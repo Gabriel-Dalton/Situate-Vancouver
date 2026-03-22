@@ -239,6 +239,10 @@
   display: none !important;
 }
 
+[data-code="en-CA"] {
+  display: none !important;
+}
+
 .insight-shell__pill {
   font-family: var(--font-mono);
   font-size: 0.65rem;
