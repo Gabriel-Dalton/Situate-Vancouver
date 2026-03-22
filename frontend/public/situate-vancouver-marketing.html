@@ -522,7 +522,7 @@
         justify-content: space-between;
         gap: 1rem;
         flex-wrap: wrap;
-        margin-bottom: 1.25rem;
+        margin-bottom: 1.5rem;
         position: relative;
       }
 
@@ -569,8 +569,8 @@
         font-size: 0.9375rem;
         color: rgba(255, 255, 255, 0.75);
         line-height: 1.7;
-        max-width: 640px;
-        margin-bottom: 1.5rem;
+        max-width: 38rem;
+        margin: 0;
         position: relative;
       }
 
@@ -579,21 +579,31 @@
         font-weight: 600;
       }
 
-      .sustain__lower {
+      .sustain__grid {
         display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: clamp(1rem, 3vw, 1.5rem);
-        align-items: start;
+        grid-template-columns: minmax(0, 1fr) minmax(300px, 1.12fr);
+        gap: clamp(1.5rem, 4vw, 2.75rem);
+        align-items: stretch;
         position: relative;
       }
 
-      @media (max-width: 640px) {
-        .sustain__lower { grid-template-columns: 1fr; }
+      @media (max-width: 900px) {
+        .sustain__grid {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      .sustain__col--copy {
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+        min-width: 0;
       }
 
       .sustain__stats {
         display: flex;
         gap: 2rem;
+        flex-wrap: wrap;
       }
 
       .sustain__stat {
@@ -617,21 +627,55 @@
         letter-spacing: 0.06em;
       }
 
-      .widget-host {
-        background: rgba(0, 0, 0, 0.2);
-        border-radius: var(--radius-md);
-        padding: clamp(0.75rem, 2vw, 1rem);
-        overflow-x: auto;
-        -webkit-overflow-scrolling: touch;
+      .sustain__col--widget {
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+        min-height: clamp(320px, 42vmin, 540px);
       }
 
-      .widget-host [data-widget-type] { min-height: 120px; }
+      .widget-host {
+        flex: 1;
+        display: flex;
+        align-items: stretch;
+        justify-content: center;
+        background: rgba(0, 0, 0, 0.32);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: var(--radius-md);
+        padding: clamp(1rem, 2.5vw, 1.75rem);
+        overflow: hidden;
+        min-height: clamp(300px, 40vmin, 520px);
+        box-sizing: border-box;
+      }
+
+      .widget-host__embed,
+      .widget-host [data-widget-type] {
+        width: 100%;
+        min-height: clamp(260px, 36vmin, 480px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .widget-host iframe {
+        width: 100% !important;
+        min-height: clamp(240px, 34vmin, 440px) !important;
+        max-width: 100%;
+        border: 0;
+        border-radius: var(--radius-sm);
+      }
+
+      .widget-host [class*='tn-'],
+      .widget-host [id*='tree-nation'] {
+        max-width: 100%;
+      }
 
       .sustain__footnote {
-        margin-top: 1rem;
+        margin-top: 1.25rem;
         font-size: 0.75rem;
-        color: rgba(255, 255, 255, 0.35);
+        color: rgba(255, 255, 255, 0.4);
         position: relative;
+        max-width: 38rem;
       }
 
       /* ── Footer ── */
@@ -669,7 +713,7 @@
       @keyframes fadeUp { to { opacity: 1; } }
       @media (prefers-reduced-motion: reduce) { .landing { animation: none; opacity: 1; } }
 
-      /* ── Language switcher (header slot + Situate theme for languagechangeridea.js) ── */
+      /* ── Language switcher (header slot + Situate theme for situate-i18n-switcher.js) ── */
       .header__lang {
         display: flex;
         align-items: center;
@@ -1035,40 +1079,45 @@
             <span class="sustain__badge">Carbon offset</span>
           </div>
 
-          <p class="sustain__body">
-            Situate Vancouver is designed to be <strong>lightweight, accessible, and
-            performance-focused</strong>. The goal is not only to make city information more
-            useful, but to do so in a way that supports faster load times, lower digital
-            overhead, and a cleaner web experience. <strong>Every page view is
-            carbon-offset</strong> through Tree Nation.
-          </p>
-
-          <div class="sustain__lower">
-            <div class="sustain__stats">
-              <div class="sustain__stat">
-                <span class="sustain__stat-value">0.00g</span>
-                <span class="sustain__stat-label">CO<sub>2</sub> / view</span>
-              </div>
-              <div class="sustain__stat">
-                <span class="sustain__stat-value">100%</span>
-                <span class="sustain__stat-label">Offset</span>
+          <div class="sustain__grid">
+            <div class="sustain__col sustain__col--copy">
+              <p class="sustain__body">
+                Situate Vancouver is designed to be <strong>lightweight, accessible, and
+                performance-focused</strong>. The goal is not only to make city information more
+                useful, but to do so in a way that supports faster load times, lower digital
+                overhead, and a cleaner web experience. <strong>Each page view is carbon-offset</strong>
+                through Tree-Nation.
+              </p>
+              <div class="sustain__stats" aria-label="Carbon summary">
+                <div class="sustain__stat">
+                  <span class="sustain__stat-value">0.00g</span>
+                  <span class="sustain__stat-label">CO<sub>2</sub> / view</span>
+                </div>
+                <div class="sustain__stat">
+                  <span class="sustain__stat-value">100%</span>
+                  <span class="sustain__stat-label">Offset</span>
+                </div>
               </div>
             </div>
-            <div
-              class="widget-host notranslate"
-              translate="no"
-              aria-label="Tree Nation website carbon offset widget"
-            >
+            <div class="sustain__col sustain__col--widget">
               <div
-                data-widget-type="offset-website"
-                data-tree-nation-code="876caf22312dcddf"
-                data-lang="en"
-                data-theme="dark"
-              ></div>
+                class="widget-host notranslate"
+                translate="no"
+                aria-label="Tree-Nation website carbon offset certification"
+              >
+                <div
+                  class="widget-host__embed"
+                  data-widget-type="offset-website"
+                  data-tree-nation-code="876caf22312dcddf"
+                  data-lang="en"
+                  data-theme="dark"
+                ></div>
+              </div>
             </div>
           </div>
           <p class="sustain__footnote">
-            Offsetting provided by Tree Nation. Figures update as the widget loads.
+            Carbon offsetting is provided by Tree-Nation. Live figures appear once the widget has
+            finished loading.
           </p>
         </div>
       </section>
@@ -1084,6 +1133,6 @@
     </div>
 
     <script src="https://widgets.tree-nation.com/js/widgets/v3/widgets.min.js"></script>
-    <script src="languagechangeridea.js" defer></script>
+    <script src="situate-i18n-switcher.js" defer></script>
   </body>
 </html>
