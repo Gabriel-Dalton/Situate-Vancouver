@@ -35,11 +35,14 @@ SECRET_KEY = os.environ.get(
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get('DJANGO_DEBUG', 'true').lower() in ('1', 'true', 'yes')
 
+# Default dev hosts include project API domains so Vite can proxy with Host: api.* when
+# API_PROXY_TARGET uses a hostname that resolves to local Django (tunnel / /etc/hosts).
+_default_allowed_hosts = 'localhost,127.0.0.1,backend'
+if DEBUG:
+    _default_allowed_hosts += ',api.ageforty.com,www.ageforty.com,ageforty.com'
 ALLOWED_HOSTS = [
-    h.strip() for h in os.environ.get(
-        'DJANGO_ALLOWED_HOSTS',
-        'localhost,127.0.0.1,backend',
-    ).split(',')
+    h.strip()
+    for h in os.environ.get('DJANGO_ALLOWED_HOSTS', _default_allowed_hosts).split(',')
     if h.strip()
 ]
 

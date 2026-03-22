@@ -5,11 +5,8 @@ HOST ?= 127.0.0.1
 # Align with frontend/vite.config.ts default API_PROXY_TARGET (127.0.0.1:8000).
 PORT ?= 8000
 
-# Prefer backend venv when present (path is relative to BACKEND_DIR because we `cd` there)
-PYTHON := $(shell command -v python3 2>/dev/null || command -v python 2>/dev/null)
-ifneq (,$(wildcard $(BACKEND_DIR)/.venv/bin/python))
-  PYTHON := .venv/bin/python
-endif
+# Prefer backend venv when present (BSD make has no ifneq; use one shell test).
+PYTHON := $(shell if [ -x "$(BACKEND_DIR)/.venv/bin/python" ]; then echo "$(BACKEND_DIR)/.venv/bin/python"; else command -v python3 2>/dev/null || command -v python 2>/dev/null; fi)
 
 .PHONY: dev dev-bg down build logs ps run install help
 

@@ -15,6 +15,10 @@ export default defineConfig(({ mode }) => {
     fileEnv.API_PROXY_TARGET || process.env.API_PROXY_TARGET || 'http://127.0.0.1:1111'
   const aiTarget =
     fileEnv.AI_PROXY_TARGET || process.env.AI_PROXY_TARGET || 'http://127.0.0.1:8001'
+  // Optional: Host header sent to Django (e.g. 127.0.0.1:1111) when API_PROXY_TARGET uses a public hostname.
+  const apiProxyForwardHost =
+    (fileEnv.API_PROXY_FORWARD_HOST || process.env.API_PROXY_FORWARD_HOST || '').trim() ||
+    undefined
   const frontendHost =
     fileEnv.FRONTEND_DEV_HOST || process.env.FRONTEND_DEV_HOST || '127.0.0.1'
   const frontendPortRaw =
@@ -22,13 +26,29 @@ export default defineConfig(({ mode }) => {
   const frontendPort = Number.parseInt(frontendPortRaw, 10)
   const devPort = Number.isFinite(frontendPort) && frontendPort > 0 ? frontendPort : 5173
 
+  // Tunnel / public hostname hits the dev server with Host: www.example.com — Vite blocks unknown hosts (DNS rebinding).
+  const viteAllowedHostsExtra = (
+    fileEnv.VITE_ALLOWED_HOSTS ||
+    process.env.VITE_ALLOWED_HOSTS ||
+    ''
+  )
+    .split(',')
+    .map((h) => h.trim())
+    .filter(Boolean)
+  const viteAllowedHostsDefaults = [
+    'www.ageforty.com',
+    'ageforty.com',
+    'api.ageforty.com',
+  ]
+  const allowedHosts = [...new Set([...viteAllowedHostsDefaults, ...viteAllowedHostsExtra])]
+
   return {
     // Windows: project folders under Documents/GitHub are often locked by OneDrive, Defender,
     // or a second Vite process — rmdir on frontend/.vite/deps then fails with EPERM. Cache in %TEMP%.
     cacheDir:
       process.env.SITUATE_VITE_CACHE_DIR ||
       path.join(os.tmpdir(), 'situate-vancouver-frontend-vite'),
-    plugins: [djangoHealthForwardPlugin(djangoTarget), react()],
+    plugins: [djangoHealthForwardPlugin(djangoTarget, apiProxyForwardHost), react()],
     optimizeDeps: {
       include: ['maplibre-gl'],
     },
@@ -39,6 +59,7 @@ export default defineConfig(({ mode }) => {
     server: {
       host: frontendHost,
       port: devPort,
+      allowedHosts,
       proxy: {
         // Browser GET to production aggregate health (avoids CORS in local dev).
         '/__situate_health': {
@@ -46,7 +67,16 @@ export default defineConfig(({ mode }) => {
           changeOrigin: true,
           rewrite: () => '/api/health/',
         },
-        '/api': djangoTarget,
+        '/api': {
+          target: djangoTarget,
+          changeOrigin: true,
+          configure(proxy) {
+            if (!apiProxyForwardHost) return
+            proxy.on('proxyReq', (proxyReq) => {
+              proxyReq.setHeader('host', apiProxyForwardHost)
+            })
+          },
+        },
         '/ai': {
           target: aiTarget,
           changeOrigin: true,
