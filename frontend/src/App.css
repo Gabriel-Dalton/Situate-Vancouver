@@ -471,6 +471,33 @@
   color: var(--text-muted);
 }
 
+.status-check__details {
+  margin-top: 0.35rem;
+}
+
+.status-check__details-summary {
+  cursor: pointer;
+  font-size: 0.55rem;
+  color: var(--text-muted);
+  list-style: none;
+}
+
+.status-check__details-summary::-webkit-details-marker {
+  display: none;
+}
+
+.status-check__details[open] .status-check__details-summary {
+  color: var(--text-dim);
+}
+
+.status-check__details-list {
+  margin: 0.25rem 0 0;
+  padding-left: 1rem;
+  font-size: 0.55rem;
+  color: var(--text-muted);
+  line-height: 1.35;
+}
+
 .map-skeleton {
   position: absolute;
   inset: 0;

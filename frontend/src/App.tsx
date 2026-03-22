@@ -17,6 +17,7 @@ const DEFAULT_LAYERS: InsightLayerState = {
 
 export default function App() {
   const [layers, setLayers] = useState<InsightLayerState>(DEFAULT_LAYERS)
+  const [serviceStatusHeading, setServiceStatusHeading] = useState('Service status')
 
   const toggleLayer = useCallback((key: keyof InsightLayerState) => {
     setLayers((prev) => ({ ...prev, [key]: !prev[key] }))
@@ -91,9 +92,12 @@ export default function App() {
 
         <aside className="insight-shell__rail insight-shell__rail--right" aria-label="Signals">
           <section className="insight-panel">
-            <h2 className="insight-panel__heading">Service status</h2>
-            <p className="insight-panel__hint">Connection status for the app and city data (refreshes every 30 s).</p>
-            <StatusPanel />
+            <h2 className="insight-panel__heading">{serviceStatusHeading}</h2>
+            <p className="insight-panel__hint">
+              Whether the app, city data, and optional AI features are reachable (refreshes every 30
+              s).
+            </p>
+            <StatusPanel onHeadingChange={setServiceStatusHeading} />
           </section>
 
           <section className="insight-panel">

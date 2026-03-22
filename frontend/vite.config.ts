@@ -32,6 +32,12 @@ export default defineConfig(({ mode }) => {
     },
     server: {
       proxy: {
+        // Browser GET to production aggregate health (avoids CORS in local dev).
+        '/__situate_health': {
+          target: 'https://www.ageforty.com',
+          changeOrigin: true,
+          rewrite: () => '/api/health/',
+        },
         '/api': djangoTarget,
         '/ai': {
           target: aiTarget,
