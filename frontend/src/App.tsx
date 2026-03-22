@@ -51,13 +51,29 @@ export default function App() {
         </div>
       </header>
 
-      <AiResponsePanel
-        response={aiResponse}
-        onClose={closeAiPanel}
-        visible={aiPanelOpen}
-      />
+      {aiPanelOpen && (
+        <div className="ai-split-view">
+          <div className="ai-split-view__map">
+            <Suspense
+              fallback={
+                <div className="map-skeleton" role="status" aria-label="Loading map">
+                  <div className="map-skeleton__grid" aria-hidden />
+                  <p className="map-skeleton__text">Initializing map canvas…</p>
+                </div>
+              }
+            >
+              <VancouverMap layers={layers} />
+            </Suspense>
+          </div>
+          <AiResponsePanel
+            response={aiResponse}
+            onClose={closeAiPanel}
+            visible={aiPanelOpen}
+          />
+        </div>
+      )}
 
-      <div className="insight-shell__body">
+      <div className="insight-shell__body" style={aiPanelOpen ? { display: 'none' } : undefined}>
         <aside className="insight-shell__rail insight-shell__rail--left" aria-label="Layers and scope">
           <section className="insight-panel">
             <h2 className="insight-panel__heading">Insight layers</h2>

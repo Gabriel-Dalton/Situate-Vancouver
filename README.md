@@ -47,7 +47,7 @@ Ports and bind addresses are read from the repo-root `.env` (`DJANGO_DEV_*`, `AI
    cd frontend && npm install && npm run dev
    ```
 
-Then open `http://localhost:5173`; both health checks are shown on the page.
+Then open **`http://localhost:5173`** for the marketing landing page. The React insight canvas (map + health checks) is at **`http://localhost:5173/app.html`**.
 
 ## Docker Compose
 

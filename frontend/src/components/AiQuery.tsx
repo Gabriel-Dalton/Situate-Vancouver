@@ -225,12 +225,10 @@ export function AiResponsePanel({
   const confidencePct = Math.round(response.confidence * 100)
 
   return (
-    <>
-      <div className="ai-overlay" onClick={onClose} aria-hidden />
-      <div
+      <aside
         className="ai-response-panel"
         ref={panelRef}
-        role="dialog"
+        role="region"
         aria-label="AI Analysis Result"
         tabIndex={-1}
       >
@@ -403,7 +401,6 @@ export function AiResponsePanel({
             </section>
           )}
         </div>
-      </div>
-    </>
+      </aside>
   )
 }

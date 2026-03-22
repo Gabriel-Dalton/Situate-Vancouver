@@ -116,58 +116,32 @@
   to { transform: rotate(360deg); }
 }
 
-/* ─── Overlay backdrop ─── */
-
-.ai-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 900;
-  background: rgba(0, 8, 20, 0.65);
-  backdrop-filter: blur(6px);
-  animation: ai-fade-in 0.2s ease;
-}
-
-@keyframes ai-fade-in {
-  from { opacity: 0; }
-  to   { opacity: 1; }
-}
-
-/* ─── Response Panel ─── */
+/* ─── Response Panel — right half of the split view ─── */
 
 .ai-response-panel {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  z-index: 950;
-  width: min(92vw, 560px);
-  max-height: 85vh;
   display: flex;
   flex-direction: column;
-  border-radius: 14px;
-  border: 1px solid var(--border-subtle);
+  min-height: 0;
+  overflow: hidden;
+  border-left: 1px solid var(--border-subtle);
   background: linear-gradient(
     175deg,
     rgba(0, 20, 46, 0.97) 0%,
     rgba(0, 32, 72, 0.96) 100%
   );
   backdrop-filter: blur(24px);
-  box-shadow:
-    0 0 0 1px rgba(0, 170, 239, 0.08),
-    0 24px 80px rgba(0, 0, 0, 0.6),
-    0 0 60px rgba(0, 170, 239, 0.06);
-  animation: ai-panel-enter 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  animation: ai-panel-slide-in 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   outline: none;
 }
 
-@keyframes ai-panel-enter {
+@keyframes ai-panel-slide-in {
   from {
     opacity: 0;
-    transform: translate(-50%, -48%) scale(0.97);
+    transform: translateX(40px);
   }
   to {
     opacity: 1;
-    transform: translate(-50%, -50%) scale(1);
+    transform: translateX(0);
   }
 }
 
@@ -176,8 +150,9 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0.85rem 1rem;
+  padding: 0.75rem 1rem;
   border-bottom: 1px solid var(--border-subtle);
+  background: rgba(0, 12, 28, 0.5);
 }
 
 .ai-response-panel__header-left {
@@ -202,8 +177,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
+  width: 30px;
+  height: 30px;
   border-radius: 6px;
   border: 1px solid transparent;
   background: none;
@@ -213,9 +188,9 @@
 }
 
 .ai-response-panel__close:hover {
-  background: rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.08);
   border-color: var(--border-subtle);
-  color: var(--text-muted);
+  color: var(--text-primary);
 }
 
 /* ─── Panel Body (scrollable) ─── */
@@ -269,12 +244,12 @@
 }
 
 .ai-chat__assistant {
-  max-width: 95%;
+  max-width: 100%;
 }
 
 .ai-chat__verdict {
   margin: 0;
-  padding: 0.7rem 0.9rem;
+  padding: 0.65rem 0.85rem;
   border-radius: 3px 12px 12px 12px;
   background: var(--surface-raised);
   border: 1px solid var(--border-subtle);
@@ -288,7 +263,7 @@
 .ai-meta-row {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.45rem;
   flex-wrap: wrap;
 }
 
@@ -446,43 +421,11 @@
   line-height: 1;
 }
 
-/* ─── Responsive ─── */
+/* ─── Responsive: header query bar ─── */
 
 @media (max-width: 768px) {
   .ai-query-bar {
     max-width: none;
-  }
-
-  .ai-response-panel {
-    width: 96vw;
-    max-height: 88vh;
-    border-radius: 12px;
-  }
-
-  .ai-response-panel__body {
-    padding: 0.85rem;
-    gap: 0.75rem;
-  }
-
-  .ai-chat__user {
-    max-width: 92%;
-  }
-
-  .ai-chat__user-query,
-  .ai-chat__verdict {
-    font-size: 0.92rem;
-  }
-
-  .ai-section {
-    padding: 0.6rem 0.65rem;
-  }
-
-  .ai-section__text {
-    font-size: 0.85rem;
-  }
-
-  .ai-actions-list__item {
-    font-size: 0.85rem;
   }
 }
 
@@ -505,53 +448,13 @@
   .ai-query-bar__submit {
     padding: 0 0.5rem;
   }
-
-  .ai-response-panel {
-    position: fixed;
-    inset: 0;
-    top: 0;
-    left: 0;
-    width: 100%;
-    max-height: 100%;
-    height: 100dvh;
-    transform: none;
-    border-radius: 0;
-    animation: ai-panel-slide-up 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-  }
-
-  .ai-overlay {
-    display: none;
-  }
-
-  .ai-response-panel__header {
-    padding: 0.75rem 0.85rem;
-    position: sticky;
-    top: 0;
-    background: linear-gradient(
-      175deg,
-      rgba(0, 20, 46, 0.99) 0%,
-      rgba(0, 32, 72, 0.98) 100%
-    );
-    z-index: 1;
-  }
-
-  .ai-response-panel__body {
-    padding: 0.75rem;
-    padding-bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px));
-  }
-
-  .ai-chat__user {
-    max-width: 95%;
-  }
 }
 
-@keyframes ai-panel-slide-up {
-  from {
-    opacity: 0;
-    transform: translateY(24px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
+/* ─── Responsive: split view on small screens stacks vertically ─── */
+
+@media (max-width: 700px) {
+  .ai-response-panel {
+    border-left: none;
+    border-top: 1px solid var(--border-subtle);
   }
 }

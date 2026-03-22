@@ -641,7 +641,7 @@
         '<div class="ls-pf">' +
           '<div class="ls-disc">' +
             S.info +
-            '<p>Translations are provided for convenience and may not fully capture the original meaning. <a id="ls-disc-link" href="#" style="color:inherit;text-decoration:underline">Language disclaimer</a></p>' +
+            '<p>Translations are provided for convenience and may not fully capture the original meaning.</p>' +
           '</div>' +
           '<button id="ls-reset" type="button" hidden>' +
             S.reset + 'Return to original language' +
@@ -672,13 +672,6 @@
         '<button type="button" id="ls-nclose" aria-label="Dismiss notice">' + S.x + '</button>' +
       '</div>';
     document.body.appendChild(noticeBar);
-
-    
-    var discLink = document.getElementById('ls-disc-link');
-    if (discLink) {
-      var inDev = /\/_dev\//.test(location.pathname) || /\/_dev\//.test(location.href);
-      discLink.href = inDev ? 'disclaimers.html#language-translations' : '_dev/disclaimers.html#language-translations';
-    }
   }
 
 

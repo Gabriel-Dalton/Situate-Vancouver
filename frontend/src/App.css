@@ -83,6 +83,22 @@
   grid-template-rows: 1fr;
 }
 
+/* ─── AI split-view: full-screen map-left / analysis-right ─── */
+
+.ai-split-view {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr;
+}
+
+.ai-split-view__map {
+  position: relative;
+  min-height: 0;
+  background: var(--harbor-navy-deep);
+}
+
 .insight-shell__map-wrap {
   position: relative;
   min-height: 320px;
@@ -561,6 +577,15 @@
     border-left-width: 0;
     border-top: 1px solid var(--border-subtle);
     order: 3;
+  }
+
+  .ai-split-view {
+    grid-template-columns: 1fr;
+    grid-template-rows: 40vh 1fr;
+  }
+
+  .ai-split-view__map {
+    min-height: 200px;
   }
 }
 

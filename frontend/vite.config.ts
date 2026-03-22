@@ -73,6 +73,12 @@ export default defineConfig(({ mode }) => {
     build: {
       // MapLibre GL is ~1MB minified; lazy-loaded — warn threshold tuned for that.
       chunkSizeWarningLimit: 1200,
+      rollupOptions: {
+        input: {
+          main: path.resolve(__dirname, 'index.html'),
+          app: path.resolve(__dirname, 'app.html'),
+        },
+      },
     },
     server: {
       host: frontendHost,
