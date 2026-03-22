@@ -135,6 +135,7 @@ class OrchestratorAgent:
             verdict=analysis.answer,
             severity=analysis.severity,
             location=incident.location or decomposed.location,
+            coordinates=incident.coordinates,
             cause=analysis.cause,
             impact=analysis.impact,
             recommended_actions=analysis.recommended_actions,

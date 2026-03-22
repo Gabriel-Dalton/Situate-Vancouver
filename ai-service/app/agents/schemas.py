@@ -108,11 +108,10 @@ class QueryResponse(BaseModel):
     query_type: str = Field(
         description="Classified intent: traffic | weather | emergency | obstruction | construction | transit | general"
     )
-    verdict: str = Field(
-        description="Plain-English answer to the user's question"
-    )
+    verdict: str = Field(description="Plain-English answer to the user's question")
     severity: str = Field(description="low | medium | high | critical")
     location: str = Field(description="The Vancouver location this response is about")
+    coordinates: Coordinates | None = Field(default=None, description="lat/lng for map pin")
     cause: str
     impact: str
     recommended_actions: list[str]
