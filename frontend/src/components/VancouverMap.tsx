@@ -13,9 +13,17 @@ import {
 import type { InsightLayerKey, InsightLayerState } from '../types/insightLayers'
 import type { MobilityLens } from '../types/mobilityLens'
 import { MOBILITY_LENS_META } from '../types/mobilityLens'
+import type { AiQueryResponse } from './AiQuery'
 import MapBasemapToolbar from './MapBasemapToolbar'
 import MapInsightToolbar from './MapInsightToolbar'
 import './VancouverMap.css'
+
+const SEVERITY_COLORS: Record<AiQueryResponse['severity'], string> = {
+  low: '#22c55e',
+  medium: '#f59e0b',
+  high: '#ef4444',
+  critical: '#ff3b3b',
+}
 
 export type { InsightLayerState } from '../types/insightLayers'
 
@@ -33,6 +41,8 @@ function applyInsightLayers(map: maplibregl.Map, layers: InsightLayerState) {
     'strategic-nodes-glow',
     'strategic-nodes-core',
     'corridors-line',
+    'incident-glow',
+    'incident-core',
   ] as const
   for (const id of ids) {
     if (!map.getLayer(id)) continue
@@ -40,6 +50,8 @@ function applyInsightLayers(map: maplibregl.Map, layers: InsightLayerState) {
       map.setLayoutProperty(id, 'visibility', vis(layers.skytrainNodes))
     } else if (id.startsWith('strategic')) {
       map.setLayoutProperty(id, 'visibility', vis(layers.strategicNodes))
+    } else if (id.startsWith('incident')) {
+      map.setLayoutProperty(id, 'visibility', vis(layers.incidentMarker))
     } else {
       map.setLayoutProperty(id, 'visibility', vis(layers.movementCorridors))
     }
@@ -158,14 +170,66 @@ type Props = {
   layers: InsightLayerState
   onToggleLayer: (key: InsightLayerKey) => void
   lens: MobilityLens
+  incident?: AiQueryResponse | null
 }
 
-export default function VancouverMap({ layers, onToggleLayer, lens }: Props) {
+function installIncidentLayer(map: maplibregl.Map, inc: AiQueryResponse) {
+  const SRC_ID = 'incident-point'
+  const GLOW_ID = 'incident-glow'
+  const CORE_ID = 'incident-core'
+  const { lat, lng } = inc.coordinates
+  const color = SEVERITY_COLORS[inc.severity] ?? SEVERITY_COLORS.low
+
+  const geojson: GeoJSON.FeatureCollection<GeoJSON.Point> = {
+    type: 'FeatureCollection',
+    features: [
+      {
+        type: 'Feature',
+        geometry: { type: 'Point', coordinates: [lng, lat] },
+        properties: { verdict: inc.verdict, location: inc.location, severity: inc.severity },
+      },
+    ],
+  }
+
+  if (map.getSource(SRC_ID)) {
+    ;(map.getSource(SRC_ID) as maplibregl.GeoJSONSource).setData(geojson)
+    if (map.getLayer(GLOW_ID)) map.setPaintProperty(GLOW_ID, 'circle-color', color)
+    if (map.getLayer(CORE_ID)) map.setPaintProperty(CORE_ID, 'circle-color', color)
+  } else {
+    map.addSource(SRC_ID, { type: 'geojson', data: geojson })
+    map.addLayer({
+      id: GLOW_ID,
+      type: 'circle',
+      source: SRC_ID,
+      paint: {
+        'circle-radius': 22,
+        'circle-color': color,
+        'circle-opacity': 0.22,
+        'circle-blur': 0.9,
+      },
+    })
+    map.addLayer({
+      id: CORE_ID,
+      type: 'circle',
+      source: SRC_ID,
+      paint: {
+        'circle-radius': 7,
+        'circle-color': color,
+        'circle-opacity': 0.96,
+        'circle-stroke-width': 2,
+        'circle-stroke-color': '#001b3d',
+      },
+    })
+  }
+}
+
+export default function VancouverMap({ layers, onToggleLayer, lens, incident }: Props) {
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<maplibregl.Map | null>(null)
   const styleReadyRef = useRef(false)
   const layersRef = useRef(layers)
   const lensRef = useRef(lens)
+  const incidentRef = useRef(incident ?? null)
   const interactionsBoundRef = useRef(false)
   const [basemap, setBasemap] = useState<BasemapId>(INITIAL_BASEMAP)
   const [cursorInfo, setCursorInfo] = useState({ lat: VAN_CENTRE[1], lng: VAN_CENTRE[0], zoom: 11.35 })
@@ -187,6 +251,10 @@ export default function VancouverMap({ layers, onToggleLayer, lens }: Props) {
   useLayoutEffect(() => {
     lensRef.current = lens
   }, [lens])
+
+  useLayoutEffect(() => {
+    incidentRef.current = incident ?? null
+  }, [incident])
 
   useEffect(() => {
     const el = containerRef.current
@@ -259,6 +327,7 @@ export default function VancouverMap({ layers, onToggleLayer, lens }: Props) {
       installInsightOverlay(map)
       installLensOverlay(map, lensRef.current)
       applyInsightLayers(map, layersRef.current)
+      if (incidentRef.current) installIncidentLayer(map, incidentRef.current)
       styleReadyRef.current = true
 
       if (!interactionsBoundRef.current) {
@@ -297,6 +366,35 @@ export default function VancouverMap({ layers, onToggleLayer, lens }: Props) {
     if (!map || !styleReadyRef.current) return
     installLensOverlay(map, lens)
   }, [lens])
+
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map || !styleReadyRef.current) return
+
+    if (!incident) {
+      if (map.getLayer('incident-glow')) map.removeLayer('incident-glow')
+      if (map.getLayer('incident-core')) map.removeLayer('incident-core')
+      if (map.getSource('incident-point')) map.removeSource('incident-point')
+      return
+    }
+
+    installIncidentLayer(map, incident)
+
+    const { lat, lng } = incident.coordinates
+    map.flyTo({ center: [lng, lat], zoom: 15, duration: 900, easing: (t) => 1 - Math.pow(1 - t, 3) })
+
+    map.once('moveend', () => {
+      new maplibregl.Popup({ maxWidth: '300px', className: 'van-popup', offset: 14 })
+        .setLngLat([lng, lat])
+        .setHTML(
+          `<div class="van-popup__title">${escapeHtml(incident.location)}</div>` +
+          `<div class="van-popup__body">${escapeHtml(incident.verdict)}</div>` +
+          `<div class="van-popup__body" style="margin-top:4px;opacity:0.7;font-size:0.78em">` +
+          `Severity: ${escapeHtml(incident.severity)}</div>`,
+        )
+        .addTo(map)
+    })
+  }, [incident])
 
   const handleBasemap = (id: BasemapId) => {
     setBasemap(id)

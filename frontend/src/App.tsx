@@ -20,6 +20,7 @@ const DEFAULT_LAYERS: InsightLayerState = {
   strategicNodes: true,
   movementCorridors: true,
   skytrainNodes: true,
+  incidentMarker: true,
 }
 
 export default function App() {
@@ -68,7 +69,7 @@ export default function App() {
                 </div>
               }
             >
-              <VancouverMap layers={layers} />
+              <VancouverMap layers={layers} onToggleLayer={toggleLayer} lens={lens} incident={aiResponse} />
             </Suspense>
           </div>
           <AiResponsePanel
@@ -116,6 +117,13 @@ export default function App() {
               checked={layers.skytrainNodes}
               onChange={() => toggleLayer('skytrainNodes')}
             />
+            <LayerToggle
+              id="layer-incident"
+              label="Incident marker"
+              description="AI-detected incident location from the last query"
+              checked={layers.incidentMarker}
+              onChange={() => toggleLayer('incidentMarker')}
+            />
             <div className="skytrain-legend" role="region" aria-label="SkyTrain line colors">
               {SKYTRAIN_LEGEND.map(({ key, shortLabel }) => (
                 <span key={key} className="skytrain-legend__item">
@@ -153,7 +161,7 @@ export default function App() {
               </div>
             }
           >
-            <VancouverMap layers={layers} onToggleLayer={toggleLayer} lens={lens} />
+            <VancouverMap layers={layers} onToggleLayer={toggleLayer} lens={lens} incident={aiResponse} />
           </Suspense>
         </main>
 
