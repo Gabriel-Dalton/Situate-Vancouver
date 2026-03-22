@@ -178,6 +178,9 @@ _cors_origins = os.environ.get(
 CORS_ALLOWED_ORIGINS = [o.strip() for o in _cors_origins.split(',') if o.strip()]
 
 AI_SERVICE_URL = os.environ.get('AI_SERVICE_URL', 'http://127.0.0.1:8001')
+AI_QUERY_TIMEOUT_SECONDS = float(
+    os.environ.get('AI_QUERY_TIMEOUT_SECONDS', '120'),
+)
 
 # Aggregate /api/health: set HEALTH_CHECK_AI=false when FastAPI is not running locally.
 HEALTH_CHECK_AI = os.environ.get('HEALTH_CHECK_AI', 'true').lower() in (

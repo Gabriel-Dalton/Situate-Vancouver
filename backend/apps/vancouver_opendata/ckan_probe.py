@@ -8,16 +8,21 @@ from .client import VancouverOpenDataClient
 from .exceptions import VancouverOpenDataConfigurationError
 
 
-def build_ckan_client() -> VancouverOpenDataClient:
+def build_ckan_client(*, timeout_seconds: float | None = None) -> VancouverOpenDataClient:
     key = settings.VANCOUVER_OPENDATA_API_KEY
     if not key:
         raise VancouverOpenDataConfigurationError(
             'VANCOUVER_OPENDATA_API_KEY is not configured',
         )
+    timeout = (
+        float(timeout_seconds)
+        if timeout_seconds is not None
+        else float(settings.VANCOUVER_OPENDATA_TIMEOUT_SECONDS)
+    )
     return VancouverOpenDataClient(
         settings.VANCOUVER_OPENDATA_BASE_URL,
         key,
-        timeout_seconds=settings.VANCOUVER_OPENDATA_TIMEOUT_SECONDS,
+        timeout_seconds=timeout,
         enforce_host_allowlist=settings.VANCOUVER_OPENDATA_ENFORCE_HOST_ALLOWLIST,
     )
 

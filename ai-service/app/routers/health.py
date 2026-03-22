@@ -1,68 +1,62 @@
-import os
-import time
+from __future__ import annotations
 
-import redis
 from fastapi import APIRouter
-from openai import OpenAI, APIConnectionError, AuthenticationError
+from openai import APIConnectionError, APIStatusError, APITimeoutError
+
+from app.openai_config import OpenAIConfigurationError, build_openai_client
 
 router = APIRouter()
 
-
-def _check_openai() -> dict:
-    try:
-        key = os.environ.get("OPENAI_API_KEY", "")
-        if not key:
-            return {"status": "error", "message": "OPENAI_API_KEY not set"}
-
-        t0 = time.perf_counter()
-        client = OpenAI(api_key=key)
-        client.chat.completions.create(
-            model="gpt-4o",
-            messages=[{"role": "user", "content": "ping"}],
-            max_tokens=1,
-        )
-        latency_ms = (time.perf_counter() - t0) * 1000
-        return {"status": "ok", "latency_ms": round(latency_ms)}
-
-    except AuthenticationError:
-        return {"status": "error", "message": "Invalid API key"}
-    except APIConnectionError:
-        return {"status": "error", "message": "Could not reach OpenAI API"}
-    except Exception as e:
-        return {"status": "error", "message": str(e)}
-
-
-def _check_redis() -> dict:
-    try:
-        r = redis.Redis(
-            host=os.environ.get("REDIS_HOST", "localhost"),
-            port=int(os.environ.get("REDIS_PORT", 6379)),
-            username=os.environ.get("REDIS_USERNAME", "default"),
-            password=os.environ.get("REDIS_PASSWORD"),
-            decode_responses=True,
-            socket_connect_timeout=3,
-        )
-        t0 = time.perf_counter()
-        r.ping()
-        latency_ms = (time.perf_counter() - t0) * 1000
-        return {"status": "ok", "latency_ms": round(latency_ms)}
-
-    except Exception as e:
-        return {"status": "error", "message": str(e)}
+# Keep health checks bounded so load balancers do not wait on slow OpenAI.
+_OPENAI_HEALTH_TIMEOUT_S = 5.0
 
 
 @router.get("/health")
 def health():
-    openai_check = _check_openai()
-    redis_check = _check_redis()
-
-    all_ok = openai_check["status"] == "ok" and redis_check["status"] == "ok"
-
-    return {
-        "status": "ok" if all_ok else "degraded",
-        "service": "ai",
-        "checks": {
-            "openai": openai_check,
-            "redis": redis_check,
-        },
-    }
+    """
+    Liveness plus OpenAI: key present and a lightweight models.list() succeeds.
+    Top-level ``status`` is ``ok`` only when OpenAI is usable; details under ``openai``.
+    """
+    payload: dict = {'service': 'ai', 'status': 'ok', 'openai': {}}
+    try:
+        client = build_openai_client(timeout=_OPENAI_HEALTH_TIMEOUT_S)
+        client.models.list()
+        payload['openai'] = {
+            'status': 'ok',
+            'message': 'OPENAI_API_KEY set and OpenAI models list succeeded',
+        }
+    except OpenAIConfigurationError as exc:
+        payload['status'] = 'error'
+        payload['openai'] = {
+            'status': 'error',
+            'message': str(exc),
+        }
+    except APITimeoutError as exc:
+        payload['status'] = 'error'
+        payload['openai'] = {
+            'status': 'error',
+            'message': 'OpenAI request timed out',
+            'detail': str(exc),
+        }
+    except APIConnectionError as exc:
+        payload['status'] = 'error'
+        payload['openai'] = {
+            'status': 'error',
+            'message': 'Could not connect to OpenAI',
+            'detail': str(exc),
+        }
+    except APIStatusError as exc:
+        payload['status'] = 'error'
+        payload['openai'] = {
+            'status': 'error',
+            'message': f'OpenAI API returned HTTP {exc.status_code}',
+            'detail': getattr(exc, 'message', None) or str(exc),
+        }
+    except Exception as exc:  # pragma: no cover - defensive
+        payload['status'] = 'error'
+        payload['openai'] = {
+            'status': 'error',
+            'message': 'OpenAI health check failed',
+            'detail': str(exc),
+        }
+    return payload

@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
 from app.agents import OrchestratorAgent, QueryResponse, DetectedIncident
+from app.openai_config import OpenAIConfigurationError
 
 router = APIRouter(prefix="/incidents", tags=["incidents"])
 
@@ -16,7 +17,10 @@ _orchestrator: OrchestratorAgent | None = None
 def get_orchestrator() -> OrchestratorAgent:
     global _orchestrator
     if _orchestrator is None:
-        _orchestrator = OrchestratorAgent()
+        try:
+            _orchestrator = OrchestratorAgent()
+        except OpenAIConfigurationError as exc:
+            raise HTTPException(status_code=503, detail=str(exc)) from exc
     return _orchestrator
 
 

@@ -1,4 +1,5 @@
-# Django API (backend)
+# Django (backend) + FastAPI (ai-service) + Vite (frontend); bind addresses/ports from repo-root `.env`.
+# See `.env.example` (DJANGO_DEV_*, AI_DEV_*, FRONTEND_DEV_*, API_PROXY_TARGET, AI_PROXY_TARGET, …).
 BACKEND_DIR := backend
 HOST ?= 127.0.0.1
 # Align with frontend/vite.config.ts default API_PROXY_TARGET (127.0.0.1:8000).
@@ -21,7 +22,8 @@ help:
 	@echo "  make logs         Tail logs (all services, or service=<name> for one)"
 	@echo "  make ps           Show running containers and ports"
 	@echo "  make install      pip/npm install for all three services (local)"
-	@echo "  make run          Start Django only (default $(HOST):$(PORT))"
+	@echo "  make run          Start FastAPI + Vite + Django (repo-root .env via scripts/dev-run.sh)"
+	@echo "Env: copy .env.example to .env at repo root (Django and dev-run.sh load it)."
 
 # ── Docker (full stack) ────────────────────────────────────────────────────
 
@@ -51,4 +53,4 @@ install:
 	cd frontend && npm install
 
 run:
-	cd $(BACKEND_DIR) && $(PYTHON) manage.py runserver $(HOST):$(PORT)
+	bash scripts/dev-run.sh
