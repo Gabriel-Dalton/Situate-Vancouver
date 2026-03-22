@@ -78,6 +78,22 @@
   color: #e8eef5 !important;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(0, 170, 239, 0.08) !important;
   backdrop-filter: blur(12px);
+  /* Override script padding; equal insets + balanced flag/label (fi icon + letter-spacing read uneven). */
+  padding-block: 0.55rem !important;
+  padding-inline: 0.72rem !important;
+  gap: 0.4rem !important;
+  box-sizing: border-box !important;
+}
+
+#ls-root .ls-trig-flag {
+  margin-inline-start: -0.06rem;
+}
+
+#ls-root #ls-trig-lbl {
+  letter-spacing: 0.04em;
+  /* Pull label box in so trailing letter-spacing does not eat the right inset. */
+  margin-inline-end: -0.07em;
+  line-height: 1;
 }
 
 #ls-root #ls-trigger:hover {
