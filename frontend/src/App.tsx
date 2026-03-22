@@ -4,6 +4,7 @@
  */
 import { lazy, Suspense, useCallback, useEffect, useState } from 'react'
 import type { InsightLayerState } from './components/VancouverMap'
+import { SKYTRAIN_LEGEND, SKYTRAIN_LINE_COLORS } from './data/skytrainLineKeys'
 import BrandLockup from './components/BrandLockup'
 import StatusPanel from './components/StatusPanel'
 import { AiQueryBar, AiResponsePanel } from './components/AiQuery'
@@ -15,6 +16,7 @@ const VancouverMap = lazy(() => import('./components/VancouverMap'))
 const DEFAULT_LAYERS: InsightLayerState = {
   strategicNodes: true,
   movementCorridors: true,
+  skytrainNodes: true,
 }
 
 export default function App() {
@@ -95,6 +97,24 @@ export default function App() {
               checked={layers.movementCorridors}
               onChange={() => toggleLayer('movementCorridors')}
             />
+            <LayerToggle
+              id="layer-skytrain"
+              label="SkyTrain stations"
+              description="Expo, Millennium, and Canada Line stops (public transit nodes)"
+              checked={layers.skytrainNodes}
+              onChange={() => toggleLayer('skytrainNodes')}
+            />
+            <div className="skytrain-legend" role="region" aria-label="SkyTrain line colors">
+              {SKYTRAIN_LEGEND.map(({ key, shortLabel }) => (
+                <span key={key} className="skytrain-legend__item">
+                  <span
+                    className="skytrain-legend__swatch"
+                    style={{ background: SKYTRAIN_LINE_COLORS[key] }}
+                  />
+                  <span className="skytrain-legend__label">{shortLabel}</span>
+                </span>
+              ))}
+            </div>
           </section>
 
           <section className="insight-panel">
@@ -121,7 +141,7 @@ export default function App() {
               </div>
             }
           >
-            <VancouverMap layers={layers} />
+            <VancouverMap layers={layers} onToggleLayer={toggleLayer} />
           </Suspense>
         </main>
 

@@ -191,6 +191,38 @@
   margin-top: 0.35rem;
 }
 
+.skytrain-legend {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin: 0.75rem 0 0;
+  padding: 0.55rem 0.5rem 0.45rem;
+  border-radius: 4px;
+  border: 1px solid rgba(0, 170, 239, 0.12);
+  background: rgba(0, 0, 0, 0.18);
+}
+
+.skytrain-legend__item {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.68rem;
+  letter-spacing: 0.02em;
+  color: var(--text-muted);
+}
+
+.skytrain-legend__swatch {
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 50%;
+  flex-shrink: 0;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.45);
+}
+
+.skytrain-legend__label {
+  line-height: 1.2;
+}
+
 .layer-toggle:hover {
   background: rgba(0, 170, 239, 0.06);
   border-color: var(--border-subtle);
