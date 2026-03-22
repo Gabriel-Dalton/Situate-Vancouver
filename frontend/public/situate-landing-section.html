@@ -10,6 +10,10 @@
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
       rel="stylesheet"
     />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/flag-icons@7.2.3/css/flag-icons.min.css"
+    />
     <style>
       :root {
         --color-primary: #002040;
@@ -433,13 +437,63 @@
       .landing { opacity: 0; transform: translateY(8px); animation: fadeUp 0.4s ease forwards; }
       @keyframes fadeUp { to { opacity: 1; transform: translateY(0); } }
       @media (prefers-reduced-motion: reduce) { .landing { animation: none; opacity: 1; transform: none; } }
+
+      /* ── Language switcher (header slot + Situate theme for languagechangeridea.js) ── */
+      .header__lang {
+        display: flex;
+        align-items: center;
+        flex-shrink: 0;
+      }
+
+      #ls-root {
+        --lsa: var(--color-accent);
+        --lsah: #0999b5;
+        --lsas: var(--color-accent-soft);
+        --lsah2: rgba(12, 168, 200, 0.16);
+        --lsbg: var(--color-surface);
+        --lssf: var(--color-bg);
+        --lsbd: var(--color-border);
+        --lst: var(--color-text);
+        --lst2: var(--color-text-secondary);
+        --lstm: var(--color-text-muted);
+        --lsf: var(--font);
+        --lsfh: var(--font);
+      }
+
+      #ls-root #ls-search:focus {
+        box-shadow: 0 0 0 3.5px rgba(12, 168, 200, 0.12);
+      }
+
+      #ls-root #ls-reset:hover,
+      #ls-root .ls-x:hover {
+        color: var(--color-accent);
+      }
+
+      #ls-root .ls-disc {
+        background: var(--color-surface);
+      }
+
+      #ls-root #ls-norig {
+        color: var(--color-primary);
+        background: var(--color-accent-soft);
+        border-color: rgba(12, 168, 200, 0.25);
+      }
+
+      #ls-root #ls-norig:hover {
+        background: rgba(12, 168, 200, 0.14);
+      }
     </style>
   </head>
   <body>
     <div class="landing">
       <!-- Header -->
       <header class="header">
-        <div class="brand-lockup" role="img" aria-label="Situate Vancouver">
+        <div
+          class="brand-lockup notranslate"
+          translate="no"
+          role="img"
+          aria-label="Situate Vancouver"
+        >
           <div class="brand-lockup__icon-wrap" aria-hidden="true">
             <img
               src="situate-vancouver-logo-standard-icon.svg"
@@ -454,6 +508,11 @@
         <nav class="header__nav" aria-label="Main navigation">
           <a href="#features" class="header__link">Features</a>
           <a href="#sustainability" class="header__link">Sustainability</a>
+          <div
+            id="situate-lang-mount"
+            class="header__lang"
+            aria-label="Language"
+          ></div>
           <button type="button" class="header__cta">Open map</button>
         </nav>
       </header>
@@ -540,7 +599,8 @@
             </div>
           </div>
           <div
-            class="widget-host"
+            class="widget-host notranslate"
+            translate="no"
             aria-label="Tree Nation website carbon offset widget"
           >
             <div
@@ -558,7 +618,7 @@
 
       <!-- Footer -->
       <footer class="footer">
-        <span class="footer__copy">&copy; 2026 Situate Vancouver</span>
+        <span class="footer__copy notranslate" translate="no">&copy; 2026 Situate Vancouver</span>
         <nav class="footer__links" aria-label="Footer navigation">
           <a href="#" class="footer__link">GitHub</a>
           <a href="#" class="footer__link">Contact</a>
@@ -567,5 +627,6 @@
     </div>
 
     <script src="https://widgets.tree-nation.com/js/widgets/v3/widgets.min.js"></script>
+    <script src="languagechangeridea.js" defer></script>
   </body>
 </html>
