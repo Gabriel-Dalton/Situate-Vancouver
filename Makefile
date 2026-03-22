@@ -10,17 +10,45 @@ ifneq (,$(wildcard $(BACKEND_DIR)/.venv/bin/python))
   PYTHON := .venv/bin/python
 endif
 
-.PHONY: run install help
+.PHONY: dev dev-bg down build logs ps run install help
 
 help:
 	@echo "Targets:"
-	@echo "  make install      pip install -r backend/requirements.txt (uses .venv if present)"
-	@echo "  make run          Start Django (default $(HOST):$(PORT))"
-	@echo "  make run PORT=8000   Use another port"
-	@echo "Env: shared variables live in repo-root .env (tracked in git)."
+	@echo "  make dev          Build and start all services (Docker)"
+	@echo "  make dev-bg       Same but run in background"
+	@echo "  make down         Stop and remove all containers"
+	@echo "  make build        Rebuild all images without cache"
+	@echo "  make logs         Tail logs (all services, or service=<name> for one)"
+	@echo "  make ps           Show running containers and ports"
+	@echo "  make install      pip/npm install for all three services (local)"
+	@echo "  make run          Start Django only (default $(HOST):$(PORT))"
+
+# ── Docker (full stack) ────────────────────────────────────────────────────
+
+dev:
+	docker compose up --build
+
+dev-bg:
+	docker compose up --build -d
+
+down:
+	docker compose down
+
+build:
+	docker compose build --no-cache
+
+logs:
+	docker compose logs -f $(service)
+
+ps:
+	docker compose ps
+
+# ── Local (no Docker) ─────────────────────────────────────────────────────
 
 install:
-	cd $(BACKEND_DIR) && $(PYTHON) -m pip install -r requirements.txt
+	cd backend && pip3 install -r requirements.txt
+	cd ai-service && pip3 install -r requirements.txt
+	cd frontend && npm install
 
 run:
 	cd $(BACKEND_DIR) && $(PYTHON) manage.py runserver $(HOST):$(PORT)
