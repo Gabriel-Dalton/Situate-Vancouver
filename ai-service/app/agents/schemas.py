@@ -96,6 +96,14 @@ class ReasonerOutput(BaseModel):
     estimated_duration: str = Field(description="How long this situation is likely to last")
     severity: str = Field(description="low | medium | high | critical")
     related_alerts: list[str] = Field(description="Other locations or lines commuters should know about")
+    coordinates: Coordinates = Field(
+        description=(
+            "Best lat/lng for the primary location in this response. "
+            "Use coordinates from the incident if available, otherwise estimate precisely "
+            "for the named Vancouver location. Vancouver is ~49.28°N, 123.12°W. "
+            "Always provide a specific value — never leave as 0,0."
+        )
+    )
     confidence: float = Field(description="0.0-1.0 confidence in this reasoning")
 
 
@@ -108,11 +116,10 @@ class QueryResponse(BaseModel):
     query_type: str = Field(
         description="Classified intent: traffic | weather | emergency | obstruction | construction | transit | general"
     )
-    verdict: str = Field(
-        description="Plain-English answer to the user's question"
-    )
+    verdict: str = Field(description="Plain-English answer to the user's question")
     severity: str = Field(description="low | medium | high | critical")
     location: str = Field(description="The Vancouver location this response is about")
+    coordinates: Coordinates = Field(description="lat/lng for the map pin — always present")
     cause: str
     impact: str
     recommended_actions: list[str]

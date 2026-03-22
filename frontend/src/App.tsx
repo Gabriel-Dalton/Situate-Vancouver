@@ -90,9 +90,7 @@ export default function App() {
         </main>
 
         <aside className="insight-shell__rail insight-shell__rail--right" aria-label="Signals">
-          <section className="insight-panel">
-            <h2 className="insight-panel__heading">Service status</h2>
-            <p className="insight-panel__hint">Connection status for the app and city data (refreshes every 30 s).</p>
+          <section className="insight-panel" aria-label="Systems status">
             <StatusPanel />
           </section>
 

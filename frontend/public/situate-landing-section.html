@@ -10,15 +10,20 @@
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
       rel="stylesheet"
     />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/flag-icons@7.2.3/css/flag-icons.min.css"
+    />
     <style>
       :root {
+        --color-primary: #002040;
         --color-bg: #ffffff;
-        --color-surface: #f8f9fb;
+        --color-surface: #f7f8fa;
         --color-text: #111827;
         --color-text-secondary: #4b5563;
         --color-text-muted: #9ca3af;
-        --color-accent: #0066ff;
-        --color-accent-soft: rgba(0, 102, 255, 0.08);
+        --color-accent: #0CA8C8;
+        --color-accent-soft: rgba(12, 168, 200, 0.08);
         --color-border: #e5e7eb;
         --color-green: #059669;
         --color-green-soft: rgba(5, 150, 105, 0.08);
@@ -41,9 +46,9 @@
       }
 
       .landing {
-        max-width: 1080px;
+        max-width: 1120px;
         margin: 0 auto;
-        padding: 0 clamp(1rem, 4vw, 2rem);
+        padding: 0 clamp(1.25rem, 5vw, 2.5rem);
       }
 
       /* ── Header ── */
@@ -55,22 +60,17 @@
         border-bottom: 1px solid var(--color-border);
       }
 
-      .header__brand {
-        min-width: 0;
-      }
-
-      /* Horizontal lockup: icon + wordmark (compact, responsive) */
       .brand-lockup {
         display: inline-flex;
         align-items: center;
-        gap: clamp(0.4rem, 1.5vw, 0.7rem);
-        box-sizing: border-box;
+        gap: 16px;
         min-width: 0;
+        text-decoration: none;
       }
 
       .brand-lockup__icon-wrap {
-        width: clamp(2rem, 4.2vw, 2.625rem);
-        height: clamp(2rem, 4.2vw, 2.625rem);
+        width: 42px;
+        height: 42px;
         flex-shrink: 0;
         display: flex;
         align-items: center;
@@ -88,10 +88,10 @@
         margin: 0;
         font-family: var(--font);
         font-weight: 800;
-        font-size: clamp(0.62rem, 1.75vw, 0.8125rem);
+        font-size: clamp(0.625rem, 1.75vw, 0.8125rem);
         letter-spacing: 0.15em;
-        line-height: 1.05;
-        color: #002040;
+        line-height: 1;
+        color: var(--color-primary);
         text-transform: uppercase;
         white-space: nowrap;
       }
@@ -116,8 +116,8 @@
         font-family: inherit;
         font-size: 0.8125rem;
         font-weight: 600;
-        padding: 0.5rem 1rem;
-        background: var(--color-text);
+        padding: 0.5rem 1.125rem;
+        background: var(--color-primary);
         color: #fff;
         border: none;
         border-radius: var(--radius-sm);
@@ -125,17 +125,77 @@
         transition: background 0.15s;
       }
 
-      .header__cta:hover { background: #1f2937; }
+      .header__cta:hover { background: #001730; }
 
       @media (max-width: 640px) {
         .header__nav { gap: 1rem; }
         .header__link { display: none; }
       }
 
+      /* ── Shared ── */
+      .section-label {
+        font-size: 0.6875rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: var(--color-accent);
+        margin-bottom: 0.5rem;
+      }
+
+      .section-title {
+        font-size: clamp(1.5rem, 3.5vw, 2rem);
+        font-weight: 800;
+        line-height: 1.15;
+        letter-spacing: -0.025em;
+        color: var(--color-primary);
+        margin-bottom: 0.75rem;
+      }
+
+      .section-desc {
+        font-size: clamp(0.9375rem, 2vw, 1.0625rem);
+        color: var(--color-text-secondary);
+        line-height: 1.65;
+        max-width: 640px;
+      }
+
+      .btn {
+        font-family: inherit;
+        font-size: 0.875rem;
+        font-weight: 600;
+        padding: 0.7rem 1.35rem;
+        border-radius: var(--radius-sm);
+        border: 1px solid transparent;
+        cursor: pointer;
+        transition: all 0.15s;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+
+      .btn--primary {
+        background: var(--color-primary);
+        color: #fff;
+        border-color: var(--color-primary);
+      }
+
+      .btn--primary:hover { background: #001730; border-color: #001730; }
+
+      .btn--secondary {
+        background: var(--color-bg);
+        color: var(--color-text);
+        border-color: var(--color-border);
+      }
+
+      .btn--secondary:hover { background: var(--color-surface); border-color: #d1d5db; }
+
+      .btn__arrow { transition: transform 0.15s; }
+      .btn:hover .btn__arrow { transform: translateX(2px); }
+
       /* ── Hero ── */
       .hero {
-        padding: clamp(3rem, 8vw, 5rem) 0 clamp(2rem, 5vw, 3rem);
-        max-width: 640px;
+        padding: clamp(2.5rem, 6vw, 4rem) 0 clamp(2rem, 5vw, 3rem);
+        max-width: 680px;
       }
 
       .hero__badge {
@@ -160,18 +220,19 @@
       }
 
       .hero__title {
-        font-size: clamp(2rem, 5vw, 3.25rem);
+        font-size: clamp(2.25rem, 5.5vw, 3.5rem);
         font-weight: 800;
-        line-height: 1.1;
+        line-height: 1.06;
         letter-spacing: -0.035em;
-        margin-bottom: 1rem;
+        color: var(--color-primary);
+        margin-bottom: 1.25rem;
       }
 
       .hero__desc {
         font-size: clamp(1rem, 2vw, 1.125rem);
         color: var(--color-text-secondary);
-        line-height: 1.6;
-        margin-bottom: 1.75rem;
+        line-height: 1.7;
+        margin-bottom: 2rem;
       }
 
       .hero__actions {
@@ -180,44 +241,36 @@
         flex-wrap: wrap;
       }
 
-      .btn {
-        font-family: inherit;
-        font-size: 0.875rem;
-        font-weight: 600;
-        padding: 0.65rem 1.25rem;
-        border-radius: var(--radius-sm);
-        border: 1px solid transparent;
-        cursor: pointer;
-        transition: all 0.15s;
-        text-decoration: none;
-        display: inline-flex;
-        align-items: center;
-        gap: 0.5rem;
+      /* ── Value section ── */
+      .value-section {
+        padding: clamp(2rem, 5vw, 3rem) 0;
+        border-top: 1px solid var(--color-border);
       }
 
-      .btn--primary {
-        background: var(--color-text);
-        color: #fff;
-        border-color: var(--color-text);
+      .value-section .section-desc {
+        max-width: 720px;
       }
 
-      .btn--primary:hover { background: #1f2937; border-color: #1f2937; }
-
-      .btn--secondary {
-        background: var(--color-bg);
-        color: var(--color-text);
-        border-color: var(--color-border);
+      /* ── What-it-does section ── */
+      .what-section {
+        padding: clamp(2rem, 5vw, 3rem) 0;
+        border-top: 1px solid var(--color-border);
       }
 
-      .btn--secondary:hover { background: var(--color-surface); border-color: #d1d5db; }
-
-      .btn__arrow {
-        transition: transform 0.15s;
+      .what-section .section-desc {
+        max-width: 720px;
       }
-
-      .btn:hover .btn__arrow { transform: translateX(2px); }
 
       /* ── Features grid ── */
+      .features-section {
+        padding: clamp(2rem, 5vw, 3rem) 0;
+        border-top: 1px solid var(--color-border);
+      }
+
+      .features-section .section-title {
+        margin-bottom: 1.5rem;
+      }
+
       .features {
         display: grid;
         grid-template-columns: repeat(3, 1fr);
@@ -226,10 +279,13 @@
         border: 1px solid var(--color-border);
         border-radius: var(--radius-lg);
         overflow: hidden;
-        margin-bottom: clamp(2rem, 5vw, 3rem);
       }
 
-      @media (max-width: 640px) {
+      @media (max-width: 768px) {
+        .features { grid-template-columns: repeat(2, 1fr); }
+      }
+
+      @media (max-width: 480px) {
         .features { grid-template-columns: 1fr; }
       }
 
@@ -242,130 +298,329 @@
         width: 2.25rem;
         height: 2.25rem;
         border-radius: var(--radius-sm);
-        background: var(--color-surface);
+        background: var(--color-accent-soft);
         display: grid;
         place-items: center;
         margin-bottom: 0.75rem;
-        color: var(--color-text);
+        color: var(--color-accent);
       }
 
-      .feature__icon svg { width: 1.125rem; height: 1.125rem; }
+      .feature__icon svg { width: 1rem; height: 1rem; }
 
       .feature__name {
         font-size: 0.875rem;
-        font-weight: 600;
-        margin-bottom: 0.25rem;
+        font-weight: 700;
+        margin-bottom: 0.3rem;
+        color: var(--color-primary);
       }
 
       .feature__text {
         font-size: 0.8125rem;
         color: var(--color-text-muted);
-        line-height: 1.5;
+        line-height: 1.55;
       }
 
-      /* ── Two-column row ── */
-      .split {
+      /* ── Queries section ── */
+      .queries-section {
+        padding: clamp(2rem, 5vw, 3rem) 0;
+        border-top: 1px solid var(--color-border);
+      }
+
+      .queries-section .section-title {
+        margin-bottom: 1.5rem;
+      }
+
+      .queries-grid {
         display: grid;
         grid-template-columns: 1fr 1fr;
-        gap: clamp(1rem, 3vw, 1.5rem);
-        margin-bottom: clamp(2rem, 5vw, 3rem);
+        gap: clamp(0.75rem, 2vw, 1rem);
       }
 
       @media (max-width: 640px) {
-        .split { grid-template-columns: 1fr; }
+        .queries-grid { grid-template-columns: 1fr; }
       }
 
-      .card {
+      .query-card {
         background: var(--color-surface);
         border: 1px solid var(--color-border);
-        border-radius: var(--radius-lg);
-        padding: clamp(1.25rem, 3vw, 1.75rem);
+        border-radius: var(--radius-md);
+        padding: clamp(1.25rem, 3vw, 1.5rem);
       }
 
-      .card__label {
-        font-size: 0.6875rem;
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.08em;
-        color: var(--color-text-muted);
+      .query-card__q {
+        font-size: 0.9375rem;
+        font-weight: 700;
+        color: var(--color-primary);
+        margin-bottom: 0.5rem;
+        line-height: 1.35;
+      }
+
+      .query-card__a {
+        font-size: 0.8125rem;
+        color: var(--color-text-secondary);
+        line-height: 1.6;
+      }
+
+      /* ── Why-it-matters ── */
+      .why-section {
+        padding: clamp(2rem, 5vw, 3rem) 0;
+        border-top: 1px solid var(--color-border);
+      }
+
+      /* ── Who-it's-for ── */
+      .audience-section {
+        padding: clamp(2rem, 5vw, 3rem) 0;
+        border-top: 1px solid var(--color-border);
+      }
+
+      .audience-section .section-title {
         margin-bottom: 0.5rem;
       }
 
-      .card__body {
-        font-size: 0.9375rem;
-        color: var(--color-text-secondary);
-        line-height: 1.65;
+      .audience-section .section-desc {
+        margin-bottom: 1.5rem;
       }
 
-      .card__actions {
-        margin-top: 1rem;
+      .audience-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1px;
+        background: var(--color-border);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-lg);
+        overflow: hidden;
+      }
+
+      @media (max-width: 768px) {
+        .audience-grid { grid-template-columns: repeat(2, 1fr); }
+      }
+
+      @media (max-width: 480px) {
+        .audience-grid { grid-template-columns: 1fr; }
+      }
+
+      .audience-card {
+        background: var(--color-bg);
+        padding: clamp(1.25rem, 3vw, 1.5rem);
+      }
+
+      .audience-card__icon {
+        width: 2rem;
+        height: 2rem;
+        border-radius: var(--radius-sm);
+        background: var(--color-accent-soft);
+        display: grid;
+        place-items: center;
+        margin-bottom: 0.625rem;
+        color: var(--color-accent);
+      }
+
+      .audience-card__icon svg { width: 0.875rem; height: 0.875rem; }
+
+      .audience-card__name {
+        font-size: 0.875rem;
+        font-weight: 700;
+        color: var(--color-primary);
+        margin-bottom: 0.25rem;
+      }
+
+      .audience-card__text {
+        font-size: 0.8125rem;
+        color: var(--color-text-muted);
+        line-height: 1.5;
+      }
+
+      /* ── How-it-works ── */
+      .how-section {
+        padding: clamp(2rem, 5vw, 3rem) 0;
+        border-top: 1px solid var(--color-border);
+      }
+
+      /* ── Languages section ── */
+      .lang-section {
+        padding: clamp(2rem, 5vw, 3rem) 0;
+        border-top: 1px solid var(--color-border);
+      }
+
+      .lang-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: clamp(2rem, 4vw, 3rem);
+        align-items: center;
+      }
+
+      @media (max-width: 640px) {
+        .lang-grid { grid-template-columns: 1fr; }
+      }
+
+      .lang-grid .section-title {
+        margin-bottom: 0.5rem;
+      }
+
+      .lang-count {
+        font-size: clamp(2.5rem, 6vw, 3.5rem);
+        font-weight: 800;
+        color: var(--color-accent);
+        letter-spacing: -0.03em;
+        line-height: 1;
+        margin-bottom: 0.25rem;
+      }
+
+      .lang-count-label {
+        font-size: 0.8125rem;
+        color: var(--color-text-muted);
+        margin-bottom: 1rem;
+      }
+
+      .flag-grid {
         display: flex;
+        flex-wrap: wrap;
         gap: 0.5rem;
+      }
+
+      .flag-grid .fi {
+        width: 2.25rem;
+        height: 1.625rem;
+        border-radius: 4px;
+        box-shadow: 0 0 0 1px rgba(0,0,0,0.08);
+        line-height: 1.625rem;
+      }
+
+      .flag-more {
+        display: inline-flex;
         align-items: center;
-        flex-wrap: wrap;
+        justify-content: center;
+        width: auto;
+        height: 1.625rem;
+        padding: 0 0.6rem;
+        background: var(--color-surface);
+        border: 1px solid var(--color-border);
+        border-radius: 4px;
+        font-size: 0.6875rem;
+        font-weight: 600;
+        color: var(--color-text-muted);
       }
 
-      .btn--small {
-        font-size: 0.8125rem;
-        padding: 0.45rem 0.85rem;
+      /* ── Sustainability block ── */
+      .sustain-section {
+        padding: clamp(2rem, 5vw, 3rem) 0;
+        border-top: 1px solid var(--color-border);
       }
 
-      .toast {
-        font-size: 0.8125rem;
-        color: var(--color-green);
-        font-weight: 500;
-        opacity: 0;
-        transition: opacity 0.2s;
+      .sustain-block {
+        background: var(--color-primary);
+        border-radius: var(--radius-lg);
+        padding: clamp(2rem, 4vw, 2.75rem);
+        color: #fff;
+        position: relative;
+        overflow: hidden;
       }
 
-      .toast.is-on { opacity: 1; }
-
-      /* ── Sustain card ── */
-      .sustain__head {
+      .sustain__header {
         display: flex;
-        align-items: center;
+        align-items: flex-start;
         justify-content: space-between;
-        gap: 0.75rem;
+        gap: 1rem;
         flex-wrap: wrap;
-        margin-bottom: 0.75rem;
+        margin-bottom: 1.25rem;
+        position: relative;
+      }
+
+      .sustain__label {
+        font-size: 0.6875rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: rgba(255, 255, 255, 0.5);
+        margin-bottom: 0.375rem;
       }
 
       .sustain__title {
-        font-size: 0.9375rem;
-        font-weight: 700;
-        letter-spacing: -0.01em;
+        font-size: clamp(1.25rem, 3vw, 1.5rem);
+        font-weight: 800;
+        letter-spacing: -0.02em;
+        line-height: 1.2;
       }
 
       .sustain__badge {
         display: inline-flex;
         align-items: center;
-        gap: 0.3rem;
+        gap: 0.35rem;
         font-size: 0.6875rem;
         font-weight: 600;
         text-transform: uppercase;
         letter-spacing: 0.06em;
-        color: var(--color-green);
-        background: var(--color-green-soft);
-        padding: 0.3rem 0.6rem;
+        color: #3ddc97;
+        background: rgba(61, 220, 151, 0.12);
+        padding: 0.35rem 0.7rem;
         border-radius: var(--radius-pill);
+        flex-shrink: 0;
       }
 
-      .sustain__copy {
-        font-size: 0.875rem;
-        color: var(--color-text-secondary);
-        line-height: 1.6;
+      .sustain__badge::before {
+        content: '';
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: #3ddc97;
       }
 
-      .sustain__copy strong {
-        color: var(--color-text);
+      .sustain__body {
+        font-size: 0.9375rem;
+        color: rgba(255, 255, 255, 0.75);
+        line-height: 1.7;
+        max-width: 640px;
+        margin-bottom: 1.5rem;
+        position: relative;
+      }
+
+      .sustain__body strong {
+        color: #fff;
         font-weight: 600;
       }
 
+      .sustain__lower {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: clamp(1rem, 3vw, 1.5rem);
+        align-items: start;
+        position: relative;
+      }
+
+      @media (max-width: 640px) {
+        .sustain__lower { grid-template-columns: 1fr; }
+      }
+
+      .sustain__stats {
+        display: flex;
+        gap: 2rem;
+      }
+
+      .sustain__stat {
+        display: flex;
+        flex-direction: column;
+        gap: 0.15rem;
+      }
+
+      .sustain__stat-value {
+        font-size: 1.5rem;
+        font-weight: 800;
+        color: #fff;
+        letter-spacing: -0.02em;
+      }
+
+      .sustain__stat-label {
+        font-size: 0.6875rem;
+        font-weight: 500;
+        color: rgba(255, 255, 255, 0.45);
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+      }
+
       .widget-host {
-        margin-top: 1rem;
-        padding: clamp(0.75rem, 2vw, 1rem);
-        background: var(--color-text);
+        background: rgba(0, 0, 0, 0.2);
         border-radius: var(--radius-md);
+        padding: clamp(0.75rem, 2vw, 1rem);
         overflow-x: auto;
         -webkit-overflow-scrolling: touch;
       }
@@ -373,9 +628,10 @@
       .widget-host [data-widget-type] { min-height: 120px; }
 
       .sustain__footnote {
-        margin-top: 0.75rem;
+        margin-top: 1rem;
         font-size: 0.75rem;
-        color: var(--color-text-muted);
+        color: rgba(255, 255, 255, 0.35);
+        position: relative;
       }
 
       /* ── Footer ── */
@@ -409,32 +665,91 @@
       .footer__link:hover { color: var(--color-text); }
 
       /* ── Entry animation ── */
-      .landing { opacity: 0; transform: translateY(8px); animation: fadeUp 0.4s ease forwards; }
-      @keyframes fadeUp { to { opacity: 1; transform: translateY(0); } }
-      @media (prefers-reduced-motion: reduce) { .landing { animation: none; opacity: 1; transform: none; } }
+      .landing { opacity: 0; animation: fadeUp 0.4s ease forwards; }
+      @keyframes fadeUp { to { opacity: 1; } }
+      @media (prefers-reduced-motion: reduce) { .landing { animation: none; opacity: 1; } }
+
+      /* ── Language switcher (header slot + Situate theme for languagechangeridea.js) ── */
+      .header__lang {
+        display: flex;
+        align-items: center;
+        flex-shrink: 0;
+      }
+
+      #ls-root,
+      #ls-notice {
+        --lsa: var(--color-accent);
+        --lsah: #0999b5;
+        --lsas: var(--color-accent-soft);
+        --lsah2: rgba(12, 168, 200, 0.16);
+        --lsbg: var(--color-surface);
+        --lssf: var(--color-bg);
+        --lsbd: var(--color-border);
+        --lst: var(--color-text);
+        --lst2: var(--color-text-secondary);
+        --lstm: var(--color-text-muted);
+        --lsf: var(--font);
+        --lsfh: var(--font);
+      }
+
+      #ls-root #ls-search:focus {
+        box-shadow: 0 0 0 3.5px rgba(12, 168, 200, 0.12);
+      }
+
+      #ls-root #ls-reset:hover,
+      #ls-root .ls-x:hover {
+        color: var(--color-accent);
+      }
+
+      #ls-root .ls-disc {
+        background: var(--color-surface);
+      }
+
+      #ls-notice #ls-norig {
+        color: var(--color-primary);
+        background: var(--color-accent-soft);
+        border-color: rgba(12, 168, 200, 0.25);
+      }
+
+      #ls-notice #ls-norig:hover {
+        background: rgba(12, 168, 200, 0.14);
+      }
+
+      #ls-notice #ls-undo:hover {
+        border-color: var(--color-accent);
+        color: var(--color-accent);
+      }
     </style>
   </head>
   <body>
     <div class="landing">
       <!-- Header -->
       <header class="header">
-        <div class="header__brand">
-          <div class="brand-lockup" role="img" aria-label="Situate Vancouver">
-            <div class="brand-lockup__icon-wrap" aria-hidden="true">
-              <img
-                src="situate-vancouver-logo-standard-icon.svg"
-                alt=""
-                width="42"
-                height="42"
-                decoding="async"
-              />
-            </div>
-            <span class="brand-lockup__wordmark" aria-hidden="true">Situate Vancouver</span>
+        <div
+          class="brand-lockup notranslate"
+          translate="no"
+          role="img"
+          aria-label="Situate Vancouver"
+        >
+          <div class="brand-lockup__icon-wrap" aria-hidden="true">
+            <img
+              src="situate-vancouver-logo-standard-icon.svg"
+              alt=""
+              width="42"
+              height="42"
+              decoding="async"
+            />
           </div>
+          <span class="brand-lockup__wordmark" aria-hidden="true">Situate Vancouver</span>
         </div>
         <nav class="header__nav" aria-label="Main navigation">
           <a href="#features" class="header__link">Features</a>
-          <a href="#about" class="header__link">About</a>
+          <a href="#sustainability" class="header__link">Sustainability</a>
+          <div
+            id="situate-lang-mount"
+            class="header__lang"
+            aria-label="Language"
+          ></div>
           <button type="button" class="header__cta">Open map</button>
         </nav>
       </header>
@@ -442,100 +757,325 @@
       <!-- Hero -->
       <section class="hero">
         <span class="hero__badge">City intelligence platform</span>
-        <h1 class="hero__title">Understand your city, instantly.</h1>
+        <h1 class="hero__title">Understand what's happening in the city, instantly.</h1>
         <p class="hero__desc">
-          A real-time map that turns open city data into clear, human explanations
-          of what is happening, where it matters, and what comes next.
+          Situate Vancouver is a real-time city awareness platform that brings together
+          traffic, transit, weather, and public data into one clear, map-based experience
+          helping people quickly understand what is happening around them.
         </p>
         <div class="hero__actions">
           <button type="button" class="btn btn--primary">
-            Open the map
+            Explore the map
             <svg class="btn__arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
               <path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
           </button>
-          <button type="button" class="btn btn--secondary">How it works</button>
+          <a href="#how" class="btn btn--secondary">See how it works</a>
         </div>
       </section>
 
+      <!-- Value section -->
+      <section class="value-section">
+        <p class="section-label">A clearer view of Vancouver</p>
+        <p class="section-desc">
+          Cities generate massive amounts of public information every day, but most of
+          it is scattered, technical, or difficult to interpret quickly. Situate Vancouver
+          brings that information into one place and turns it into something people can
+          actually understand and use.
+        </p>
+      </section>
+
+      <!-- What it does -->
+      <section class="what-section">
+        <p class="section-label">What it does</p>
+        <h2 class="section-title">See what's happening, where it's happening, and what it means</h2>
+        <p class="section-desc">
+          Situate Vancouver helps people understand changing city conditions in real time.
+          By combining transit updates, traffic patterns, weather conditions, and other
+          public signals, the platform gives users a simple way to explore disruptions,
+          delays, congestion, and ripple effects across Vancouver.
+        </p>
+      </section>
+
       <!-- Features -->
-      <div class="features" id="features">
-        <div class="feature">
-          <span class="feature__icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none">
-              <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2"/>
-              <path d="M12 5v2M12 17v2M5 12h2M17 12h2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-            </svg>
-          </span>
-          <p class="feature__name">Real-time data</p>
-          <p class="feature__text">Live context from open data feeds, built for everyone.</p>
-        </div>
-        <div class="feature">
-          <span class="feature__icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none">
-              <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7S2 12 2 12Z" stroke="currentColor" stroke-width="2"/>
-              <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2"/>
-            </svg>
-          </span>
-          <p class="feature__name">Clear insights</p>
-          <p class="feature__text">See what is happening, where, and what it means next.</p>
-        </div>
-        <div class="feature">
-          <span class="feature__icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none">
-              <path d="M13 2 3 14h8l-1 8L21 10h-8l1-8Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
-            </svg>
-          </span>
-          <p class="feature__name">Lightweight</p>
-          <p class="feature__text">Fast pages, minimal footprint, data where you need it.</p>
-        </div>
-      </div>
-
-      <!-- Pitch + Sustainability -->
-      <div class="split" id="about">
-        <div class="card">
-          <p class="card__label">Pitch</p>
-          <p class="card__body" id="sv-pitch-text">
-            Situate Vancouver is a lightweight, map-based platform that turns
-            real-time city data into clear, human explanations of what is
-            happening, where it is affecting people, and what will happen next.
-          </p>
-          <div class="card__actions">
-            <button type="button" class="btn btn--secondary btn--small" id="sv-copy-pitch">Copy pitch</button>
-            <span class="toast" id="sv-toast" role="status" aria-live="polite"></span>
+      <section class="features-section" id="features">
+        <h2 class="section-title">Built to make city data useful</h2>
+        <div class="features">
+          <div class="feature">
+            <span class="feature__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none">
+                <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2"/>
+                <path d="M12 5v2M12 17v2M5 12h2M17 12h2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+            </span>
+            <p class="feature__name">Live map intelligence</p>
+            <p class="feature__text">Explore Vancouver through a real-time map that surfaces disruptions, congestion, weather impacts, and other important city conditions in one place.</p>
+          </div>
+          <div class="feature">
+            <span class="feature__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+              </svg>
+            </span>
+            <p class="feature__name">Plain-language explanations</p>
+            <p class="feature__text">Ask a question or click an area on the map to get a clear explanation of what is happening and why, without needing to interpret raw data yourself.</p>
+          </div>
+          <div class="feature">
+            <span class="feature__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none">
+                <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+                <path d="M12 6v6l4 2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </span>
+            <p class="feature__name">Ripple effect awareness</p>
+            <p class="feature__text">Understand how one event can affect nearby roads, bridges, transit routes, and surrounding neighbourhoods, not just isolated incidents.</p>
+          </div>
+          <div class="feature">
+            <span class="feature__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none">
+                <path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+            </span>
+            <p class="feature__name">Open data, unified</p>
+            <p class="feature__text">Multiple public data sources brought into one streamlined experience, making city information easier to access, compare, and understand.</p>
+          </div>
+          <div class="feature">
+            <span class="feature__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none">
+                <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7S2 12 2 12Z" stroke="currentColor" stroke-width="2"/>
+                <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2"/>
+              </svg>
+            </span>
+            <p class="feature__name">Accessible by design</p>
+            <p class="feature__text">Dark mode, light mode, strong contrast, and simplified summaries designed to be clear and usable for a wide range of people.</p>
+          </div>
+          <div class="feature">
+            <span class="feature__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none">
+                <path d="M13 2 3 14h8l-1 8L21 10h-8l1-8Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+              </svg>
+            </span>
+            <p class="feature__name">Efficient and lightweight</p>
+            <p class="feature__text">Built for performance with a fast, efficient approach that supports accessibility, low digital overhead, and a smoother user experience.</p>
           </div>
         </div>
+      </section>
 
-        <div class="card">
-          <div class="sustain__head">
-            <p class="sustain__title">Sustainable by design</p>
-            <span class="sustain__badge">Carbon aware</span>
+      <!-- Example queries -->
+      <section class="queries-section">
+        <p class="section-label">Example queries</p>
+        <h2 class="section-title">Built for real questions people actually ask</h2>
+        <div class="queries-grid">
+          <div class="query-card">
+            <p class="query-card__q">Why is traffic bad near Burrard Bridge?</p>
+            <p class="query-card__a">Identify contributing factors such as collisions, construction, weather conditions, and corridor congestion, then see where the disruption is spreading.</p>
           </div>
-          <p class="sustain__copy">
-            We keep the experience <strong>lightweight</strong> so maps load
-            quickly and use less energy. <strong>Every page view is
+          <div class="query-card">
+            <p class="query-card__q">What is happening near Waterfront Station?</p>
+            <p class="query-card__a">See transit delays, crowd pressure, nearby disruptions, and area-wide movement patterns in one place.</p>
+          </div>
+          <div class="query-card">
+            <p class="query-card__q">Will rain affect downtown traffic tonight?</p>
+            <p class="query-card__a">Explore how weather conditions may influence congestion, travel times, and route pressure later in the day.</p>
+          </div>
+          <div class="query-card">
+            <p class="query-card__q">Why is this area unusually busy?</p>
+            <p class="query-card__a">View overlapping causes such as events, road closures, peak-hour traffic, service changes, or weather impacts.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Why it matters -->
+      <section class="why-section">
+        <p class="section-label">Why it matters</p>
+        <h2 class="section-title">Public data is only useful when people can understand it</h2>
+        <p class="section-desc">
+          Vancouver already has valuable public data, but most people do not have the time
+          or technical knowledge to search across multiple websites, alerts, dashboards, and
+          feeds. Situate Vancouver turns scattered information into clear, immediate insight
+          that supports better decisions for everyday life.
+        </p>
+      </section>
+
+      <!-- Who it's for -->
+      <section class="audience-section">
+        <p class="section-label">Who it's for</p>
+        <h2 class="section-title">Designed for people moving through the city</h2>
+        <p class="section-desc">
+          Built for residents, commuters, visitors, transit riders, and local organizations
+          that want a faster, clearer way to understand urban conditions.
+        </p>
+        <div class="audience-grid">
+          <div class="audience-card">
+            <span class="audience-card__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none">
+                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+                <path d="M9 22V12h6v10" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+              </svg>
+            </span>
+            <p class="audience-card__name">Residents</p>
+            <p class="audience-card__text">Get a clearer picture of disruptions, delays, and changing conditions near home.</p>
+          </div>
+          <div class="audience-card">
+            <span class="audience-card__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none">
+                <rect x="2" y="6" width="20" height="12" rx="2" stroke="currentColor" stroke-width="2"/>
+                <path d="M12 6V4M8 6V4M16 6V4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+            </span>
+            <p class="audience-card__name">Commuters</p>
+            <p class="audience-card__text">Understand congestion and route pressure before leaving or while planning your trip.</p>
+          </div>
+          <div class="audience-card">
+            <span class="audience-card__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none">
+                <path d="M8 6v12M16 6v8M4 18h16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                <circle cx="8" cy="4" r="2" stroke="currentColor" stroke-width="2"/>
+                <circle cx="16" cy="4" r="2" stroke="currentColor" stroke-width="2"/>
+              </svg>
+            </span>
+            <p class="audience-card__name">Transit riders</p>
+            <p class="audience-card__text">See where service changes, delays, and crowding may affect your travel.</p>
+          </div>
+          <div class="audience-card">
+            <span class="audience-card__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none">
+                <path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 1 1 18 0Z" stroke="currentColor" stroke-width="2"/>
+                <circle cx="12" cy="10" r="3" stroke="currentColor" stroke-width="2"/>
+              </svg>
+            </span>
+            <p class="audience-card__name">Visitors</p>
+            <p class="audience-card__text">Navigate Vancouver more confidently with simple, map-based context.</p>
+          </div>
+          <div class="audience-card">
+            <span class="audience-card__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none">
+                <rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" stroke-width="2"/>
+                <path d="M9 3v18M3 9h18" stroke="currentColor" stroke-width="2"/>
+              </svg>
+            </span>
+            <p class="audience-card__name">Local businesses</p>
+            <p class="audience-card__text">Understand nearby city conditions that may affect customers, staff, or operations.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- How it works -->
+      <section class="how-section" id="how">
+        <p class="section-label">How it works</p>
+        <h2 class="section-title">Turning city data into clarity</h2>
+        <p class="section-desc">
+          Situate Vancouver gathers live data from public sources, organizes it into a
+          consistent structure, and transforms it into map-based explanations that are
+          easier to read and act on. Instead of forcing users to interpret fragmented
+          information, the platform helps them quickly understand what is happening now
+          and what may happen next.
+        </p>
+      </section>
+
+      <!-- Languages -->
+      <section class="lang-section">
+        <div class="lang-grid">
+          <div>
+            <p class="section-label">Languages</p>
+            <h2 class="section-title">Available in 86 languages</h2>
+            <p class="section-desc">
+              Situate Vancouver is designed to be accessible to everyone. The platform
+              supports 86 languages so residents, visitors, and communities across
+              Vancouver can use it in the language they are most comfortable with.
+            </p>
+          </div>
+          <div>
+            <div class="flag-grid">
+              <span class="fi fi-ca" title="Canadian English"></span>
+              <span class="fi fi-gb" title="English"></span>
+              <span class="fi fi-es" title="Spanish"></span>
+              <span class="fi fi-fr" title="French"></span>
+              <span class="fi fi-de" title="German"></span>
+              <span class="fi fi-cn" title="Chinese (Simplified)"></span>
+              <span class="fi fi-jp" title="Japanese"></span>
+              <span class="fi fi-sa" title="Arabic"></span>
+              <span class="fi fi-br" title="Portuguese"></span>
+              <span class="fi fi-in" title="Hindi"></span>
+              <span class="fi fi-ru" title="Russian"></span>
+              <span class="fi fi-kr" title="Korean"></span>
+              <span class="fi fi-it" title="Italian"></span>
+              <span class="fi fi-nl" title="Dutch"></span>
+              <span class="fi fi-pl" title="Polish"></span>
+              <span class="fi fi-se" title="Swedish"></span>
+              <span class="fi fi-tr" title="Turkish"></span>
+              <span class="fi fi-vn" title="Vietnamese"></span>
+              <span class="fi fi-th" title="Thai"></span>
+              <span class="fi fi-ua" title="Ukrainian"></span>
+              <span class="fi fi-ph" title="Filipino"></span>
+              <span class="flag-more">+65 more</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Build Canada callout -->
+      <section class="value-section" style="text-align:center">
+        <p class="section-label">Build Canada 2026</p>
+        <h2 class="section-title" style="max-width:600px;margin-left:auto;margin-right:auto">Built in Canada, for Canada</h2>
+        <p class="section-desc" style="max-width:600px;margin-left:auto;margin-right:auto">
+          Situate Vancouver is proudly built as part of the Build Canada hackathon.
+          Try switching the language to Canadian English for a true local experience.
+        </p>
+      </section>
+
+      <!-- Sustainability -->
+      <section class="sustain-section" id="sustainability">
+        <div class="sustain-block">
+          <div class="sustain__header">
+            <div>
+              <p class="sustain__label">Sustainability</p>
+              <p class="sustain__title">Built efficiently, not just intelligently</p>
+            </div>
+            <span class="sustain__badge">Carbon offset</span>
+          </div>
+
+          <p class="sustain__body">
+            Situate Vancouver is designed to be <strong>lightweight, accessible, and
+            performance-focused</strong>. The goal is not only to make city information more
+            useful, but to do so in a way that supports faster load times, lower digital
+            overhead, and a cleaner web experience. <strong>Every page view is
             carbon-offset</strong> through Tree Nation.
           </p>
-          <div
-            class="widget-host"
-            aria-label="Tree Nation website carbon offset widget"
-          >
+
+          <div class="sustain__lower">
+            <div class="sustain__stats">
+              <div class="sustain__stat">
+                <span class="sustain__stat-value">0.00g</span>
+                <span class="sustain__stat-label">CO<sub>2</sub> / view</span>
+              </div>
+              <div class="sustain__stat">
+                <span class="sustain__stat-value">100%</span>
+                <span class="sustain__stat-label">Offset</span>
+              </div>
+            </div>
             <div
-              data-widget-type="offset-website"
-              data-tree-nation-code="876caf22312dcddf"
-              data-lang="en"
-              data-theme="dark"
-            ></div>
+              class="widget-host notranslate"
+              translate="no"
+              aria-label="Tree Nation website carbon offset widget"
+            >
+              <div
+                data-widget-type="offset-website"
+                data-tree-nation-code="876caf22312dcddf"
+                data-lang="en"
+                data-theme="dark"
+              ></div>
+            </div>
           </div>
           <p class="sustain__footnote">
             Offsetting provided by Tree Nation. Figures update as the widget loads.
           </p>
         </div>
-      </div>
+      </section>
 
       <!-- Footer -->
       <footer class="footer">
-        <span class="footer__copy">&copy; 2026 Situate Vancouver</span>
+        <span class="footer__copy notranslate" translate="no">&copy; 2026 Situate Vancouver</span>
         <nav class="footer__links" aria-label="Footer navigation">
           <a href="#" class="footer__link">GitHub</a>
           <a href="#" class="footer__link">Contact</a>
@@ -544,54 +1084,6 @@
     </div>
 
     <script src="https://widgets.tree-nation.com/js/widgets/v3/widgets.min.js"></script>
-    <script>
-      (function () {
-        var pitchEl = document.getElementById('sv-pitch-text');
-        var copyBtn = document.getElementById('sv-copy-pitch');
-        var toast = document.getElementById('sv-toast');
-
-        function showToast(msg) {
-          if (!toast) return;
-          toast.textContent = msg;
-          toast.classList.add('is-on');
-          clearTimeout(showToast._t);
-          showToast._t = setTimeout(function () {
-            toast.classList.remove('is-on');
-            toast.textContent = '';
-          }, 2200);
-        }
-
-        if (copyBtn && pitchEl) {
-          copyBtn.addEventListener('click', function () {
-            var text = pitchEl.textContent.replace(/\s+/g, ' ').trim();
-            if (navigator.clipboard && navigator.clipboard.writeText) {
-              navigator.clipboard.writeText(text).then(
-                function () { showToast('Copied'); },
-                function () { fallbackCopy(text); }
-              );
-            } else {
-              fallbackCopy(text);
-            }
-          });
-        }
-
-        function fallbackCopy(text) {
-          var ta = document.createElement('textarea');
-          ta.value = text;
-          ta.setAttribute('readonly', '');
-          ta.style.position = 'fixed';
-          ta.style.left = '-9999px';
-          document.body.appendChild(ta);
-          ta.select();
-          try {
-            document.execCommand('copy');
-            showToast('Copied');
-          } catch (e) {
-            showToast('Select and copy manually');
-          }
-          document.body.removeChild(ta);
-        }
-      })();
-    </script>
+    <script src="languagechangeridea.js" defer></script>
   </body>
 </html>

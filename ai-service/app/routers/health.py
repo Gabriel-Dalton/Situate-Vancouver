@@ -11,7 +11,7 @@ router = APIRouter()
 _OPENAI_HEALTH_TIMEOUT_S = 5.0
 
 
-@router.get('/health')
+@router.get("/health")
 def health():
     """
     Liveness plus OpenAI: key present and a lightweight models.list() succeeds.
