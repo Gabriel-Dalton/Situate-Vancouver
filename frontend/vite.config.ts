@@ -12,9 +12,15 @@ const repoRoot = path.resolve(__dirname, '..')
 export default defineConfig(({ mode }) => {
   const fileEnv = loadEnv(mode, repoRoot, '')
   const djangoTarget =
-    fileEnv.API_PROXY_TARGET || process.env.API_PROXY_TARGET || 'http://127.0.0.1:8000'
+    fileEnv.API_PROXY_TARGET || process.env.API_PROXY_TARGET || 'http://127.0.0.1:1111'
   const aiTarget =
     fileEnv.AI_PROXY_TARGET || process.env.AI_PROXY_TARGET || 'http://127.0.0.1:8001'
+  const frontendHost =
+    fileEnv.FRONTEND_DEV_HOST || process.env.FRONTEND_DEV_HOST || '127.0.0.1'
+  const frontendPortRaw =
+    fileEnv.FRONTEND_DEV_PORT || process.env.FRONTEND_DEV_PORT || '5173'
+  const frontendPort = Number.parseInt(frontendPortRaw, 10)
+  const devPort = Number.isFinite(frontendPort) && frontendPort > 0 ? frontendPort : 5173
 
   return {
     // Windows: project folders under Documents/GitHub are often locked by OneDrive, Defender,
@@ -31,6 +37,8 @@ export default defineConfig(({ mode }) => {
       chunkSizeWarningLimit: 1200,
     },
     server: {
+      host: frontendHost,
+      port: devPort,
       proxy: {
         '/api': djangoTarget,
         '/ai': {
