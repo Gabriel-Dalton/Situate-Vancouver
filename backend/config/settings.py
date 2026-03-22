@@ -35,11 +35,14 @@ SECRET_KEY = os.environ.get(
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get('DJANGO_DEBUG', 'true').lower() in ('1', 'true', 'yes')
 
+# Default dev hosts include project API domains so Vite can proxy with Host: api.* when
+# API_PROXY_TARGET uses a hostname that resolves to local Django (tunnel / /etc/hosts).
+_default_allowed_hosts = 'localhost,127.0.0.1,backend'
+if DEBUG:
+    _default_allowed_hosts += ',api.ageforty.com,www.ageforty.com,ageforty.com'
 ALLOWED_HOSTS = [
-    h.strip() for h in os.environ.get(
-        'DJANGO_ALLOWED_HOSTS',
-        'localhost,127.0.0.1,backend',
-    ).split(',')
+    h.strip()
+    for h in os.environ.get('DJANGO_ALLOWED_HOSTS', _default_allowed_hosts).split(',')
     if h.strip()
 ]
 
@@ -80,6 +83,7 @@ INSTALLED_APPS = [
     'corsheaders',
     'apps.core.apps.CoreConfig',
     'apps.vancouver_opendata.apps.VancouverOpenDataConfig',
+    'apps.open511_bc.apps.Open511BCConfig',
 ]
 
 MIDDLEWARE = [
@@ -178,6 +182,9 @@ _cors_origins = os.environ.get(
 CORS_ALLOWED_ORIGINS = [o.strip() for o in _cors_origins.split(',') if o.strip()]
 
 AI_SERVICE_URL = os.environ.get('AI_SERVICE_URL', 'http://127.0.0.1:8001')
+AI_QUERY_TIMEOUT_SECONDS = float(
+    os.environ.get('AI_QUERY_TIMEOUT_SECONDS', '120'),
+)
 
 # Aggregate /api/health: set HEALTH_CHECK_AI=false when FastAPI is not running locally.
 HEALTH_CHECK_AI = os.environ.get('HEALTH_CHECK_AI', 'true').lower() in (
@@ -207,3 +214,23 @@ HEALTH_VANCOUVER_OPENDATA_STATUS_URL = os.environ.get(
     'HEALTH_VANCOUVER_OPENDATA_STATUS_URL',
     '',
 ).strip()
+
+# --- Open511 BC (DriveBC) — public API, no key ---
+_open511_base = os.environ.get(
+    'OPEN511_BC_BASE_URL',
+    'https://api.open511.gov.bc.ca',
+).rstrip('/')
+OPEN511_BC_BASE_URL = _open511_base
+OPEN511_BC_TIMEOUT_SECONDS = float(os.environ.get('OPEN511_BC_TIMEOUT_SECONDS', '15'))
+OPEN511_BC_ENFORCE_HOST_ALLOWLIST = os.environ.get(
+    'OPEN511_BC_ENFORCE_HOST_ALLOWLIST',
+    'true',
+).lower() in ('1', 'true', 'yes')
+HEALTH_CHECK_OPEN511_BC = os.environ.get(
+    'HEALTH_CHECK_OPEN511_BC',
+    'true',
+).lower() in ('1', 'true', 'yes')
+# Seconds before a stored snapshot is considered stale (used by the cached-events endpoint).
+OPEN511_EVENTS_CACHE_STALE_AFTER_SECONDS = int(
+    os.environ.get('OPEN511_EVENTS_CACHE_STALE_AFTER_SECONDS', '300'),
+)

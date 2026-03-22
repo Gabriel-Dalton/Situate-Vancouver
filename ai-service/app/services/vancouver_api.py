@@ -116,6 +116,38 @@ DATASETS: dict[str, list[DatasetConfig]] = {
             select_fields=[],
         ),
     ],
+    "natural_disaster": [
+        # Road closures are the most direct indicator of disaster-related blockages
+        DatasetConfig(
+            dataset_id="road-ahead-current-road-closures",
+            label="Current road closures",
+            location_field="location",
+            select_fields=["project", "location", "comp_date", "url_link", "geo_point_2d"],
+        ),
+        # 311 requests surface flood reports, fallen trees, debris, sinkholes
+        DatasetConfig(
+            dataset_id="3-1-1-service-requests",
+            label="311 disaster-related service requests",
+            location_field="address",
+            select_fields=[
+                "service_request_type",
+                "department",
+                "status",
+                "address",
+                "local_area",
+                "service_request_open_timestamp",
+                "latitude",
+                "longitude",
+            ],
+        ),
+        # Snow removal routes provide winter infrastructure context
+        DatasetConfig(
+            dataset_id="snow-removal-routes",
+            label="Snow removal routes",
+            location_field="",
+            select_fields=[],
+        ),
+    ],
     "general": [
         DatasetConfig(
             dataset_id="road-ahead-current-road-closures",
@@ -161,7 +193,7 @@ class VancouverAPIGetter:
     def __init__(self):
         self.api_key = os.environ.get("VANCOUVER_OPENDATA_API_KEY", "")
         self.timeout = float(os.environ.get("VANCOUVER_OPENDATA_TIMEOUT_SECONDS", 10))
-        self.headers = {"Authorization": f"Apikey {self.api_key}"}
+        self.headers = {"Authorization": f"Apikey {self.api_key}"} if self.api_key else {}
 
     def fetch(
         self,

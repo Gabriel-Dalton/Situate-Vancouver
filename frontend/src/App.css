@@ -9,7 +9,6 @@
   flex-shrink: 0;
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: 1rem;
   padding: 0.55rem 1.15rem;
   border-bottom: 1px solid var(--border-subtle);
@@ -24,6 +23,7 @@
   align-items: flex-start;
   gap: 0.4rem;
   min-width: 0;
+  flex-shrink: 0;
 }
 
 .insight-shell__subtitle {
@@ -41,6 +41,8 @@
   gap: 0.65rem;
   flex-wrap: wrap;
   justify-content: flex-end;
+  margin-left: auto;
+  flex-shrink: 0;
 }
 
 .insight-shell__pill {
@@ -140,6 +142,22 @@
   display: grid;
   grid-template-columns: minmax(220px, 17rem) 1fr minmax(200px, 15rem);
   grid-template-rows: 1fr;
+}
+
+/* ─── AI split-view: full-screen map-left / analysis-right ─── */
+
+.ai-split-view {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr;
+}
+
+.ai-split-view__map {
+  position: relative;
+  min-height: 0;
+  background: var(--harbor-navy-deep);
 }
 
 .insight-shell__map-wrap {
@@ -380,7 +398,7 @@
   color: var(--text-muted);
 }
 
-/* ── Status panel ────────────────────────────────── */
+/* Status panel */
 
 .status-panel {
   display: flex;
@@ -564,6 +582,33 @@
   color: var(--text-muted);
 }
 
+.status-check__details {
+  margin-top: 0.35rem;
+}
+
+.status-check__details-summary {
+  cursor: pointer;
+  font-size: 0.55rem;
+  color: var(--text-muted);
+  list-style: none;
+}
+
+.status-check__details-summary::-webkit-details-marker {
+  display: none;
+}
+
+.status-check__details[open] .status-check__details-summary {
+  color: var(--text-dim);
+}
+
+.status-check__details-list {
+  margin: 0.25rem 0 0;
+  padding-left: 1rem;
+  font-size: 0.55rem;
+  color: var(--text-muted);
+  line-height: 1.35;
+}
+
 .map-skeleton {
   position: absolute;
   inset: 0;
@@ -625,5 +670,45 @@
     border-left-width: 0;
     border-top: 1px solid var(--border-subtle);
     order: 3;
+  }
+
+  .ai-split-view {
+    grid-template-columns: 1fr;
+    grid-template-rows: 40vh 1fr;
+  }
+
+  .ai-split-view__map {
+    min-height: 200px;
+  }
+}
+
+@media (max-width: 768px) {
+  .insight-shell__pill {
+    display: none;
+  }
+
+  .insight-shell__header {
+    gap: 0.6rem;
+    padding: 0.45rem 0.75rem;
+  }
+
+  .insight-shell__subtitle {
+    display: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .insight-shell__header {
+    gap: 0.35rem 0.5rem;
+    padding: 0.4rem 0.5rem;
+    flex-wrap: wrap;
+  }
+
+  .insight-shell__clock {
+    display: none;
+  }
+
+  .insight-shell__header-meta {
+    margin-left: 0;
   }
 }

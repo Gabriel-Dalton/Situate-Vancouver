@@ -23,6 +23,7 @@
     { code: 'da',    name: 'Danish',                native: 'Dansk'            },
     { code: 'nl',    name: 'Dutch',                 native: 'Nederlands'       },
     { code: 'en',    name: 'English',               native: 'English'          },
+    { code: 'en-CA', name: 'Canadian English',       native: 'Canadian English'  },
     { code: 'et',    name: 'Estonian',              native: 'Eesti'            },
     { code: 'fi',    name: 'Finnish',               native: 'Suomi'            },
     { code: 'fr',    name: 'French',                native: 'Français'         },
@@ -94,7 +95,7 @@
   var FI_MAP = {
     af: 'za', sq: 'al', am: 'et', ar: 'sa', hy: 'am', az: 'az', eu: 'es-pv',
     be: 'by', bn: 'bd', bs: 'ba', bg: 'bg', ca: 'es-ct', 'zh-CN': 'cn', 'zh-TW': 'tw',
-    hr: 'hr', cs: 'cz', da: 'dk', nl: 'nl', en: 'gb', et: 'ee', fi: 'fi', fr: 'fr',
+    hr: 'hr', cs: 'cz', da: 'dk', nl: 'nl', en: 'gb', 'en-CA': 'ca', et: 'ee', fi: 'fi', fr: 'fr',
     gl: 'es-ga', ka: 'ge', de: 'de', el: 'gr', gu: 'in', ht: 'ht', ha: 'ng', he: 'il',
     hi: 'in', hu: 'hu', is: 'is', ig: 'ng', id: 'id', ga: 'ie', it: 'it', ja: 'jp',
     kn: 'in', kk: 'kz', km: 'kh', ko: 'kr', lo: 'la', lv: 'lv', lt: 'lt', lb: 'lu',
@@ -105,13 +106,15 @@
     vi: 'vn', cy: 'gb-wls', xh: 'za', yi: 'il', yo: 'ng', zu: 'za',
   };
 
-  var SUGGESTED = ['es','fr','de','zh-CN','ja','ar','pt','hi','ru','ko'];
+  var SUGGESTED = ['en-CA','fr','es','de','zh-CN','ja','ar','pt','hi','ru'];
   var ORIGINAL  = 'en';
   var STORE_KEY = 'ls_selected_lang';
 
 
   var current   = ORIGINAL;
   var panelOpen = false;
+  
+  var undoFrom  = null;
 
 
   function getLang(code) {
@@ -126,6 +129,14 @@
       .replace(/&/g, '&amp;')
       .replace(/"/g, '&quot;')
       .replace(/</g, '&lt;');
+  }
+
+  function escapeHtml(s) {
+    return String(s)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
   }
 
   function flagIconClass(iso) {
@@ -241,7 +252,7 @@
     
     el.textContent =
       
-      '#ls-root{' +
+      '#ls-root,#ls-notice{' +
         '--lsa:#c44d2a;--lsah:#a33f22;--lsas:rgba(196,77,42,.09);--lsah2:rgba(196,77,42,.15);' +
         '--lsbg:#f8f6f3;--lssf:#fff;--lsbd:#e5e2de;' +
         '--lst:#1a1a1a;--lst2:#4a4a4a;--lstm:#6b6b6b;' +
@@ -475,6 +486,14 @@
         'transition:background var(--lsd) var(--lse);-webkit-tap-highlight-color:transparent;outline:none}' +
       '#ls-norig:hover{background:var(--lsah2)}' +
       '#ls-norig:focus-visible{outline:2px solid var(--lsa);outline-offset:2px}' +
+      '#ls-undo{font-family:var(--lsf);font-size:.79rem;font-weight:600;color:var(--lst2);' +
+        'background:var(--lsbg);border:1px solid var(--lsbd);border-radius:6px;padding:5px 12px;' +
+        'cursor:pointer;white-space:nowrap;' +
+        'transition:background var(--lsd) var(--lse),border-color var(--lsd) var(--lse),color var(--lsd) var(--lse);' +
+        '-webkit-tap-highlight-color:transparent;outline:none;flex-shrink:0}' +
+      '#ls-undo:hover{background:var(--lssf);border-color:var(--lsa);color:var(--lsa)}' +
+      '#ls-undo:focus-visible{outline:2px solid var(--lsa);outline-offset:2px}' +
+      '#ls-undo[hidden]{display:none!important}' +
       '#ls-nclose{display:flex;align-items:center;justify-content:center;' +
         'width:26px;height:26px;border-radius:6px;border:none;' +
         'background:transparent;color:var(--lstm);cursor:pointer;flex-shrink:0;padding:0;' +
@@ -499,6 +518,7 @@
         '#ls-panel{max-height:82dvh}' +
         '.ls-ni{flex-wrap:wrap;gap:7px}' +
         '#ls-ntxt{flex-basis:100%}' +
+        '#ls-undo,#ls-norig{margin-left:0}' +
         '#ls-norig{margin-left:auto}' +
       '}' +
 
@@ -573,16 +593,6 @@
       '<div id="ls-gt-el" aria-hidden="true" style="display:none;position:absolute"></div>' +
 
       
-      '<div id="ls-notice" role="status" aria-live="polite" hidden>' +
-        '<div class="ls-ni">' +
-          S.globeNi +
-          '<span id="ls-ntxt">Viewing a translated version</span>' +
-          '<button id="ls-norig" type="button">View original</button>' +
-          '<button id="ls-nclose" type="button" aria-label="Dismiss notice">' + S.x + '</button>' +
-        '</div>' +
-      '</div>' +
-
-      
       '<button id="ls-trigger" type="button" ' +
           'aria-label="Select language" aria-expanded="false" aria-controls="ls-panel">' +
         '<span id="ls-trig-flag" class="ls-trig-flag"></span>' +
@@ -631,7 +641,7 @@
         '<div class="ls-pf">' +
           '<div class="ls-disc">' +
             S.info +
-            '<p>Translations are provided for convenience and may not fully capture the original meaning. <a id="ls-disc-link" href="#" style="color:inherit;text-decoration:underline">Language disclaimer</a></p>' +
+            '<p>Translations are provided for convenience and may not fully capture the original meaning.</p>' +
           '</div>' +
           '<button id="ls-reset" type="button" hidden>' +
             S.reset + 'Return to original language' +
@@ -648,11 +658,20 @@
     }
 
     
-    var discLink = document.getElementById('ls-disc-link');
-    if (discLink) {
-      var inDev = /\/_dev\//.test(location.pathname) || /\/_dev\//.test(location.href);
-      discLink.href = inDev ? 'disclaimers.html#language-translations' : '_dev/disclaimers.html#language-translations';
-    }
+    var noticeBar = document.createElement('div');
+    noticeBar.id = 'ls-notice';
+    noticeBar.setAttribute('role', 'status');
+    noticeBar.setAttribute('aria-live', 'polite');
+    noticeBar.setAttribute('hidden', '');
+    noticeBar.innerHTML =
+      '<div class="ls-ni">' +
+        S.globeNi +
+        '<span id="ls-ntxt"></span>' +
+        '<button type="button" id="ls-undo" hidden>Previous language</button>' +
+        '<button type="button" id="ls-norig">View original</button>' +
+        '<button type="button" id="ls-nclose" aria-label="Dismiss notice">' + S.x + '</button>' +
+      '</div>';
+    document.body.appendChild(noticeBar);
   }
 
 
@@ -742,12 +761,36 @@
 
     var notice = document.getElementById('ls-notice');
     var ntxt   = document.getElementById('ls-ntxt');
+    var norig  = document.getElementById('ls-norig');
+    var nundo  = document.getElementById('ls-undo');
     if (current !== ORIGINAL) {
       var lo = getLang(current);
-      ntxt.innerHTML = 'Viewing in <strong>' + (lo ? lo.name : current) + '</strong> — translated version';
+      var native = lo ? lo.native : current;
+      ntxt.innerHTML =
+        'Viewing in <strong class="notranslate" translate="no">' +
+        escapeHtml(native) +
+        '</strong> — translated version';
+      if (norig) {
+        norig.textContent = 'View original';
+        norig.setAttribute('aria-label', 'View original');
+      }
+      if (nundo) {
+        if (undoFrom != null && undoFrom !== '') {
+          nundo.removeAttribute('hidden');
+          nundo.textContent = 'Previous language';
+          nundo.setAttribute('aria-label', 'Go back to previous language');
+        } else {
+          nundo.setAttribute('hidden', '');
+        }
+      }
       notice.removeAttribute('hidden');
     } else {
       notice.setAttribute('hidden', '');
+      if (norig) {
+        norig.textContent = 'View original';
+        norig.setAttribute('aria-label', 'View original');
+      }
+      if (nundo) nundo.setAttribute('hidden', '');
     }
   }
 
@@ -792,13 +835,286 @@
   }
 
 
+  function undoLanguage() {
+    if (undoFrom == null || undoFrom === '') return;
+    var target = undoFrom;
+    undoFrom = null;
+    /* Undo Canadian mode if active */
+    if (current === 'en-CA') removeCanadianMode();
+    current = target;
+    writeStore(current);
+    syncUI();
+    if (target === 'en-CA') { applyCanadianMode(); }
+    else { applyTranslation(target); }
+  }
+
+  /* Canadian English Easter-egg */
+  var canadianActive = false;
+  var canadianOriginals = [];
+  var caStyleEl = null;
+  var caMapleInterval = null;
+
+  var CA_REPLACEMENTS = [
+    [/\bsorry\b/gi, 'sooorry'],
+    [/\babout\b/gi, 'aboot'],
+    [/\bhouse\b/gi, 'hoose'],
+    [/\bout\b/gi, 'oot'],
+    [/\bcolor\b/gi, 'colour'],
+    [/\bcenter\b/gi, 'centre'],
+    [/\bfavor\b/gi, 'favour'],
+    [/\bneighbor\b/gi, 'neighbour'],
+    [/\bdata\b/gi, 'data, bud'],
+    [/\bplatform\b/gi, 'platform, eh'],
+    [/\btraffic\b/gi, 'traffic, sorry'],
+    [/\bdisruptions?\b/gi, function(m){ return m + ', sorry aboot that'; }],
+    [/\bweather\b/gi, 'weather (probably snow, eh)'],
+    [/\bunderstand\b/gi, 'understand, eh'],
+    [/\blightweight\b/gi, 'light as a Timbit'],
+    [/\bcity\b/gi, 'city, eh'],
+    [/\bmap\b/gi, 'map, buddy'],
+    [/\benergy\b/gi, 'hydro'],
+    [/\breal-time\b/gi, 'real-time (faster than a Zamboni)'],
+    [/\bopen\b/gi, 'open, eh'],
+    [/\beveryone\b/gi, 'everyone, coast to coast'],
+    [/\.\s*$/gm, ', eh.'],
+  ];
+
+  function spawnMapleLeaf() {
+    var leaf = document.createElement('div');
+    leaf.className = 'ca-maple-leaf';
+    leaf.textContent = '\uD83C\uDF41';
+    leaf.style.left = (Math.random() * 100) + 'vw';
+    leaf.style.animationDuration = (3 + Math.random() * 4) + 's';
+    leaf.style.fontSize = (14 + Math.random() * 20) + 'px';
+    leaf.style.opacity = String(0.4 + Math.random() * 0.6);
+    document.body.appendChild(leaf);
+    leaf.addEventListener('animationend', function() { leaf.remove(); });
+  }
+
+  function injectCanadianStyles() {
+    if (caStyleEl) return;
+    caStyleEl = document.createElement('style');
+    caStyleEl.id = 'ca-mode-styles';
+    caStyleEl.textContent =
+      /* Red and white Canadian theme */
+      '.landing.ca-mode {' +
+        '--color-accent: #d80621;' +
+        '--color-accent-soft: rgba(216, 6, 33, 0.08);' +
+        '--color-primary: #d80621;' +
+      '}' +
+      /* Red buttons */
+      '.ca-mode .btn--primary {' +
+        'background: #d80621 !important;' +
+        'border-color: #d80621 !important;' +
+      '}' +
+      '.ca-mode .btn--primary:hover {' +
+        'background: #b50019 !important;' +
+        'border-color: #b50019 !important;' +
+      '}' +
+      '.ca-mode .header__cta {' +
+        'background: #d80621 !important;' +
+      '}' +
+      '.ca-mode .header__cta:hover {' +
+        'background: #b50019 !important;' +
+      '}' +
+      /* Red badge */
+      '.ca-mode .hero__badge {' +
+        'color: #d80621 !important;' +
+        'background: rgba(216, 6, 33, 0.08) !important;' +
+      '}' +
+      '.ca-mode .hero__badge::before {' +
+        'background: #d80621 !important;' +
+      '}' +
+      /* Red feature icons */
+      '.ca-mode .feature__icon {' +
+        'color: #d80621 !important;' +
+        'background: rgba(216, 6, 33, 0.08) !important;' +
+      '}' +
+      '.ca-mode .feature__name {' +
+        'color: #d80621 !important;' +
+      '}' +
+      /* Red section labels */
+      '.ca-mode .section-label {' +
+        'color: #d80621 !important;' +
+      '}' +
+      '.ca-mode .section-title {' +
+        'color: #d80621 !important;' +
+      '}' +
+      /* Red audience card icons */
+      '.ca-mode .audience-card__icon {' +
+        'color: #d80621 !important;' +
+        'background: rgba(216, 6, 33, 0.08) !important;' +
+      '}' +
+      '.ca-mode .audience-card__name {' +
+        'color: #d80621 !important;' +
+      '}' +
+      /* Red lang count */
+      '.ca-mode .lang-count {' +
+        'color: #d80621 !important;' +
+      '}' +
+      /* Sustainability block red override */
+      '.ca-mode .sustain-block {' +
+        'background: #d80621 !important;' +
+      '}' +
+      /* Query card headings */
+      '.ca-mode .query-card__q {' +
+        'color: #d80621 !important;' +
+      '}' +
+      /* Brand wordmark */
+      '.ca-mode .brand-lockup__wordmark {' +
+        'color: #d80621 !important;' +
+      '}' +
+      /* Canadian welcome banner */
+      '.ca-welcome-banner {' +
+        'background: linear-gradient(135deg, #d80621 0%, #ff1a3d 100%);' +
+        'color: #fff;' +
+        'text-align: center;' +
+        'padding: 12px 20px;' +
+        'font-family: inherit;' +
+        'font-size: 0.9rem;' +
+        'font-weight: 600;' +
+        'letter-spacing: 0.01em;' +
+        'animation: ca-banner-in 0.5s ease;' +
+        'position: relative;' +
+        'overflow: hidden;' +
+      '}' +
+      '.ca-welcome-banner::before {' +
+        'content: "\\1F341";' +
+        'margin-right: 8px;' +
+      '}' +
+      '.ca-welcome-banner::after {' +
+        'content: "\\1F341";' +
+        'margin-left: 8px;' +
+      '}' +
+      '@keyframes ca-banner-in {' +
+        'from { transform: translateY(-100%); opacity: 0; }' +
+        'to { transform: translateY(0); opacity: 1; }' +
+      '}' +
+      /* Falling maple leaves */
+      '.ca-maple-leaf {' +
+        'position: fixed;' +
+        'top: -40px;' +
+        'z-index: 9999;' +
+        'pointer-events: none;' +
+        'animation: ca-fall linear forwards;' +
+      '}' +
+      '@keyframes ca-fall {' +
+        '0% { transform: translateY(0) rotate(0deg); }' +
+        '25% { transform: translateY(25vh) rotate(90deg) translateX(30px); }' +
+        '50% { transform: translateY(50vh) rotate(180deg) translateX(-20px); }' +
+        '75% { transform: translateY(75vh) rotate(270deg) translateX(25px); }' +
+        '100% { transform: translateY(105vh) rotate(360deg); opacity: 0; }' +
+      '}' +
+      /* Subtle red glow on feature cards */
+      '.ca-mode .feature:hover {' +
+        'background: rgba(216, 6, 33, 0.03) !important;' +
+      '}' +
+      /* Footer links turn red on hover */
+      '.ca-mode .footer__link:hover {' +
+        'color: #d80621 !important;' +
+      '}' +
+      '@media (prefers-reduced-motion: reduce) {' +
+        '.ca-maple-leaf { display: none; }' +
+        '.ca-welcome-banner { animation: none; }' +
+      '}';
+    document.head.appendChild(caStyleEl);
+  }
+
+  function removeCanadianStyles() {
+    if (caStyleEl) { caStyleEl.remove(); caStyleEl = null; }
+    var leaves = document.querySelectorAll('.ca-maple-leaf');
+    for (var i = 0; i < leaves.length; i++) leaves[i].remove();
+    var banner = document.querySelector('.ca-welcome-banner');
+    if (banner) banner.remove();
+  }
+
+  function applyCanadianMode() {
+    if (canadianActive) return;
+    canadianActive = true;
+    canadianOriginals = [];
+
+    injectCanadianStyles();
+
+    /* Add the ca-mode class for CSS theming */
+    var root = document.querySelector('.landing');
+    if (root) root.classList.add('ca-mode');
+
+    /* Add welcome banner */
+    if (root && !document.querySelector('.ca-welcome-banner')) {
+      var banner = document.createElement('div');
+      banner.className = 'ca-welcome-banner';
+      banner.textContent = 'Welcome to Situate Vancouver, eh! Built with pride for Build Canada';
+      root.insertBefore(banner, root.firstChild);
+    }
+
+    /* Start maple leaf shower (one burst + gentle ongoing) */
+    for (var b = 0; b < 8; b++) setTimeout(spawnMapleLeaf, b * 200);
+    caMapleInterval = setInterval(spawnMapleLeaf, 2500);
+
+    /* Text replacements */
+    var walker = document.createTreeWalker(
+      root || document.body,
+      NodeFilter.SHOW_TEXT,
+      { acceptNode: function(n) {
+          var p = n.parentElement;
+          if (!p) return NodeFilter.FILTER_REJECT;
+          if (p.closest('.notranslate,[translate="no"],#ls-root,#ls-panel,#ls-notice,.ca-welcome-banner,.brand-lockup,.header__nav')) return NodeFilter.FILTER_REJECT;
+          if (p.tagName === 'SCRIPT' || p.tagName === 'STYLE') return NodeFilter.FILTER_REJECT;
+          return n.textContent.trim() ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT;
+        }
+      }
+    );
+    var node;
+    while ((node = walker.nextNode())) {
+      var orig = node.textContent;
+      var text = orig;
+      for (var i = 0; i < CA_REPLACEMENTS.length; i++) {
+        text = text.replace(CA_REPLACEMENTS[i][0], CA_REPLACEMENTS[i][1]);
+      }
+      if (text !== orig) {
+        canadianOriginals.push({ node: node, text: orig });
+        node.textContent = text;
+      }
+    }
+  }
+
+  function removeCanadianMode() {
+    if (!canadianActive) return;
+    /* Restore text */
+    for (var i = 0; i < canadianOriginals.length; i++) {
+      try { canadianOriginals[i].node.textContent = canadianOriginals[i].text; } catch(e) {}
+    }
+    canadianOriginals = [];
+    canadianActive = false;
+
+    /* Remove ca-mode class */
+    var root = document.querySelector('.ca-mode');
+    if (root) root.classList.remove('ca-mode');
+
+    /* Stop maple leaves and remove styles */
+    if (caMapleInterval) { clearInterval(caMapleInterval); caMapleInterval = null; }
+    removeCanadianStyles();
+  }
+
   function selectLang(code) {
     var prev = current;
+    if (code === prev) return;
+
+    /* Undo Canadian mode when switching away */
+    if (prev === 'en-CA') removeCanadianMode();
+
+    undoFrom = prev;
     current = code;
     writeStore(code);
     syncUI();
     closePanel();
-    if (code !== prev) applyTranslation(code);
+
+    if (code === 'en-CA') {
+      /* Canadian English: don't call Google Translate, just canadianise the page */
+      applyCanadianMode();
+    } else {
+      applyTranslation(code);
+    }
   }
 
 
@@ -825,6 +1141,7 @@
     var sc     = document.getElementById('ls-sc');
     var reset  = document.getElementById('ls-reset');
     var norig  = document.getElementById('ls-norig');
+    var nundo  = document.getElementById('ls-undo');
     var nclose = document.getElementById('ls-nclose');
     var panel  = document.getElementById('ls-panel');
     var sugg   = document.getElementById('ls-sugg');
@@ -845,6 +1162,7 @@
 
     reset.addEventListener('click', function () { selectLang(ORIGINAL); });
     norig.addEventListener('click', function () { selectLang(ORIGINAL); });
+    if (nundo) nundo.addEventListener('click', undoLanguage);
     nclose.addEventListener('click', function () {
       document.getElementById('ls-notice').setAttribute('hidden', '');
     });
@@ -879,7 +1197,11 @@
       if (code && code !== ORIGINAL) { current = code; writeStore(code); syncUI(); return; }
     }
     var saved = readStore();
-    if (saved && saved !== ORIGINAL) { current = saved; syncUI(); }
+    if (saved && saved !== ORIGINAL) {
+      current = saved;
+      syncUI();
+      if (saved === 'en-CA') applyCanadianMode();
+    }
   }
 
 

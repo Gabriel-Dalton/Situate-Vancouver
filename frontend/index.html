@@ -1,20 +1,1364 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="color-scheme" content="dark" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <title>City intelligence | Situate Vancouver</title>
+    <meta
+      name="description"
+      content="Real-time city awareness for Vancouver — traffic, transit, weather, and public data in one map-based experience."
+    />
+    <meta property="og:title" content="City intelligence | Situate Vancouver" />
+    <meta
+      property="og:description"
+      content="Real-time city awareness for Vancouver — traffic, transit, weather, and public data in one map-based experience."
+    />
+    <meta property="og:type" content="website" />
+    <meta
+      property="og:image"
+      content="https://www.ageforty.com/situate-vancouver-logo-standard-icon.svg"
+    />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="City intelligence | Situate Vancouver" />
+    <meta
+      name="twitter:description"
+      content="Real-time city awareness for Vancouver — traffic, transit, weather, and public data in one map-based experience."
+    />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&family=Inter:wght@800&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
       rel="stylesheet"
     />
-    <title>Situate Vancouver</title>
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/flag-icons@7.2.3/css/flag-icons.min.css"
+    />
+    <style>
+      :root {
+        --color-primary: #002040;
+        --color-bg: #ffffff;
+        --color-surface: #f7f8fa;
+        --color-text: #111827;
+        --color-text-secondary: #4b5563;
+        --color-text-muted: #9ca3af;
+        --color-accent: #0CA8C8;
+        --color-accent-soft: rgba(12, 168, 200, 0.08);
+        --color-border: #e5e7eb;
+        --color-green: #059669;
+        --color-green-soft: rgba(5, 150, 105, 0.08);
+        --radius-lg: 16px;
+        --radius-md: 12px;
+        --radius-sm: 8px;
+        --radius-pill: 999px;
+        --font: 'Inter', system-ui, -apple-system, sans-serif;
+      }
+
+      * { box-sizing: border-box; margin: 0; }
+
+      body {
+        font-family: var(--font);
+        font-size: 1rem;
+        line-height: 1.6;
+        color: var(--color-text);
+        background: var(--color-bg);
+        -webkit-font-smoothing: antialiased;
+      }
+
+      .landing {
+        max-width: 1120px;
+        margin: 0 auto;
+        padding: 0 clamp(1.25rem, 5vw, 2.5rem);
+      }
+
+      /* Header */
+      .header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 1.25rem 0;
+        border-bottom: 1px solid var(--color-border);
+        gap: 0.75rem;
+        flex-wrap: wrap;
+      }
+
+      .brand-lockup {
+        display: inline-flex;
+        align-items: center;
+        gap: 16px;
+        min-width: 0;
+        text-decoration: none;
+        flex-shrink: 0;
+        z-index: 2;
+      }
+
+      .brand-lockup__icon-wrap {
+        width: 42px;
+        height: 42px;
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .brand-lockup__icon-wrap img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        display: block;
+      }
+
+      .brand-lockup__wordmark {
+        margin: 0;
+        font-family: var(--font);
+        font-weight: 800;
+        font-size: clamp(0.625rem, 1.75vw, 0.8125rem);
+        letter-spacing: 0.15em;
+        line-height: 1;
+        color: var(--color-primary);
+        text-transform: uppercase;
+        white-space: nowrap;
+      }
+
+      .header__nav {
+        display: flex;
+        align-items: center;
+        gap: 2rem;
+        flex-shrink: 0;
+      }
+
+      .header__link {
+        font-size: 0.875rem;
+        font-weight: 500;
+        color: var(--color-text-secondary);
+        text-decoration: none;
+        transition: color 0.15s;
+      }
+
+      .header__link:hover { color: var(--color-text); }
+
+      .header__cta {
+        font-family: inherit;
+        font-size: 0.8125rem;
+        font-weight: 600;
+        padding: 0.5rem 1.125rem;
+        background: var(--color-primary);
+        color: #fff;
+        border: none;
+        border-radius: var(--radius-sm);
+        cursor: pointer;
+        transition: background 0.15s;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        text-decoration: none;
+      }
+
+      .header__cta:hover { background: #001730; }
+
+      @media (max-width: 640px) {
+        .header {
+          gap: 0.5rem;
+        }
+        .header__nav { gap: 0.75rem; }
+        .header__link { display: none; }
+        .brand-lockup__wordmark { display: none; }
+      }
+
+      @media (max-width: 420px) {
+        .header {
+          flex-wrap: wrap;
+          justify-content: center;
+          gap: 0.625rem;
+          padding: 1rem 0;
+        }
+        .brand-lockup {
+          width: 100%;
+          justify-content: center;
+        }
+        .brand-lockup__wordmark { display: inline; }
+        .header__nav {
+          width: 100%;
+          justify-content: center;
+          gap: 0.625rem;
+        }
+      }
+
+      /* Shared */
+      .section-label {
+        font-size: 0.6875rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: var(--color-accent);
+        margin-bottom: 0.5rem;
+      }
+
+      .section-title {
+        font-size: clamp(1.5rem, 3.5vw, 2rem);
+        font-weight: 800;
+        line-height: 1.15;
+        letter-spacing: -0.025em;
+        color: var(--color-primary);
+        margin-bottom: 0.75rem;
+      }
+
+      .section-desc {
+        font-size: clamp(0.9375rem, 2vw, 1.0625rem);
+        color: var(--color-text-secondary);
+        line-height: 1.65;
+        max-width: 640px;
+      }
+
+      .btn {
+        font-family: inherit;
+        font-size: 0.875rem;
+        font-weight: 600;
+        padding: 0.7rem 1.35rem;
+        border-radius: var(--radius-sm);
+        border: 1px solid transparent;
+        cursor: pointer;
+        transition: all 0.15s;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+
+      .btn--primary {
+        background: var(--color-primary);
+        color: #fff;
+        border-color: var(--color-primary);
+      }
+
+      .btn--primary:hover { background: #001730; border-color: #001730; }
+
+      .btn--secondary {
+        background: var(--color-bg);
+        color: var(--color-text);
+        border-color: var(--color-border);
+      }
+
+      .btn--secondary:hover { background: var(--color-surface); border-color: #d1d5db; }
+
+      .btn__arrow { transition: transform 0.15s; }
+      .btn:hover .btn__arrow { transform: translateX(2px); }
+
+      /* Hero */
+      .hero {
+        padding: clamp(2.5rem, 6vw, 4rem) 0 clamp(2rem, 5vw, 3rem);
+        max-width: 680px;
+      }
+
+      .hero__badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.375rem;
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: var(--color-accent);
+        background: var(--color-accent-soft);
+        padding: 0.3rem 0.75rem;
+        border-radius: var(--radius-pill);
+        margin-bottom: 1.25rem;
+      }
+
+      .hero__badge::before {
+        content: '';
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: var(--color-accent);
+      }
+
+      .hero__title {
+        font-size: clamp(2.25rem, 5.5vw, 3.5rem);
+        font-weight: 800;
+        line-height: 1.06;
+        letter-spacing: -0.035em;
+        color: var(--color-primary);
+        margin-bottom: 1.25rem;
+      }
+
+      .hero__desc {
+        font-size: clamp(1rem, 2vw, 1.125rem);
+        color: var(--color-text-secondary);
+        line-height: 1.7;
+        margin-bottom: 2rem;
+      }
+
+      .hero__actions {
+        display: flex;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+      }
+
+      /* Value section */
+      .value-section {
+        padding: clamp(2rem, 5vw, 3rem) 0;
+        border-top: 1px solid var(--color-border);
+      }
+
+      .value-section .section-desc {
+        max-width: 720px;
+      }
+
+      /* What-it-does section */
+      .what-section {
+        padding: clamp(2rem, 5vw, 3rem) 0;
+        border-top: 1px solid var(--color-border);
+      }
+
+      .what-section .section-desc {
+        max-width: 720px;
+      }
+
+      /* Features grid */
+      .features-section {
+        padding: clamp(2rem, 5vw, 3rem) 0;
+        border-top: 1px solid var(--color-border);
+      }
+
+      .features-section .section-title {
+        margin-bottom: 1.5rem;
+      }
+
+      .features {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1px;
+        background: var(--color-border);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-lg);
+        overflow: hidden;
+      }
+
+      @media (max-width: 768px) {
+        .features { grid-template-columns: repeat(2, 1fr); }
+      }
+
+      @media (max-width: 480px) {
+        .features { grid-template-columns: 1fr; }
+      }
+
+      .feature {
+        background: var(--color-bg);
+        padding: clamp(1.25rem, 3vw, 1.75rem);
+      }
+
+      .feature__icon {
+        width: 2.25rem;
+        height: 2.25rem;
+        border-radius: var(--radius-sm);
+        background: var(--color-accent-soft);
+        display: grid;
+        place-items: center;
+        margin-bottom: 0.75rem;
+        color: var(--color-accent);
+      }
+
+      .feature__icon svg { width: 1rem; height: 1rem; }
+
+      .feature__name {
+        font-size: 0.875rem;
+        font-weight: 700;
+        margin-bottom: 0.3rem;
+        color: var(--color-primary);
+      }
+
+      .feature__text {
+        font-size: 0.8125rem;
+        color: var(--color-text-muted);
+        line-height: 1.55;
+      }
+
+      /* Queries section */
+      .queries-section {
+        padding: clamp(2rem, 5vw, 3rem) 0;
+        border-top: 1px solid var(--color-border);
+      }
+
+      .queries-section .section-title {
+        margin-bottom: 1.5rem;
+      }
+
+      .queries-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: clamp(0.75rem, 2vw, 1rem);
+      }
+
+      @media (max-width: 640px) {
+        .queries-grid { grid-template-columns: 1fr; }
+      }
+
+      .query-card {
+        background: var(--color-surface);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-md);
+        padding: clamp(1.25rem, 3vw, 1.5rem);
+      }
+
+      .query-card__q {
+        font-size: 0.9375rem;
+        font-weight: 700;
+        color: var(--color-primary);
+        margin-bottom: 0.5rem;
+        line-height: 1.35;
+      }
+
+      .query-card__a {
+        font-size: 0.8125rem;
+        color: var(--color-text-secondary);
+        line-height: 1.6;
+      }
+
+      /* Why-it-matters */
+      .why-section {
+        padding: clamp(2rem, 5vw, 3rem) 0;
+        border-top: 1px solid var(--color-border);
+      }
+
+      /* Who-it's-for */
+      .audience-section {
+        padding: clamp(2rem, 5vw, 3rem) 0;
+        border-top: 1px solid var(--color-border);
+      }
+
+      .audience-section .section-title {
+        margin-bottom: 0.5rem;
+      }
+
+      .audience-section .section-desc {
+        margin-bottom: 1.5rem;
+      }
+
+      .audience-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1px;
+        background: var(--color-border);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-lg);
+        overflow: hidden;
+      }
+
+      @media (max-width: 768px) {
+        .audience-grid { grid-template-columns: repeat(2, 1fr); }
+      }
+
+      @media (max-width: 480px) {
+        .audience-grid { grid-template-columns: 1fr; }
+      }
+
+      .audience-card {
+        background: var(--color-bg);
+        padding: clamp(1.25rem, 3vw, 1.5rem);
+      }
+
+      .audience-card__icon {
+        width: 2rem;
+        height: 2rem;
+        border-radius: var(--radius-sm);
+        background: var(--color-accent-soft);
+        display: grid;
+        place-items: center;
+        margin-bottom: 0.625rem;
+        color: var(--color-accent);
+      }
+
+      .audience-card__icon svg { width: 0.875rem; height: 0.875rem; }
+
+      .audience-card__name {
+        font-size: 0.875rem;
+        font-weight: 700;
+        color: var(--color-primary);
+        margin-bottom: 0.25rem;
+      }
+
+      .audience-card__text {
+        font-size: 0.8125rem;
+        color: var(--color-text-muted);
+        line-height: 1.5;
+      }
+
+      /* How-it-works */
+      .how-section {
+        padding: clamp(2rem, 5vw, 3rem) 0;
+        border-top: 1px solid var(--color-border);
+      }
+
+      /* Languages section */
+      .lang-section {
+        padding: clamp(2rem, 5vw, 3rem) 0;
+        border-top: 1px solid var(--color-border);
+      }
+
+      .lang-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: clamp(2rem, 4vw, 3rem);
+        align-items: center;
+      }
+
+      @media (max-width: 640px) {
+        .lang-grid { grid-template-columns: 1fr; }
+      }
+
+      .lang-grid .section-title {
+        margin-bottom: 0.5rem;
+      }
+
+      .lang-count {
+        font-size: clamp(2.5rem, 6vw, 3.5rem);
+        font-weight: 800;
+        color: var(--color-accent);
+        letter-spacing: -0.03em;
+        line-height: 1;
+        margin-bottom: 0.25rem;
+      }
+
+      .lang-count-label {
+        font-size: 0.8125rem;
+        color: var(--color-text-muted);
+        margin-bottom: 1rem;
+      }
+
+      .flag-grid {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+      }
+
+      .flag-grid .fi {
+        width: 2.25rem;
+        height: 1.625rem;
+        border-radius: 4px;
+        box-shadow: 0 0 0 1px rgba(0,0,0,0.08);
+        line-height: 1.625rem;
+      }
+
+      .flag-more {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: auto;
+        height: 1.625rem;
+        padding: 0 0.6rem;
+        background: var(--color-surface);
+        border: 1px solid var(--color-border);
+        border-radius: 4px;
+        font-size: 0.6875rem;
+        font-weight: 600;
+        color: var(--color-text-muted);
+      }
+
+      /* Sustainability block */
+      .sustain-section {
+        padding: clamp(2rem, 5vw, 3rem) 0;
+        border-top: 1px solid var(--color-border);
+      }
+
+      .sustain-block {
+        background: var(--color-primary);
+        border-radius: var(--radius-lg);
+        padding: clamp(2rem, 4vw, 2.75rem);
+        color: #fff;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .sustain-block::before {
+        content: '';
+        position: absolute;
+        top: -40%;
+        right: -10%;
+        width: 420px;
+        height: 420px;
+        background: radial-gradient(circle, rgba(61, 220, 151, 0.06) 0%, transparent 70%);
+        pointer-events: none;
+      }
+
+      .sustain__header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 1rem;
+        flex-wrap: wrap;
+        margin-bottom: 1.5rem;
+        position: relative;
+      }
+
+      .sustain__label {
+        font-size: 0.6875rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: rgba(255, 255, 255, 0.5);
+        margin-bottom: 0.375rem;
+      }
+
+      .sustain__title {
+        font-size: clamp(1.25rem, 3vw, 1.5rem);
+        font-weight: 800;
+        letter-spacing: -0.02em;
+        line-height: 1.2;
+      }
+
+      .sustain__badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        font-size: 0.6875rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: #3ddc97;
+        background: rgba(61, 220, 151, 0.12);
+        padding: 0.35rem 0.7rem;
+        border-radius: var(--radius-pill);
+        flex-shrink: 0;
+      }
+
+      .sustain__badge::before {
+        content: '';
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: #3ddc97;
+      }
+
+      .sustain__body {
+        font-size: 0.9375rem;
+        color: rgba(255, 255, 255, 0.75);
+        line-height: 1.7;
+        max-width: 38rem;
+        margin: 0;
+        position: relative;
+      }
+
+      .sustain__body strong {
+        color: #fff;
+        font-weight: 600;
+      }
+
+      .sustain__grid {
+        display: grid;
+        grid-template-columns: 1.2fr 1fr;
+        gap: clamp(1.5rem, 4vw, 2.5rem);
+        align-items: center;
+        position: relative;
+      }
+
+      @media (max-width: 768px) {
+        .sustain__grid {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      .sustain__col--copy {
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+        min-width: 0;
+      }
+
+      .sustain__stats {
+        display: flex;
+        gap: 2rem;
+        flex-wrap: wrap;
+      }
+
+      .sustain__stat {
+        display: flex;
+        flex-direction: column;
+        gap: 0.15rem;
+      }
+
+      .sustain__stat-value {
+        font-size: 1.5rem;
+        font-weight: 800;
+        color: #fff;
+        letter-spacing: -0.02em;
+      }
+
+      .sustain__stat-label {
+        font-size: 0.6875rem;
+        font-weight: 500;
+        color: rgba(255, 255, 255, 0.45);
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+      }
+
+      .sustain__col--widget {
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+      }
+
+      .widget-host {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(0, 0, 0, 0.25);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: var(--radius-md);
+        padding: clamp(0.75rem, 2vw, 1.25rem);
+        overflow: hidden;
+        min-height: 200px;
+        box-sizing: border-box;
+      }
+
+      .widget-host__embed,
+      .widget-host [data-widget-type] {
+        width: 100%;
+        min-height: 180px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .widget-host iframe {
+        width: 100% !important;
+        min-height: 180px !important;
+        max-height: 320px;
+        max-width: 100%;
+        border: 0;
+        border-radius: var(--radius-sm);
+      }
+
+      .widget-host [class*='tn-'],
+      .widget-host [id*='tree-nation'] {
+        max-width: 100%;
+      }
+
+      .sustain__footnote {
+        margin-top: 1.25rem;
+        font-size: 0.75rem;
+        color: rgba(255, 255, 255, 0.35);
+        position: relative;
+        max-width: 38rem;
+        border-top: 1px solid rgba(255, 255, 255, 0.06);
+        padding-top: 1rem;
+      }
+
+      /* Footer */
+      .footer {
+        padding: 3rem 0 2rem;
+        border-top: 1px solid var(--color-border);
+      }
+
+      .footer__inner {
+        display: grid;
+        grid-template-columns: 1.5fr 1fr 1fr;
+        gap: 2rem;
+      }
+
+      @media (max-width: 640px) {
+        .footer__inner {
+          grid-template-columns: 1fr;
+          gap: 1.5rem;
+          text-align: center;
+        }
+      }
+
+      .footer__brand {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+      }
+
+      @media (max-width: 640px) {
+        .footer__brand { align-items: center; }
+      }
+
+      .footer__brand-lockup {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        text-decoration: none;
+      }
+
+      .footer__brand-lockup img {
+        width: 28px;
+        height: 28px;
+        object-fit: contain;
+      }
+
+      .footer__brand-name {
+        font-weight: 800;
+        font-size: 0.6875rem;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--color-primary);
+      }
+
+      .footer__brand-desc {
+        font-size: 0.8125rem;
+        color: var(--color-text-muted);
+        line-height: 1.55;
+        max-width: 280px;
+      }
+
+      @media (max-width: 640px) {
+        .footer__brand-desc { max-width: none; }
+      }
+
+      .footer__col-title {
+        font-size: 0.6875rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--color-text);
+        margin-bottom: 0.75rem;
+      }
+
+      .footer__col-links {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+      }
+
+      @media (max-width: 640px) {
+        .footer__col-links {
+          align-items: center;
+        }
+      }
+
+      .footer__link {
+        font-size: 0.8125rem;
+        color: var(--color-text-muted);
+        text-decoration: none;
+        transition: color 0.15s;
+      }
+
+      .footer__link:hover { color: var(--color-accent); }
+
+      .footer__bottom {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+        margin-top: 2rem;
+        padding-top: 1.25rem;
+        border-top: 1px solid var(--color-border);
+      }
+
+      @media (max-width: 640px) {
+        .footer__bottom {
+          justify-content: center;
+          text-align: center;
+        }
+      }
+
+      .footer__copy {
+        font-size: 0.75rem;
+        color: var(--color-text-muted);
+      }
+
+      .footer__built-with {
+        font-size: 0.75rem;
+        color: var(--color-text-muted);
+      }
+
+      /* Hero responsive */
+      @media (max-width: 480px) {
+        .hero__title {
+          font-size: clamp(1.75rem, 7vw, 2.25rem);
+        }
+        .hero__actions {
+          flex-direction: column;
+        }
+        .hero__actions .btn {
+          width: 100%;
+          justify-content: center;
+        }
+      }
+
+      /* Lang section responsive */
+      @media (max-width: 480px) {
+        .lang-count {
+          font-size: 2.25rem;
+        }
+      }
+
+      /* Sustainability section responsive */
+      @media (max-width: 480px) {
+        .sustain-block {
+          padding: clamp(1.25rem, 4vw, 2rem);
+        }
+        .sustain__stats {
+          gap: 1.25rem;
+        }
+        .widget-host {
+          min-height: 160px;
+          padding: 0.75rem;
+        }
+        .widget-host__embed,
+        .widget-host [data-widget-type] {
+          min-height: 140px;
+        }
+        .widget-host iframe {
+          min-height: 140px !important;
+        }
+      }
+
+      /* Entry animation */
+      .landing { opacity: 0; animation: fadeUp 0.4s ease forwards; }
+      @keyframes fadeUp { to { opacity: 1; } }
+      @media (prefers-reduced-motion: reduce) { .landing { animation: none; opacity: 1; } }
+
+      /* Language switcher (header slot + Situate theme for situate-i18n-switcher.js) */
+      .header__lang {
+        display: flex;
+        align-items: center;
+        flex-shrink: 0;
+      }
+
+      #ls-root,
+      #ls-notice {
+        --lsa: var(--color-accent);
+        --lsah: #0999b5;
+        --lsas: var(--color-accent-soft);
+        --lsah2: rgba(12, 168, 200, 0.16);
+        --lsbg: var(--color-surface);
+        --lssf: var(--color-bg);
+        --lsbd: var(--color-border);
+        --lst: var(--color-text);
+        --lst2: var(--color-text-secondary);
+        --lstm: var(--color-text-muted);
+        --lsf: var(--font);
+        --lsfh: var(--font);
+      }
+
+      #ls-root #ls-search:focus {
+        box-shadow: 0 0 0 3.5px rgba(12, 168, 200, 0.12);
+      }
+
+      #ls-root #ls-reset:hover,
+      #ls-root .ls-x:hover {
+        color: var(--color-accent);
+      }
+
+      #ls-root .ls-disc {
+        background: var(--color-surface);
+      }
+
+      #ls-notice #ls-norig {
+        color: var(--color-primary);
+        background: var(--color-accent-soft);
+        border-color: rgba(12, 168, 200, 0.25);
+      }
+
+      #ls-notice #ls-norig:hover {
+        background: rgba(12, 168, 200, 0.14);
+      }
+
+      #ls-notice #ls-undo:hover {
+        border-color: var(--color-accent);
+        color: var(--color-accent);
+      }
+    </style>
   </head>
   <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
+    <div class="landing">
+      <!-- Header -->
+      <header class="header">
+        <div
+          class="brand-lockup notranslate"
+          translate="no"
+          role="img"
+          aria-label="Situate Vancouver"
+        >
+          <div class="brand-lockup__icon-wrap" aria-hidden="true">
+            <img
+              src="/situate-vancouver-logo-standard-icon.svg"
+              alt=""
+              width="42"
+              height="42"
+              decoding="async"
+            />
+          </div>
+          <span class="brand-lockup__wordmark" aria-hidden="true">Situate Vancouver</span>
+        </div>
+        <nav class="header__nav" aria-label="Main navigation">
+          <a href="#features" class="header__link">Features</a>
+          <a href="#sustainability" class="header__link">Sustainability</a>
+          <div
+            id="situate-lang-mount"
+            class="header__lang"
+            aria-label="Language"
+          ></div>
+          <a href="/app.html" class="header__cta">Open map</a>
+        </nav>
+      </header>
+
+      <!-- Hero -->
+      <section class="hero">
+        <span class="hero__badge">City intelligence platform</span>
+        <h1 class="hero__title">Understand what's happening in the city, instantly.</h1>
+        <p class="hero__desc">
+          Situate Vancouver is a real-time city awareness platform that brings together
+          traffic, transit, weather, and public data into one clear, map-based experience
+          helping people quickly understand what is happening around them.
+        </p>
+        <div class="hero__actions">
+          <a href="/app.html" class="btn btn--primary">
+            Explore the map
+            <svg class="btn__arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </a>
+          <a href="#how" class="btn btn--secondary">See how it works</a>
+        </div>
+      </section>
+
+      <!-- Value section -->
+      <section class="value-section">
+        <p class="section-label">A clearer view of Vancouver</p>
+        <p class="section-desc">
+          Cities generate massive amounts of public information every day, but most of
+          it is scattered, technical, or difficult to interpret quickly. Situate Vancouver
+          brings that information into one place and turns it into something people can
+          actually understand and use.
+        </p>
+      </section>
+
+      <!-- What it does -->
+      <section class="what-section">
+        <p class="section-label">What it does</p>
+        <h2 class="section-title">See what's happening, where it's happening, and what it means</h2>
+        <p class="section-desc">
+          Situate Vancouver helps people understand changing city conditions in real time.
+          By combining transit updates, traffic patterns, weather conditions, and other
+          public signals, the platform gives users a simple way to explore disruptions,
+          delays, congestion, and ripple effects across Vancouver.
+        </p>
+      </section>
+
+      <!-- Features -->
+      <section class="features-section" id="features">
+        <h2 class="section-title">Built to make city data useful</h2>
+        <div class="features">
+          <div class="feature">
+            <span class="feature__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none">
+                <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2"/>
+                <path d="M12 5v2M12 17v2M5 12h2M17 12h2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+            </span>
+            <p class="feature__name">Live map intelligence</p>
+            <p class="feature__text">Explore Vancouver through a real-time map that surfaces disruptions, congestion, weather impacts, and other important city conditions in one place.</p>
+          </div>
+          <div class="feature">
+            <span class="feature__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+              </svg>
+            </span>
+            <p class="feature__name">Plain-language explanations</p>
+            <p class="feature__text">Ask a question or click an area on the map to get a clear explanation of what is happening and why, without needing to interpret raw data yourself.</p>
+          </div>
+          <div class="feature">
+            <span class="feature__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none">
+                <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+                <path d="M12 6v6l4 2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </span>
+            <p class="feature__name">Ripple effect awareness</p>
+            <p class="feature__text">Understand how one event can affect nearby roads, bridges, transit routes, and surrounding neighbourhoods, not just isolated incidents.</p>
+          </div>
+          <div class="feature">
+            <span class="feature__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none">
+                <path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+            </span>
+            <p class="feature__name">Open data, unified</p>
+            <p class="feature__text">Multiple public data sources brought into one streamlined experience, making city information easier to access, compare, and understand.</p>
+          </div>
+          <div class="feature">
+            <span class="feature__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none">
+                <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7S2 12 2 12Z" stroke="currentColor" stroke-width="2"/>
+                <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2"/>
+              </svg>
+            </span>
+            <p class="feature__name">Accessible by design</p>
+            <p class="feature__text">Dark mode, light mode, strong contrast, and simplified summaries designed to be clear and usable for a wide range of people.</p>
+          </div>
+          <div class="feature">
+            <span class="feature__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none">
+                <path d="M13 2 3 14h8l-1 8L21 10h-8l1-8Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+              </svg>
+            </span>
+            <p class="feature__name">Efficient and lightweight</p>
+            <p class="feature__text">Built for performance with a fast, efficient approach that supports accessibility, low digital overhead, and a smoother user experience.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Example queries -->
+      <section class="queries-section">
+        <p class="section-label">Example queries</p>
+        <h2 class="section-title">Built for real questions people actually ask</h2>
+        <div class="queries-grid">
+          <div class="query-card">
+            <p class="query-card__q">Why is traffic bad near Burrard Bridge?</p>
+            <p class="query-card__a">Identify contributing factors such as collisions, construction, weather conditions, and corridor congestion, then see where the disruption is spreading.</p>
+          </div>
+          <div class="query-card">
+            <p class="query-card__q">What is happening near Waterfront Station?</p>
+            <p class="query-card__a">See transit delays, crowd pressure, nearby disruptions, and area-wide movement patterns in one place.</p>
+          </div>
+          <div class="query-card">
+            <p class="query-card__q">Will rain affect downtown traffic tonight?</p>
+            <p class="query-card__a">Explore how weather conditions may influence congestion, travel times, and route pressure later in the day.</p>
+          </div>
+          <div class="query-card">
+            <p class="query-card__q">Why is this area unusually busy?</p>
+            <p class="query-card__a">View overlapping causes such as events, road closures, peak-hour traffic, service changes, or weather impacts.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Why it matters -->
+      <section class="why-section">
+        <p class="section-label">Why it matters</p>
+        <h2 class="section-title">Public data is only useful when people can understand it</h2>
+        <p class="section-desc">
+          Vancouver already has valuable public data, but most people do not have the time
+          or technical knowledge to search across multiple websites, alerts, dashboards, and
+          feeds. Situate Vancouver turns scattered information into clear, immediate insight
+          that supports better decisions for everyday life.
+        </p>
+      </section>
+
+      <!-- Who it's for -->
+      <section class="audience-section">
+        <p class="section-label">Who it's for</p>
+        <h2 class="section-title">Designed for people moving through the city</h2>
+        <p class="section-desc">
+          Built for residents, commuters, visitors, transit riders, and local organizations
+          that want a faster, clearer way to understand urban conditions.
+        </p>
+        <div class="audience-grid">
+          <div class="audience-card">
+            <span class="audience-card__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none">
+                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+                <path d="M9 22V12h6v10" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+              </svg>
+            </span>
+            <p class="audience-card__name">Residents</p>
+            <p class="audience-card__text">Get a clearer picture of disruptions, delays, and changing conditions near home.</p>
+          </div>
+          <div class="audience-card">
+            <span class="audience-card__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none">
+                <rect x="2" y="6" width="20" height="12" rx="2" stroke="currentColor" stroke-width="2"/>
+                <path d="M12 6V4M8 6V4M16 6V4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+            </span>
+            <p class="audience-card__name">Commuters</p>
+            <p class="audience-card__text">Understand congestion and route pressure before leaving or while planning your trip.</p>
+          </div>
+          <div class="audience-card">
+            <span class="audience-card__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none">
+                <path d="M8 6v12M16 6v8M4 18h16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                <circle cx="8" cy="4" r="2" stroke="currentColor" stroke-width="2"/>
+                <circle cx="16" cy="4" r="2" stroke="currentColor" stroke-width="2"/>
+              </svg>
+            </span>
+            <p class="audience-card__name">Transit riders</p>
+            <p class="audience-card__text">See where service changes, delays, and crowding may affect your travel.</p>
+          </div>
+          <div class="audience-card">
+            <span class="audience-card__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none">
+                <path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 1 1 18 0Z" stroke="currentColor" stroke-width="2"/>
+                <circle cx="12" cy="10" r="3" stroke="currentColor" stroke-width="2"/>
+              </svg>
+            </span>
+            <p class="audience-card__name">Visitors</p>
+            <p class="audience-card__text">Navigate Vancouver more confidently with simple, map-based context.</p>
+          </div>
+          <div class="audience-card">
+            <span class="audience-card__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none">
+                <rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" stroke-width="2"/>
+                <path d="M9 3v18M3 9h18" stroke="currentColor" stroke-width="2"/>
+              </svg>
+            </span>
+            <p class="audience-card__name">Local businesses</p>
+            <p class="audience-card__text">Understand nearby city conditions that may affect customers, staff, or operations.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- How it works -->
+      <section class="how-section" id="how">
+        <p class="section-label">How it works</p>
+        <h2 class="section-title">Turning city data into clarity</h2>
+        <p class="section-desc">
+          Situate Vancouver gathers live data from public sources, organizes it into a
+          consistent structure, and transforms it into map-based explanations that are
+          easier to read and act on. Instead of forcing users to interpret fragmented
+          information, the platform helps them quickly understand what is happening now
+          and what may happen next.
+        </p>
+      </section>
+
+      <!-- Languages -->
+      <section class="lang-section">
+        <div class="lang-grid">
+          <div>
+            <p class="section-label">Languages</p>
+            <h2 class="section-title">Available in 86 languages</h2>
+            <p class="section-desc">
+              Situate Vancouver is designed to be accessible to everyone. The platform
+              supports 86 languages so residents, visitors, and communities across
+              Vancouver can use it in the language they are most comfortable with.
+            </p>
+          </div>
+          <div>
+            <div class="flag-grid">
+              <span class="fi fi-ca" title="Canadian English"></span>
+              <span class="fi fi-gb" title="English"></span>
+              <span class="fi fi-es" title="Spanish"></span>
+              <span class="fi fi-fr" title="French"></span>
+              <span class="fi fi-de" title="German"></span>
+              <span class="fi fi-cn" title="Chinese (Simplified)"></span>
+              <span class="fi fi-jp" title="Japanese"></span>
+              <span class="fi fi-sa" title="Arabic"></span>
+              <span class="fi fi-br" title="Portuguese"></span>
+              <span class="fi fi-in" title="Hindi"></span>
+              <span class="fi fi-ru" title="Russian"></span>
+              <span class="fi fi-kr" title="Korean"></span>
+              <span class="fi fi-it" title="Italian"></span>
+              <span class="fi fi-nl" title="Dutch"></span>
+              <span class="fi fi-pl" title="Polish"></span>
+              <span class="fi fi-se" title="Swedish"></span>
+              <span class="fi fi-tr" title="Turkish"></span>
+              <span class="fi fi-vn" title="Vietnamese"></span>
+              <span class="fi fi-th" title="Thai"></span>
+              <span class="fi fi-ua" title="Ukrainian"></span>
+              <span class="fi fi-ph" title="Filipino"></span>
+              <span class="flag-more">+65 more</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Build Canada callout -->
+      <section class="value-section" style="text-align:center">
+        <p class="section-label">Build Canada 2026</p>
+        <h2 class="section-title" style="max-width:600px;margin-left:auto;margin-right:auto">Built in Canada, for Canada</h2>
+        <p class="section-desc" style="max-width:600px;margin-left:auto;margin-right:auto">
+          Situate Vancouver is proudly built as part of the Build Canada hackathon.
+          Try switching the language to Canadian English for a true local experience.
+        </p>
+      </section>
+
+      <!-- Sustainability -->
+      <section class="sustain-section" id="sustainability">
+        <div class="sustain-block">
+          <div class="sustain__header">
+            <div>
+              <p class="sustain__label">Sustainability</p>
+              <p class="sustain__title">Built efficiently, not just intelligently</p>
+            </div>
+            <span class="sustain__badge">Carbon offset</span>
+          </div>
+
+          <div class="sustain__grid">
+            <div class="sustain__col sustain__col--copy">
+              <p class="sustain__body">
+                Situate Vancouver is designed to be <strong>lightweight, accessible, and
+                performance-focused</strong>. The goal is not only to make city information more
+                useful, but to do so in a way that supports faster load times, lower digital
+                overhead, and a cleaner web experience. <strong>Each page view is carbon-offset</strong>
+                through Tree-Nation.
+              </p>
+              <div class="sustain__stats" aria-label="Carbon summary">
+                <div class="sustain__stat">
+                  <span class="sustain__stat-value">0.00g</span>
+                  <span class="sustain__stat-label">CO<sub>2</sub> / view</span>
+                </div>
+                <div class="sustain__stat">
+                  <span class="sustain__stat-value">100%</span>
+                  <span class="sustain__stat-label">Offset</span>
+                </div>
+              </div>
+            </div>
+            <div class="sustain__col sustain__col--widget">
+              <div
+                class="widget-host notranslate"
+                translate="no"
+                aria-label="Tree-Nation website carbon offset certification"
+              >
+                <div
+                  class="widget-host__embed"
+                  data-widget-type="offset-website"
+                  data-tree-nation-code="876caf22312dcddf"
+                  data-lang="en"
+                  data-theme="dark"
+                ></div>
+              </div>
+            </div>
+          </div>
+          <p class="sustain__footnote">
+            Carbon offsetting is provided by Tree-Nation. Live figures appear once the widget has
+            finished loading.
+          </p>
+        </div>
+      </section>
+
+      <!-- Footer -->
+      <footer class="footer">
+        <div class="footer__inner">
+          <div class="footer__brand">
+            <div class="footer__brand-lockup notranslate" translate="no">
+              <img
+                src="/situate-vancouver-logo-standard-icon.svg"
+                alt=""
+                width="28"
+                height="28"
+                decoding="async"
+              />
+              <span class="footer__brand-name">Situate Vancouver</span>
+            </div>
+            <p class="footer__brand-desc">Real-time city awareness for Vancouver &mdash; traffic, transit, weather, and public data in one map-based experience.</p>
+          </div>
+          <div class="footer__col">
+            <p class="footer__col-title">Product</p>
+            <nav class="footer__col-links" aria-label="Footer product links">
+              <a href="#features" class="footer__link">Features</a>
+              <a href="#how" class="footer__link">How it works</a>
+              <a href="#sustainability" class="footer__link">Sustainability</a>
+            </nav>
+          </div>
+          <div class="footer__col">
+            <p class="footer__col-title">Connect</p>
+            <nav class="footer__col-links" aria-label="Footer connect links">
+              <a href="#" class="footer__link">GitHub</a>
+              <a href="#" class="footer__link">Contact</a>
+            </nav>
+          </div>
+        </div>
+        <div class="footer__bottom">
+          <span class="footer__copy notranslate" translate="no">&copy; 2026 Situate Vancouver</span>
+          <span class="footer__built-with">Built for Build Canada 2026</span>
+        </div>
+      </footer>
+    </div>
+
+    <script src="https://widgets.tree-nation.com/js/widgets/v3/widgets.min.js"></script>
+    <script src="/situate-i18n-switcher.js" defer></script>
   </body>
 </html>

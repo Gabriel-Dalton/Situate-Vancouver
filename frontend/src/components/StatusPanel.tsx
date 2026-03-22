@@ -6,6 +6,7 @@ interface ServiceCheck {
   latency_ms?: number
   base_url?: string
   url?: string
+  catalog_probe?: string
   /** When Vancouver Open Data status is copied from a remote aggregate /api/health. */
   health_source_url?: string
 }
@@ -17,19 +18,31 @@ interface HealthResponse {
 }
 
 const STATUS_LABEL: Record<string, string> = {
-  ok: 'OK',
-  error: 'ERR',
-  not_configured: 'N/A',
-  skipped: 'SKIP',
+  ok: 'Online',
+  error: 'Offline',
+  not_configured: 'Not set',
+  skipped: 'Skipped',
 }
+
+/** Display order for known checks; any extra keys from the API are listed after, sorted. */
+const CHECK_ORDER = ['django', 'vancouver_opendata', 'ai_service'] as const
 
 const POLL_INTERVAL_MS = 30_000
 
-/** Checks we still fetch but do not show in the sidebar (backend may still return them). */
-const HIDDEN_CHECK_KEYS = new Set(['ai_service'])
-
 const MSG_APP_UNAVAILABLE =
-  'We could not connect to the app services. Please try again in a few minutes.'
+  'We could not reach the app. Please try again in a few minutes or check your connection.'
+
+/**
+ * Aggregate `/api/health/` JSON. In dev, the browser calls same-origin `/api/health/`; Vite forwards
+ * to Django using repo-root `.env`: `API_PROXY_TARGET` or `DJANGO_DEV_HOST` + `DJANGO_DEV_PORT`.
+ * Production builds use the URL baked in from that same resolution unless `VITE_HEALTH_URL` is set.
+ */
+function healthEndpointUrl(): string {
+  const fromEnv = import.meta.env.VITE_HEALTH_URL as string | undefined
+  if (fromEnv?.trim()) return fromEnv.trim()
+  if (import.meta.env.DEV) return '/api/health/'
+  return __SITUATE_PROD_HEALTH_URL__
+}
 
 function parseHealthPayload(text: string): HealthResponse | null {
   try {
@@ -54,10 +67,82 @@ function syntheticUnhealthy(): HealthResponse {
   }
 }
 
-function describeCityDataLatency(ms: number): string {
-  if (ms < 300) return 'The city data link responded quickly.'
-  if (ms < 1000) return 'The city data link is responding at a normal speed.'
-  return 'The city data link is slower than usual, but it is working.'
+function orderedCheckEntries(checks: Record<string, ServiceCheck>): [string, ServiceCheck][] {
+  const known = new Set<string>(CHECK_ORDER)
+  const primary = CHECK_ORDER.filter((key) => checks[key] != null).map(
+    (key) => [key, checks[key]] as [string, ServiceCheck],
+  )
+  const rest = Object.keys(checks)
+    .filter((k) => !known.has(k))
+    .sort()
+    .map((key) => [key, checks[key]] as [string, ServiceCheck])
+  return [...primary, ...rest]
+}
+
+function friendlyServiceTitle(key: string): string {
+  const map: Record<string, string> = {
+    django: 'App server',
+    vancouver_opendata: 'City open data',
+    ai_service: 'AI features',
+  }
+  return (
+    map[key] ??
+    key
+      .replace(/_/g, ' ')
+      .replace(/\b\w/g, (c) => c.toUpperCase())
+  )
+}
+
+/** Plain-language description for non-technical readers; prefers API `message` when it is clear. */
+function userFacingCheckMessage(key: string, check: ServiceCheck): string {
+  const raw = check.message?.trim() ?? ''
+
+  if (check.status === 'ok') {
+    if (key === 'django' && /django/i.test(raw)) {
+      return 'The app is running normally.'
+    }
+    if (key === 'ai_service' && (raw.includes('/health') || /AI service/i.test(raw))) {
+      return 'AI-assisted features are connected and working.'
+    }
+    if (raw) return raw
+    return 'This part of the system is working.'
+  }
+
+  if (check.status === 'error') {
+    if (key === 'django') return MSG_APP_UNAVAILABLE
+    if (raw) return raw
+    return 'This service is not responding right now.'
+  }
+
+  if (check.status === 'not_configured') {
+    return raw || 'This option is not set up in this environment.'
+  }
+
+  if (check.status === 'skipped') {
+    return raw || 'This check was not run.'
+  }
+
+  return raw || 'Status is not available.'
+}
+
+function technicalLines(check: ServiceCheck): string[] {
+  const lines: string[] = []
+  if (check.latency_ms != null) {
+    lines.push(`Response time: ${check.latency_ms.toFixed(0)} ms`)
+  }
+  if (check.base_url) {
+    lines.push(`Data source: ${check.base_url}`)
+  }
+  if (check.url) {
+    lines.push(`Health URL: ${check.url}`)
+  }
+  if (check.health_source_url) {
+    lines.push(`Status copied from: ${check.health_source_url}`)
+  }
+  if (check.catalog_probe) {
+    lines.push(`Probe: ${check.catalog_probe}`)
+  }
+  return lines
 }
 
 export default function StatusPanel() {
@@ -66,10 +151,11 @@ export default function StatusPanel() {
   const [lastChecked, setLastChecked] = useState<Date | null>(null)
 
   const fetchHealth = useCallback(async () => {
+    const url = healthEndpointUrl()
     try {
-      const res = await fetch('/api/health/')
-      const text = await res.text()
+      const text = await (await fetch(url)).text()
       const data = parseHealthPayload(text)
+      // Prefer JSON from the wire (including 503 from the dev health forwarder) over `res.ok` alone.
       setHealth(data ?? syntheticUnhealthy())
       setLastChecked(new Date())
     } catch {
@@ -96,7 +182,7 @@ export default function StatusPanel() {
 
   if (!health) return null
 
-  const entries = Object.entries(health.checks).filter(([key]) => !HIDDEN_CHECK_KEYS.has(key))
+  const entries = orderedCheckEntries(health.checks)
 
   return (
     <div className="status-panel">
@@ -107,7 +193,7 @@ export default function StatusPanel() {
             ? 'All systems operational'
             : health.status === 'degraded'
               ? 'Some features are limited'
-              : 'Unhealthy'}
+              : 'Something is not reachable'}
         </span>
       </div>
 
@@ -130,51 +216,10 @@ export default function StatusPanel() {
   )
 }
 
-function getRowPresentation(name: string, check: ServiceCheck) {
-  if (name === 'django') {
-    return {
-      title: 'App server',
-      message:
-        check.status === 'ok'
-          ? 'The app is running and ready to use.'
-          : MSG_APP_UNAVAILABLE,
-      showLatency: false,
-      showSourceUrl: false,
-    }
-  }
-  if (name === 'vancouver_opendata') {
-    const byStatus: Partial<Record<ServiceCheck['status'], string>> = {
-      ok: 'We can load public information published by the city (datasets, maps, and similar).',
-      error:
-        'City-published information is not available right now. Other parts of the app may still work.',
-      not_configured: 'City data is not set up in this environment yet.',
-      skipped: 'City data status was not checked.',
-    }
-    let message = byStatus[check.status] ?? 'Status details are not available.'
-    if (check.status === 'ok' && check.latency_ms != null) {
-      message = `${describeCityDataLatency(check.latency_ms)} ${message}`
-    }
-    return {
-      title: 'City information',
-      message,
-      showLatency: false,
-      showSourceUrl: false,
-    }
-  }
-
-  const title = name
-    .replace(/_/g, ' ')
-    .replace(/\b\w/g, (c) => c.toUpperCase())
-  return {
-    title,
-    message: check.message,
-    showLatency: check.latency_ms != null,
-    showSourceUrl: Boolean(check.health_source_url),
-  }
-}
-
 function ServiceCheckRow({ name, check }: { name: string; check: ServiceCheck }) {
-  const { title, message, showLatency, showSourceUrl } = getRowPresentation(name, check)
+  const title = friendlyServiceTitle(name)
+  const message = userFacingCheckMessage(name, check)
+  const tech = technicalLines(check)
 
   return (
     <div className={`status-check status-check--${check.status}`}>
@@ -184,14 +229,16 @@ function ServiceCheckRow({ name, check }: { name: string; check: ServiceCheck })
           <span className="status-check__name">{title}</span>
           <span className="status-check__badge">{STATUS_LABEL[check.status] ?? check.status}</span>
         </div>
-        {showLatency && check.latency_ms != null && (
-          <span className="status-check__latency">{check.latency_ms.toFixed(0)} ms</span>
-        )}
         {message && <span className="status-check__msg">{message}</span>}
-        {showSourceUrl && check.health_source_url && (
-          <span className="status-check__msg status-check__msg--meta">
-            Source: {check.health_source_url}
-          </span>
+        {tech.length > 0 && (
+          <details className="status-check__details">
+            <summary className="status-check__details-summary">Technical details</summary>
+            <ul className="status-check__details-list">
+              {tech.map((line) => (
+                <li key={line}>{line}</li>
+              ))}
+            </ul>
+          </details>
         )}
       </div>
     </div>

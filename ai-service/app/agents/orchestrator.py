@@ -4,6 +4,8 @@ from .reasoner import ReasonerAgent
 from .decomposer import QueryDecomposer
 from .schemas import Coordinates, DetectedIncident, QueryResponse
 
+_NO_DATA_COORDINATES = Coordinates(lat=49.2827, lng=-123.1207)  # Vancouver city centre
+
 
 class OrchestratorAgent:
     """
@@ -119,9 +121,30 @@ class OrchestratorAgent:
             incident_type=decomposed.intent,
             location=decomposed.location,
         )
+        live_data = getattr(self.watcher, "last_live_data", None)
 
-        # Step 3 — retrieve context, now enriched with the real incident data
-        context = self.retriever.retrieve(decomposed_query=decomposed, incident=incident)
+        # Hard guard: no live data found → return immediately, never call Reasoner
+        if not incident.event_detected:
+            return QueryResponse(
+                original_query=user_query,
+                query_type=decomposed.intent,
+                verdict="No live data is currently available for this query from our feeds.",
+                severity="low",
+                location=decomposed.location or "Vancouver",
+                coordinates=_NO_DATA_COORDINATES,
+                cause="No matching incidents found in DriveBC or Vancouver Open Data.",
+                impact="Unknown — no active incident data for this location.",
+                recommended_actions=["Check DriveBC (drivebc.ca) for the latest road conditions."],
+                estimated_duration="N/A",
+                related_alerts=[],
+                cache_hit=False,
+                confidence=0.0,
+            )
+
+        # Step 3 — retrieve context grounded in the actual API records
+        context = self.retriever.retrieve(
+            decomposed_query=decomposed, incident=incident, live_data=live_data
+        )
 
         analysis = self.reasoner.reason(
             user_query=user_query,
@@ -135,7 +158,7 @@ class OrchestratorAgent:
             verdict=analysis.answer,
             severity=analysis.severity,
             location=incident.location or decomposed.location,
-            coordinates=incident.coordinates,
+            coordinates=analysis.coordinates,
             cause=analysis.cause,
             impact=analysis.impact,
             recommended_actions=analysis.recommended_actions,

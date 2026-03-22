@@ -32,7 +32,9 @@ _make_redis_stub()
 
 # Now safe to import our agents
 from app.agents.schemas import (  # noqa: E402
+    Coordinates,
     DecomposedQuery,
+    DetectedIncident,
     RetrievedContext,
     ReasonerOutput,
     QueryResponse,
@@ -43,6 +45,18 @@ from app.agents.orchestrator import OrchestratorAgent  # noqa: E402
 # ---------------------------------------------------------------------------
 # Realistic mock payloads
 # ---------------------------------------------------------------------------
+
+MOCK_INCIDENT = DetectedIncident(
+    event_detected=True,
+    incident_type="traffic_incident",
+    location="Burrard Bridge",
+    coordinates=Coordinates(lat=49.28, lng=-123.12),
+    severity="high",
+    summary="Heavy southbound traffic on Burrard Bridge",
+    raw_details="test",
+    affects_transit=True,
+    timestamp="2025-01-01T00:00:00Z",
+)
 
 MOCK_DECOMPOSED = DecomposedQuery(
     intent="traffic",
@@ -147,6 +161,7 @@ class TestBurrardQuery(unittest.TestCase):
         orch.retriever = MagicMock()
         orch.reasoner = MagicMock()
         orch.watcher = MagicMock()
+        orch.watcher.watch.return_value = MOCK_INCIDENT
 
         orch.decomposer.decompose.return_value = MOCK_DECOMPOSED
         orch.retriever.retrieve.return_value = MOCK_CONTEXT
@@ -179,7 +194,10 @@ class TestBurrardQuery(unittest.TestCase):
     def test_retriever_called_with_decomposed(self):
         orch = self._make_orchestrator()
         orch.answer_query("Why is the traffic so bad on Burrard street?")
-        orch.retriever.retrieve.assert_called_once_with(decomposed_query=MOCK_DECOMPOSED)
+        orch.retriever.retrieve.assert_called_once_with(
+            decomposed_query=MOCK_DECOMPOSED,
+            incident=MOCK_INCIDENT,
+        )
 
     def test_cache_hit_flag_propagates(self):
         orch = self._make_orchestrator()

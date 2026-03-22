@@ -1,7 +1,8 @@
 import os
 import json
 import redis
-from openai import OpenAI
+from app.openai_config import build_openai_client
+
 from .schemas import DecomposedQuery, DetectedIncident, RetrievedContext
 
 
@@ -15,9 +16,10 @@ class RetrieverAgent:
     """
 
     CACHE_TTL = {
-        "emergency":    30,
-        "traffic":      60,
-        "transit":      60,
+        "emergency":        30,
+        "natural_disaster": 30,   # fast-moving situations — keep TTL short
+        "traffic":          60,
+        "transit":          60,
         "obstruction":  120,
         "weather":      300,
         "construction": 600,
@@ -25,7 +27,7 @@ class RetrieverAgent:
     }
 
     def __init__(self, model: str = "gpt-4o"):
-        self.client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
+        self.client = build_openai_client()
         self.model = model
         self.redis = redis.Redis(
             host=os.environ.get("REDIS_HOST", "localhost"),
@@ -36,22 +38,24 @@ class RetrieverAgent:
         )
         self.system_prompt = (
             "You are the Retriever agent for Situate Vancouver, a real-time city monitoring system. "
-            "Given a structured query decomposition and optional incident data, surface all relevant "
-            "context needed to explain what is happening and why.\n\n"
-            "You have deep knowledge of:\n"
-            "- Vancouver bridges: Burrard, Granville, Cambie, Knight Street, Lions Gate, Pattullo, Port Mann\n"
-            "- TransLink: Expo Line, Millennium Line, Canada Line, buses, SeaBus, WestCoast Express\n"
-            "- Key hubs: Waterfront, Stadium-Chinatown, Broadway-City Hall, Commercial-Broadway, Metrotown\n"
-            "- Venues: Rogers Arena, BC Place, Queen Elizabeth Theatre\n"
-            "- Neighbourhoods: Downtown, West End, Kitsilano, Mount Pleasant, East Van, Strathcona\n"
-            "- Weather impact zones: bridges, North Shore routes, Highway 1\n"
-            "- Emergency service areas and public safety hotspots"
+            "You receive live API records and an optional detected incident. "
+            "Your job is to summarize what the data shows — nothing more.\n\n"
+            "CRITICAL RULES:\n"
+            "1. Only report what is explicitly present in the live API records or detected incident provided.\n"
+            "2. Do NOT add context, patterns, or causes from training knowledge.\n"
+            "3. If the live data is empty or no incident was detected, set confidence=0.1 and "
+            "report that no data was found in data_sources_checked.\n"
+            "4. location_context: briefly describe the geographic area to help interpret the data "
+            "(street type, neighbourhood) — but never fabricate incident details.\n"
+            "5. known_patterns, contributing_factors, and related_locations must only reference "
+            "information present in the provided records."
         )
 
     def retrieve(
         self,
         decomposed_query: DecomposedQuery,
         incident: DetectedIncident | None = None,
+        live_data: dict | None = None,
     ) -> RetrievedContext:
         """
         Retrieve context using a decomposed query. Checks entity-based cache first.
@@ -75,6 +79,8 @@ class RetrieverAgent:
         user_message = f"Query decomposition:\n{decomposed_query.model_dump_json(indent=2)}"
         if incident:
             user_message += f"\n\nDetected incident:\n{incident.model_dump_json(indent=2)}"
+        if live_data:
+            user_message += f"\n\nLive API records fetched for this query:\n{json.dumps(live_data, indent=2)}"
 
         response = self.client.beta.chat.completions.parse(
             model=self.model,

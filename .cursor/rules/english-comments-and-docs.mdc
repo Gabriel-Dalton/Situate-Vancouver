@@ -12,8 +12,8 @@ alwaysApply: true
 - **User-facing strings** (UI copy, API messages shown to end users) may stay in the product’s target language if the project requires it—this rule targets **developer comments** only.
 
 ```typescript
-// ❌ BAD
-// محاسبه مجموع
+// ❌ BAD (non-English developer comment)
+// Calculer le total
 
 // ✅ GOOD
 // Compute the running total

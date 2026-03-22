@@ -10,5 +10,9 @@ node_modules/
 dist/
 .DS_Store
 *.log
+
+# Vancouver Open Data snapshots (see: python manage.py fetch_vancouver_opendata)
+data/vancouver_opendata/
+
 .idea/
 .vscode/
