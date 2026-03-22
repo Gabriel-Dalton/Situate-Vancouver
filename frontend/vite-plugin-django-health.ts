@@ -1,23 +1,30 @@
 import type { IncomingMessage, ServerResponse } from 'node:http'
-import type { Plugin } from 'vite'
+import type { Connect, Plugin } from 'vite'
 
 /**
- * Handles GET /api/health/* in dev without the stock Vite proxy.
- * Forwards to Django so connection failures return JSON instead of ECONNREFUSED spam in the terminal.
+ * Handles GET /api/health/* in dev before the stock `/api` proxy.
+ * If this ran after the proxy, a down Django would yield non-JSON errors and the UI could not parse status.
  */
 export function djangoHealthForwardPlugin(djangoTarget: string): Plugin {
   return {
     name: 'django-health-forward',
     enforce: 'pre',
     configureServer(server) {
-      server.middlewares.use((req, res, next) => {
+      const handler: Connect.NextHandleFunction = (req, res, next) => {
         const raw = req.url ?? ''
         if (req.method !== 'GET' || !raw.startsWith('/api/health')) {
           next()
           return
         }
         void forwardHealth(req, res, djangoTarget)
-      })
+      }
+
+      const stack = (server.middlewares as Connect.Server & { stack?: Connect.ServerStackItem[] }).stack
+      if (Array.isArray(stack)) {
+        stack.unshift({ route: '', handle: handler })
+      } else {
+        server.middlewares.use(handler)
+      }
     },
   }
 }
@@ -54,7 +61,8 @@ async function forwardHealth(
         checks: {
           django: {
             status: 'error',
-            message: `Django is not reachable at ${base}. From the repo root run: cd backend && python manage.py runserver 0.0.0.0:8000 — or set API_PROXY_TARGET in .env to match your runserver port.`,
+            message:
+              'The app could not reach the server. Please try again in a few minutes.',
           },
         },
       }),

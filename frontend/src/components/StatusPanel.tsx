@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 
 interface ServiceCheck {
   status: 'ok' | 'error' | 'not_configured' | 'skipped'
@@ -28,23 +28,53 @@ const POLL_INTERVAL_MS = 30_000
 /** Checks we still fetch but do not show in the sidebar (backend may still return them). */
 const HIDDEN_CHECK_KEYS = new Set(['ai_service'])
 
+const MSG_APP_UNAVAILABLE =
+  'We could not connect to the app services. Please try again in a few minutes.'
+
+function parseHealthPayload(text: string): HealthResponse | null {
+  try {
+    const data = JSON.parse(text) as unknown
+    if (!data || typeof data !== 'object') return null
+    const o = data as Record<string, unknown>
+    if (typeof o.status !== 'string') return null
+    if (!o.checks || typeof o.checks !== 'object') return null
+    return data as HealthResponse
+  } catch {
+    return null
+  }
+}
+
+function syntheticUnhealthy(): HealthResponse {
+  return {
+    status: 'unhealthy',
+    service: 'django',
+    checks: {
+      django: { status: 'error', message: MSG_APP_UNAVAILABLE },
+    },
+  }
+}
+
+function describeCityDataLatency(ms: number): string {
+  if (ms < 300) return 'The city data link responded quickly.'
+  if (ms < 1000) return 'The city data link is responding at a normal speed.'
+  return 'The city data link is slower than usual, but it is working.'
+}
+
 export default function StatusPanel() {
   const [health, setHealth] = useState<HealthResponse | null>(null)
-  const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [lastChecked, setLastChecked] = useState<Date | null>(null)
 
   const fetchHealth = useCallback(async () => {
     try {
       const res = await fetch('/api/health/')
-      // Always try to parse JSON — backend may return valid health data with 500
-      const data: HealthResponse = await res.json()
-      setHealth(data)
-      setError(null)
+      const text = await res.text()
+      const data = parseHealthPayload(text)
+      setHealth(data ?? syntheticUnhealthy())
       setLastChecked(new Date())
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to reach API')
-      setHealth(null)
+    } catch {
+      setHealth(syntheticUnhealthy())
+      setLastChecked(new Date())
     } finally {
       setLoading(false)
     }
@@ -64,20 +94,6 @@ export default function StatusPanel() {
     )
   }
 
-  if (error) {
-    return (
-      <div className="status-panel">
-        <div className="status-check status-check--error">
-          <span className="status-check__dot" />
-          <div className="status-check__body">
-            <span className="status-check__name">Connection</span>
-            <span className="status-check__msg">Could not reach the app — {error}</span>
-          </div>
-        </div>
-      </div>
-    )
-  }
-
   if (!health) return null
 
   const entries = Object.entries(health.checks).filter(([key]) => !HIDDEN_CHECK_KEYS.has(key))
@@ -90,7 +106,7 @@ export default function StatusPanel() {
           {health.status === 'healthy'
             ? 'All systems operational'
             : health.status === 'degraded'
-              ? 'Degraded'
+              ? 'Some features are limited'
               : 'Unhealthy'}
         </span>
       </div>
@@ -118,20 +134,29 @@ function getRowPresentation(name: string, check: ServiceCheck) {
   if (name === 'django') {
     return {
       title: 'App server',
-      message: check.status === 'ok' ? 'Online and responding.' : check.message,
+      message:
+        check.status === 'ok'
+          ? 'The app is running and ready to use.'
+          : MSG_APP_UNAVAILABLE,
       showLatency: false,
       showSourceUrl: false,
     }
   }
   if (name === 'vancouver_opendata') {
     const byStatus: Partial<Record<ServiceCheck['status'], string>> = {
-      ok: 'We can load public information published by the city (things like datasets and maps).',
-      error: 'City-published information is not reachable right now. You can still use the rest of the app.',
-      not_configured: 'City data is not connected on this setup yet.',
+      ok: 'We can load public information published by the city (datasets, maps, and similar).',
+      error:
+        'City-published information is not available right now. Other parts of the app may still work.',
+      not_configured: 'City data is not set up in this environment yet.',
+      skipped: 'City data status was not checked.',
+    }
+    let message = byStatus[check.status] ?? 'Status details are not available.'
+    if (check.status === 'ok' && check.latency_ms != null) {
+      message = `${describeCityDataLatency(check.latency_ms)} ${message}`
     }
     return {
       title: 'City information',
-      message: byStatus[check.status] ?? check.message,
+      message,
       showLatency: false,
       showSourceUrl: false,
     }

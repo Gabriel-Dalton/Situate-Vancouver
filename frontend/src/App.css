@@ -350,6 +350,11 @@
   color: var(--pacific-slate);
 }
 
+.status-panel__overall--degraded .status-panel__overall-label,
+.status-panel__overall--unhealthy .status-panel__overall-label {
+  color: rgba(255, 255, 255, 0.95);
+}
+
 .status-panel__timestamp {
   font-family: var(--font-mono);
   font-size: 0.55rem;
