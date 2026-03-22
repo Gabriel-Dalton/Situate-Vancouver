@@ -13,8 +13,14 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 import os
 from pathlib import Path
 
+from dotenv import load_dotenv
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+REPO_ROOT = BASE_DIR.parent
+
+# Load repo-root .env (monorepo single source of env vars).
+load_dotenv(REPO_ROOT / '.env')
 
 
 # Quick-start development settings - unsuitable for production
@@ -29,10 +35,36 @@ SECRET_KEY = os.environ.get(
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get('DJANGO_DEBUG', 'true').lower() in ('1', 'true', 'yes')
 
-ALLOWED_HOSTS = os.environ.get(
-    'DJANGO_ALLOWED_HOSTS',
-    'localhost,127.0.0.1,backend',
-).split(',')
+ALLOWED_HOSTS = [
+    h.strip() for h in os.environ.get(
+        'DJANGO_ALLOWED_HOSTS',
+        'localhost,127.0.0.1,backend',
+    ).split(',')
+    if h.strip()
+]
+
+# Dev-only: accept any Host header (helps some Cloudflare Tunnel / proxy setups).
+# Never use with DEBUG=false in production.
+if DEBUG and os.environ.get('DJANGO_ALLOW_ALL_HOSTS', '').lower() in (
+    '1',
+    'true',
+    'yes',
+):
+    ALLOWED_HOSTS = ['*']
+
+_csrf_trusted = os.environ.get('DJANGO_CSRF_TRUSTED_ORIGINS', '').strip()
+CSRF_TRUSTED_ORIGINS = [
+    o.strip() for o in _csrf_trusted.split(',') if o.strip()
+]
+
+# Trust X-Forwarded-* from Cloudflare Tunnel / reverse proxy (HTTPS at the edge).
+if os.environ.get('DJANGO_USE_X_FORWARDED_HEADERS', '').lower() in (
+    '1',
+    'true',
+    'yes',
+):
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    USE_X_FORWARDED_HOST = True
 
 
 # Application definition
@@ -47,6 +79,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'corsheaders',
     'apps.core.apps.CoreConfig',
+    'apps.vancouver_opendata.apps.VancouverOpenDataConfig',
 ]
 
 MIDDLEWARE = [
@@ -145,3 +178,25 @@ _cors_origins = os.environ.get(
 CORS_ALLOWED_ORIGINS = [o.strip() for o in _cors_origins.split(',') if o.strip()]
 
 AI_SERVICE_URL = os.environ.get('AI_SERVICE_URL', 'http://127.0.0.1:8001')
+
+# Aggregate /api/health: set HEALTH_CHECK_AI=false when FastAPI is not running locally.
+HEALTH_CHECK_AI = os.environ.get('HEALTH_CHECK_AI', 'true').lower() in (
+    '1',
+    'true',
+    'yes',
+)
+
+# --- Vancouver Open Data (CKAN) ---
+_van_base = os.environ.get(
+    'VANCOUVER_OPENDATA_BASE_URL',
+    'https://opendata.vancouver.ca',
+).rstrip('/')
+VANCOUVER_OPENDATA_BASE_URL = _van_base
+VANCOUVER_OPENDATA_API_KEY = os.environ.get('VANCOUVER_OPENDATA_API_KEY', '').strip()
+VANCOUVER_OPENDATA_TIMEOUT_SECONDS = float(
+    os.environ.get('VANCOUVER_OPENDATA_TIMEOUT_SECONDS', '10'),
+)
+VANCOUVER_OPENDATA_ENFORCE_HOST_ALLOWLIST = os.environ.get(
+    'VANCOUVER_OPENDATA_ENFORCE_HOST_ALLOWLIST',
+    'true',
+).lower() in ('1', 'true', 'yes')

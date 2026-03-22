@@ -20,4 +20,5 @@ from django.urls import include, path
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/', include('apps.core.urls')),
+    path('api/vancouver-opendata/', include('apps.vancouver_opendata.urls')),
 ]

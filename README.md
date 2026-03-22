@@ -51,4 +51,4 @@ docker compose up --build
 - AI health: `GET http://localhost:8001/health`
 - FastAPI docs: `http://localhost:8001/docs`
 
-متغیرهای محیطی نمونه در `.env.example`.
+متغیرهای محیطی در روت ریپو در فایل `.env`.

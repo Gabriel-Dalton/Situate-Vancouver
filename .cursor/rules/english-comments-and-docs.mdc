@@ -1,9 +1,9 @@
 ---
-description: English-only code comments; project documentation lives in docs/
+description: English for comments, docs, and plans; project documentation in docs/
 alwaysApply: true
 ---
 
-# Comments and documentation
+# Comments, documentation, and plans
 
 ## Code comments (English only)
 
@@ -25,3 +25,10 @@ alwaysApply: true
 - Examples: architecture notes, how-to guides, ADRs, API docs written as Markdown, design specs meant for the team.
 - Prefer **`docs/<topic>.md`** (or a small subdirectory tree under `docs/` for larger sets) instead of leaving loose `NOTES.md` or `GUIDE.md` files in random folders.
 - The root **`README.md`** may remain at the root as the primary entry point; link from it into `docs/` when detail lives there.
+
+## Documentation and plans (English only)
+
+- Write **all documentation** you create or edit in **English**: Markdown under `docs/`, `README` sections, ADRs, design notes, API descriptions, and any other repo docs.
+- Write **all plans** in **English**: implementation plans, task breakdowns, phased roadmaps, and structured step-by-step outlines—whether saved as files (e.g. `PLAN.md`, specs) or given as numbered plans in the assistant response.
+- Do not use other languages for this material (including Persian/Farsi), so it stays consistent for the team and version control.
+- **Exception**: **User-facing product copy** may follow the product’s locale if the project requires it; this rule applies to **developer-facing** docs and plans.
