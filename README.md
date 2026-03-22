@@ -52,3 +52,11 @@ docker compose up --build
 - FastAPI docs: `http://localhost:8001/docs`
 
 متغیرهای محیطی در روت ریپو در فایل `.env`.
+
+## API / Vite proxy (troubleshooting)
+
+The dev server proxies browser requests from `/api/*` to Django. The default target is `http://127.0.0.1:8000`. Vite reads `API_PROXY_TARGET` and `AI_PROXY_TARGET` from the **repository root** `.env` (not only from shell environment).
+
+- **ECONNREFUSED / “API Unreachable”**: Django is not listening on the proxy target. Start it with `cd backend && python manage.py runserver` (port **8000** by default), or `make run` (Makefile default port is **8000** and matches Vite).
+- **Custom Django port**: Set `API_PROXY_TARGET=http://127.0.0.1:<port>` in repo-root `.env`.
+- **`/api/health/`** is handled in dev by a small Vite plugin that forwards to Django and returns JSON if Django is down, so the terminal is not spammed with proxy connection errors for that route.

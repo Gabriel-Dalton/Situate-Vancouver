@@ -1,33 +1,44 @@
+import os from 'node:os'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { defineConfig } from 'vite'
+import { defineConfig, loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
+import { djangoHealthForwardPlugin } from './vite-plugin-django-health'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
-const djangoTarget = process.env.API_PROXY_TARGET ?? 'http://127.0.0.1:8000'
-const aiTarget = process.env.AI_PROXY_TARGET ?? 'http://127.0.0.1:8001'
+const repoRoot = path.resolve(__dirname, '..')
 
 // https://vite.dev/config/
-export default defineConfig({
-  // Keep prebundle cache under frontend/.vite (not node_modules/.vite) to avoid Windows EPERM
-  // when another process locks files inside node_modules.
-  cacheDir: path.resolve(__dirname, '.vite'),
-  plugins: [react()],
-  optimizeDeps: {
-    include: ['maplibre-gl'],
-  },
-  build: {
-    // MapLibre GL is ~1MB minified; lazy-loaded — warn threshold tuned for that.
-    chunkSizeWarningLimit: 1200,
-  },
-  server: {
-    proxy: {
-      '/api': djangoTarget,
-      '/ai': {
-        target: aiTarget,
-        changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/ai/, ''),
+export default defineConfig(({ mode }) => {
+  const fileEnv = loadEnv(mode, repoRoot, '')
+  const djangoTarget =
+    fileEnv.API_PROXY_TARGET || process.env.API_PROXY_TARGET || 'http://127.0.0.1:8000'
+  const aiTarget =
+    fileEnv.AI_PROXY_TARGET || process.env.AI_PROXY_TARGET || 'http://127.0.0.1:8001'
+
+  return {
+    // Windows: project folders under Documents/GitHub are often locked by OneDrive, Defender,
+    // or a second Vite process — rmdir on frontend/.vite/deps then fails with EPERM. Cache in %TEMP%.
+    cacheDir:
+      process.env.SITUATE_VITE_CACHE_DIR ||
+      path.join(os.tmpdir(), 'situate-vancouver-frontend-vite'),
+    plugins: [djangoHealthForwardPlugin(djangoTarget), react()],
+    optimizeDeps: {
+      include: ['maplibre-gl'],
+    },
+    build: {
+      // MapLibre GL is ~1MB minified; lazy-loaded — warn threshold tuned for that.
+      chunkSizeWarningLimit: 1200,
+    },
+    server: {
+      proxy: {
+        '/api': djangoTarget,
+        '/ai': {
+          target: aiTarget,
+          changeOrigin: true,
+          rewrite: (path) => path.replace(/^\/ai/, ''),
+        },
       },
     },
-  },
+  }
 })

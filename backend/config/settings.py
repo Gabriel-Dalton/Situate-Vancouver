@@ -200,3 +200,10 @@ VANCOUVER_OPENDATA_ENFORCE_HOST_ALLOWLIST = os.environ.get(
     'VANCOUVER_OPENDATA_ENFORCE_HOST_ALLOWLIST',
     'true',
 ).lower() in ('1', 'true', 'yes')
+
+# Optional: GET this URL (aggregate /api/health JSON) and copy checks.vancouver_opendata.
+# For local dev pointing at production (e.g. ageforty). Do not set to this deployment's own URL.
+HEALTH_VANCOUVER_OPENDATA_STATUS_URL = os.environ.get(
+    'HEALTH_VANCOUVER_OPENDATA_STATUS_URL',
+    '',
+).strip()

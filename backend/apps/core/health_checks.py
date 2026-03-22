@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import time
 
 import httpx
@@ -14,6 +15,7 @@ from apps.vancouver_opendata.exceptions import (
 )
 
 AI_HEALTH_TIMEOUT_SECONDS = 3.0
+REMOTE_OPENDATA_HEALTH_TIMEOUT_SECONDS = 12.0
 
 
 def collect_health_checks() -> dict:
@@ -24,7 +26,7 @@ def collect_health_checks() -> dict:
         },
     }
 
-    _check_vancouver_opendata(checks)
+    _check_vancouver_opendata_with_optional_remote(checks)
     if settings.HEALTH_CHECK_AI:
         _check_ai_service(checks)
     else:
@@ -57,7 +59,39 @@ def _compute_overall(checks: dict[str, dict]) -> str:
     return 'healthy'
 
 
-def _check_vancouver_opendata(checks: dict[str, dict]) -> None:
+def _check_vancouver_opendata_with_optional_remote(checks: dict[str, dict]) -> None:
+    remote_url = getattr(settings, 'HEALTH_VANCOUVER_OPENDATA_STATUS_URL', '') or ''
+    if remote_url and _apply_remote_vancouver_opendata_check(checks, remote_url):
+        return
+    _check_vancouver_opendata_local(checks)
+
+
+def _apply_remote_vancouver_opendata_check(checks: dict[str, dict], remote_url: str) -> bool:
+    """
+    True if checks['vancouver_opendata'] was filled from remote aggregate health JSON.
+    """
+    try:
+        response = httpx.get(
+            remote_url,
+            timeout=REMOTE_OPENDATA_HEALTH_TIMEOUT_SECONDS,
+            follow_redirects=True,
+        )
+        try:
+            data = response.json()
+        except json.JSONDecodeError:
+            return False
+        remote_check = data.get('checks', {}).get('vancouver_opendata')
+        if not isinstance(remote_check, dict) or not remote_check.get('status'):
+            return False
+        merged = dict(remote_check)
+        merged['health_source_url'] = remote_url
+        checks['vancouver_opendata'] = merged
+        return True
+    except httpx.RequestError:
+        return False
+
+
+def _check_vancouver_opendata_local(checks: dict[str, dict]) -> None:
     try:
         client = build_ckan_client()
         started = time.perf_counter()

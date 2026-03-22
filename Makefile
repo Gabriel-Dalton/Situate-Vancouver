@@ -1,7 +1,8 @@
 # Django API (backend)
 BACKEND_DIR := backend
 HOST ?= 127.0.0.1
-PORT ?= 1111
+# Align with frontend/vite.config.ts default API_PROXY_TARGET (127.0.0.1:8000).
+PORT ?= 8000
 
 # Prefer backend venv when present (path is relative to BACKEND_DIR because we `cd` there)
 PYTHON := $(shell command -v python3 2>/dev/null || command -v python 2>/dev/null)

@@ -441,6 +441,13 @@
   word-break: break-word;
 }
 
+.status-check__msg--meta {
+  display: block;
+  margin-top: 0.2rem;
+  font-size: 0.55rem;
+  color: var(--text-muted);
+}
+
 .map-skeleton {
   position: absolute;
   inset: 0;

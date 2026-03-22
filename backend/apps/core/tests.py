@@ -123,3 +123,41 @@ class AggregateHealthAPITests(TestCase):
         body = r.json()
         self.assertEqual(body['status'], 'healthy')
         self.assertEqual(body['checks']['ai_service']['status'], 'skipped')
+
+    @override_settings(
+        HEALTH_CHECK_AI=False,
+        HEALTH_VANCOUVER_OPENDATA_STATUS_URL='https://example.com/api/health/',
+    )
+    @patch('apps.core.health_checks.httpx.get')
+    @patch('apps.core.health_checks.build_ckan_client')
+    @patch('apps.core.health_checks.run_ckan_smoke_probe')
+    def test_health_vancouver_opendata_from_remote_aggregate_url(
+        self,
+        mock_probe: MagicMock,
+        mock_build_ckan: MagicMock,
+        mock_httpx_get: MagicMock,
+    ) -> None:
+        mock_httpx_get.return_value = httpx.Response(
+            200,
+            json={
+                'status': 'healthy',
+                'checks': {
+                    'vancouver_opendata': {
+                        'status': 'ok',
+                        'message': 'Vancouver Open Data Explore API reachable',
+                        'base_url': 'https://opendata.vancouver.ca',
+                        'catalog_probe': 'catalog_datasets',
+                        'latency_ms': 100.0,
+                    },
+                },
+            },
+        )
+
+        r = self.client.get('/api/health/')
+        self.assertEqual(r.status_code, status.HTTP_200_OK)
+        body = r.json()
+        van = body['checks']['vancouver_opendata']
+        self.assertEqual(van['status'], 'ok')
+        self.assertEqual(van['health_source_url'], 'https://example.com/api/health/')
+        mock_build_ckan.assert_not_called()
+        mock_probe.assert_not_called()

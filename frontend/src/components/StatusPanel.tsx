@@ -6,6 +6,8 @@ interface ServiceCheck {
   latency_ms?: number
   base_url?: string
   url?: string
+  /** When Vancouver Open Data status is copied from a remote aggregate /api/health. */
+  health_source_url?: string
 }
 
 interface HealthResponse {
@@ -118,6 +120,11 @@ function ServiceCheckRow({ name, check }: { name: string; check: ServiceCheck })
         )}
         {check.message && (
           <span className="status-check__msg">{check.message}</span>
+        )}
+        {check.health_source_url && (
+          <span className="status-check__msg status-check__msg--meta">
+            Source: {check.health_source_url}
+          </span>
         )}
       </div>
     </div>
