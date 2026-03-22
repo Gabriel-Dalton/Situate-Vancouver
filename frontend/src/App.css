@@ -75,6 +75,67 @@
   letter-spacing: 0.06em;
 }
 
+/* ── Lens selector (header) ───────────────────────── */
+
+.lens-selector {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 5px;
+  border: 1px solid var(--border-subtle);
+  background: rgba(0, 0, 0, 0.25);
+}
+
+.lens-selector__btn {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.65rem;
+  margin: 0;
+  border: none;
+  border-radius: 3px;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition:
+    background 0.14s ease,
+    color 0.14s ease,
+    box-shadow 0.14s ease;
+}
+
+.lens-selector__btn:hover {
+  color: var(--pacific-slate);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.lens-selector__btn--active {
+  color: var(--lens-accent, var(--data-cyan));
+  background: color-mix(in srgb, var(--lens-accent, var(--data-cyan)) 14%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--lens-accent, var(--data-cyan)) 35%, transparent);
+}
+
+.lens-selector__btn:focus-visible {
+  outline: 1px solid var(--data-cyan);
+  outline-offset: 2px;
+}
+
+.lens-selector__glyph {
+  width: 18px;
+  height: 18px;
+  display: block;
+  flex-shrink: 0;
+}
+
+.lens-selector__label {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  line-height: 1;
+}
+
 .insight-shell__body {
   flex: 1;
   min-height: 0;
