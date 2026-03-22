@@ -193,7 +193,7 @@ class VancouverAPIGetter:
     def __init__(self):
         self.api_key = os.environ.get("VANCOUVER_OPENDATA_API_KEY", "")
         self.timeout = float(os.environ.get("VANCOUVER_OPENDATA_TIMEOUT_SECONDS", 10))
-        self.headers = {"Authorization": f"Apikey {self.api_key}"}
+        self.headers = {"Authorization": f"Apikey {self.api_key}"} if self.api_key else {}
 
     def fetch(
         self,
