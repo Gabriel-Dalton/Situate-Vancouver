@@ -145,11 +145,7 @@ function technicalLines(check: ServiceCheck): string[] {
   return lines
 }
 
-export type StatusPanelProps = {
-  onHeadingChange?: (heading: string) => void
-}
-
-export default function StatusPanel({ onHeadingChange }: StatusPanelProps) {
+export default function StatusPanel() {
   const [health, setHealth] = useState<HealthResponse | null>(null)
   const [loading, setLoading] = useState(true)
   const [lastChecked, setLastChecked] = useState<Date | null>(null)
@@ -175,27 +171,6 @@ export default function StatusPanel({ onHeadingChange }: StatusPanelProps) {
     const id = window.setInterval(fetchHealth, POLL_INTERVAL_MS)
     return () => window.clearInterval(id)
   }, [fetchHealth])
-
-  useEffect(() => {
-    if (!onHeadingChange) return
-    if (loading) {
-      onHeadingChange('Service status')
-      return
-    }
-    if (!health) {
-      onHeadingChange('Service status')
-      return
-    }
-    if (health.status === 'healthy') {
-      onHeadingChange('All systems operational')
-      return
-    }
-    if (health.status === 'degraded') {
-      onHeadingChange('Some features are limited')
-      return
-    }
-    onHeadingChange('Service unavailable')
-  }, [loading, health, onHeadingChange])
 
   if (loading) {
     return (
