@@ -1,0 +1,27 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">Situate Vancouver logo</title>
+  <desc id="desc">A standardized geometric diamond logo made of cyan, teal, and navy bands.</desc>
+  <defs>
+    <mask id="ring-cutout">
+      <rect width="512" height="512" fill="black"/>
+      <path d="M256 84L428 256L256 428L84 256L256 84Z" fill="white"/>
+      <path d="M256 172L340 256L256 340L172 256L256 172Z" fill="black"/>
+    </mask>
+    <clipPath id="outer-diamond">
+      <path d="M256 84L428 256L256 428L84 256L256 84Z"/>
+    </clipPath>
+  </defs>
+
+  <!-- Base navy ring -->
+  <path d="M256 84L428 256L256 428L84 256L256 84Z M256 172L172 256L256 340L340 256L256 172Z" fill="#012F4F" fill-rule="evenodd" clip-rule="evenodd"/>
+
+  <!-- Cyan band -->
+  <g mask="url(#ring-cutout)">
+    <path d="M84 256L256 428L340 344L168 172L84 256Z" fill="#0CA8C8"/>
+  </g>
+
+  <!-- Teal band -->
+  <g mask="url(#ring-cutout)">
+    <path d="M168 172L256 84L340 168L252 256L168 172Z" fill="#038DAE"/>
+  </g>
+</svg>

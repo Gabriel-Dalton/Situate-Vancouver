@@ -1,0 +1,42 @@
+/* Situate Vancouver — horizontal brand lockup (icon + wordmark) */
+
+.brand-lockup {
+  display: inline-flex;
+  align-items: center;
+  gap: clamp(0.4rem, 1.5vw, 0.7rem);
+  box-sizing: border-box;
+  min-width: 0;
+}
+
+.brand-lockup__icon-wrap {
+  width: clamp(2rem, 4.2vw, 2.625rem);
+  height: clamp(2rem, 4.2vw, 2.625rem);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.brand-lockup__icon-wrap img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+.brand-lockup__wordmark {
+  margin: 0;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-weight: 800;
+  font-size: clamp(0.62rem, 1.75vw, 0.8125rem);
+  letter-spacing: 0.15em;
+  line-height: 1.05;
+  color: #002040;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+/* Dark surfaces (e.g. app chrome): light wordmark, no white panel */
+.brand-lockup--on-dark .brand-lockup__wordmark {
+  color: var(--pacific-slate);
+}

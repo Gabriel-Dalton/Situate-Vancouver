@@ -4,6 +4,7 @@
  */
 import { lazy, Suspense, useCallback, useEffect, useState } from 'react'
 import type { InsightLayerState } from './components/VancouverMap'
+import BrandLockup from './components/BrandLockup'
 import StatusPanel from './components/StatusPanel'
 import './App.css'
 
@@ -25,11 +26,8 @@ export default function App() {
     <div className="insight-shell">
       <header className="insight-shell__header">
         <div className="insight-shell__brand">
-          <span className="insight-shell__mark" aria-hidden />
-          <div>
-            <h1 className="insight-shell__title">Situate Vancouver</h1>
-            <p className="insight-shell__subtitle">City-scale insight canvas</p>
-          </div>
+          <BrandLockup variant="onDark" />
+          <p className="insight-shell__subtitle">City-scale insight canvas</p>
         </div>
         <div className="insight-shell__header-meta">
           <span className="insight-shell__pill">Metro · Lower Mainland</span>

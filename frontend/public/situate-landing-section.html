@@ -56,22 +56,44 @@
       }
 
       .header__brand {
+        min-width: 0;
+      }
+
+      /* Horizontal lockup: icon + wordmark (compact, responsive) */
+      .brand-lockup {
+        display: inline-flex;
+        align-items: center;
+        gap: clamp(0.4rem, 1.5vw, 0.7rem);
+        box-sizing: border-box;
+        min-width: 0;
+      }
+
+      .brand-lockup__icon-wrap {
+        width: clamp(2rem, 4.2vw, 2.625rem);
+        height: clamp(2rem, 4.2vw, 2.625rem);
+        flex-shrink: 0;
         display: flex;
         align-items: center;
-        gap: 0.625rem;
+        justify-content: center;
       }
 
-      .header__mark {
-        width: 2rem;
-        height: 2rem;
-        border-radius: var(--radius-sm);
-        background: var(--color-accent);
+      .brand-lockup__icon-wrap img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        display: block;
       }
 
-      .header__name {
-        font-weight: 700;
-        font-size: 1rem;
-        letter-spacing: -0.02em;
+      .brand-lockup__wordmark {
+        margin: 0;
+        font-family: var(--font);
+        font-weight: 800;
+        font-size: clamp(0.62rem, 1.75vw, 0.8125rem);
+        letter-spacing: 0.15em;
+        line-height: 1.05;
+        color: #002040;
+        text-transform: uppercase;
+        white-space: nowrap;
       }
 
       .header__nav {
@@ -397,8 +419,18 @@
       <!-- Header -->
       <header class="header">
         <div class="header__brand">
-          <span class="header__mark" aria-hidden="true"></span>
-          <span class="header__name">Situate Vancouver</span>
+          <div class="brand-lockup" role="img" aria-label="Situate Vancouver">
+            <div class="brand-lockup__icon-wrap" aria-hidden="true">
+              <img
+                src="situate-vancouver-logo-standard-icon.svg"
+                alt=""
+                width="42"
+                height="42"
+                decoding="async"
+              />
+            </div>
+            <span class="brand-lockup__wordmark" aria-hidden="true">Situate Vancouver</span>
+          </div>
         </div>
         <nav class="header__nav" aria-label="Main navigation">
           <a href="#features" class="header__link">Features</a>
