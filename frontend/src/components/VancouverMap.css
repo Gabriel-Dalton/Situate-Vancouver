@@ -146,6 +146,7 @@
   color: var(--text-muted);
 }
 
+<<<<<<< HEAD
 /* ── Focus-location marker (pulsing outline) ── */
 
 .van-focus-marker {
@@ -199,4 +200,44 @@
     transform: scale(1.35);
     opacity: 0;
   }
+=======
+/* ── Coordinates footer strip ────────────────────── */
+
+.van-map-footer {
+  position: absolute;
+  z-index: 2;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 0.3rem 0.75rem;
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+  background: rgba(0, 12, 28, 0.82);
+  border-top: 1px solid rgba(241, 245, 249, 0.06);
+  backdrop-filter: blur(8px);
+  pointer-events: none;
+  user-select: none;
+}
+
+.van-map-footer__coord {
+  color: var(--text-primary);
+  opacity: 0.85;
+}
+
+.van-map-footer__sep {
+  opacity: 0.35;
+}
+
+.van-map-footer__zoom {
+  color: var(--data-cyan);
+  opacity: 0.7;
+>>>>>>> a44dc157eb27a4219185001de67ba1b8343f0444
 }

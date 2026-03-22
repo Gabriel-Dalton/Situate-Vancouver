@@ -4,7 +4,10 @@
  */
 import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react'
 import type { InsightLayerState, FocusLocation } from './components/VancouverMap'
+import LensSelector from './components/LensSelector'
 import { SKYTRAIN_LEGEND, SKYTRAIN_LINE_COLORS } from './data/skytrainLineKeys'
+import type { MobilityLens } from './types/mobilityLens'
+import { LENS_SIGNALS, MOBILITY_LENS_META } from './types/mobilityLens'
 import BrandLockup from './components/BrandLockup'
 import StatusPanel from './components/StatusPanel'
 import { AiQueryBar, AiResponsePanel } from './components/AiQuery'
@@ -17,28 +20,45 @@ const DEFAULT_LAYERS: InsightLayerState = {
   strategicNodes: true,
   movementCorridors: true,
   skytrainNodes: true,
+  incidentMarker: true,
 }
 
 export default function App() {
   const [layers, setLayers] = useState<InsightLayerState>(DEFAULT_LAYERS)
+  const [lens, setLens] = useState<MobilityLens>('cycle')
   const [aiResponse, setAiResponse] = useState<AiQueryResponse | null>(null)
   const [aiPanelOpen, setAiPanelOpen] = useState(false)
 
   useEffect(() => {
-    function relocate() {
+    /**
+     * The language script keeps #ls-bd and #ls-panel inside #ls-root. The map header uses
+     * backdrop-filter, which creates a containing block for position:fixed descendants, so
+     * the dialog's top:50% becomes half the header height and the panel clips off-screen.
+     * Moving the backdrop and dialog to document.body restores viewport-relative centering.
+     */
+    function portalLangOverlaysToBody() {
+      const bd = document.getElementById('ls-bd')
+      const panel = document.getElementById('ls-panel')
+      if (bd && bd.parentElement !== document.body) document.body.appendChild(bd)
+      if (panel && panel.parentElement !== document.body) document.body.appendChild(panel)
+    }
+
+    function relocateLangSwitcher() {
       const mount = document.getElementById('situate-lang-mount')
       const root = document.getElementById('ls-root')
-      if (mount && root && root.parentElement !== mount) {
+      if (!mount || !root) return false
+      if (root.parentElement !== mount) {
         root.classList.add('ls-inline')
         mount.appendChild(root)
-        return true
       }
-      return false
+      portalLangOverlaysToBody()
+      return true
     }
-    if (relocate()) return
+
+    if (relocateLangSwitcher()) return
 
     const observer = new MutationObserver(() => {
-      if (relocate()) observer.disconnect()
+      if (relocateLangSwitcher()) observer.disconnect()
     })
     observer.observe(document.body, { childList: true, subtree: true })
     return () => observer.disconnect()
@@ -93,7 +113,13 @@ export default function App() {
                 </div>
               }
             >
-              <VancouverMap layers={layers} focusLocation={focusLocation} />
+              <VancouverMap
+                layers={layers}
+                onToggleLayer={toggleLayer}
+                lens={lens}
+                incident={aiResponse}
+                focusLocation={focusLocation}
+              />
             </Suspense>
           </div>
           <AiResponsePanel
@@ -106,6 +132,14 @@ export default function App() {
 
       <div className="insight-shell__body" style={aiPanelOpen ? { display: 'none' } : undefined}>
         <aside className="insight-shell__rail insight-shell__rail--left" aria-label="Layers and scope">
+          <section className="insight-panel">
+            <h2 className="insight-panel__heading">Mobility lens</h2>
+            <p className="insight-panel__hint">
+              Choose how you move — the map and signals adapt to your context.
+            </p>
+            <LensSelector active={lens} onSelect={setLens} />
+          </section>
+
           <section className="insight-panel">
             <h2 className="insight-panel__heading">Insight layers</h2>
             <p className="insight-panel__hint">
@@ -132,6 +166,13 @@ export default function App() {
               description="Expo, Millennium, and Canada Line stops (public transit nodes)"
               checked={layers.skytrainNodes}
               onChange={() => toggleLayer('skytrainNodes')}
+            />
+            <LayerToggle
+              id="layer-incident"
+              label="Incident marker"
+              description="AI-detected incident location from the last query"
+              checked={layers.incidentMarker}
+              onChange={() => toggleLayer('incidentMarker')}
             />
             <div className="skytrain-legend" role="region" aria-label="SkyTrain line colors">
               {SKYTRAIN_LEGEND.map(({ key, shortLabel }) => (
@@ -170,7 +211,13 @@ export default function App() {
               </div>
             }
           >
-            <VancouverMap layers={layers} onToggleLayer={toggleLayer} focusLocation={focusLocation} />
+            <VancouverMap
+              layers={layers}
+              onToggleLayer={toggleLayer}
+              lens={lens}
+              incident={aiResponse}
+              focusLocation={focusLocation}
+            />
           </Suspense>
         </main>
 
@@ -180,11 +227,20 @@ export default function App() {
           </section>
 
           <section className="insight-panel">
-            <h2 className="insight-panel__heading">City signals</h2>
-            <p className="insight-panel__hint">Placeholder tiles until API feeds land.</p>
-            <SignalTile label="Activity index" value="—" trend="Awaiting stream" />
-            <SignalTile label="Mobility stress" value="—" trend="Awaiting stream" />
-            <SignalTile label="Equity lens" value="—" trend="Awaiting stream" />
+            <h2 className="insight-panel__heading">
+              {MOBILITY_LENS_META[lens].label} signals
+            </h2>
+            <p className="insight-panel__hint">
+              City data scoped to the active mobility lens.
+            </p>
+            {LENS_SIGNALS[lens].map((sig) => (
+              <SignalTile
+                key={sig.label}
+                label={sig.label}
+                value={sig.value}
+                trend={sig.trend}
+              />
+            ))}
           </section>
         </aside>
       </div>

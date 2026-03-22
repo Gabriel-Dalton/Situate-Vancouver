@@ -4,6 +4,7 @@ from datetime import datetime, timezone
 from app.openai_config import build_openai_client
 from app.services.vancouver_api import VancouverAPIGetter
 from app.services.drivebc import DriveBCGetter
+from app.services.translink import TransLinkGetter
 from .schemas import Coordinates, DetectedIncident
 
 
@@ -23,6 +24,7 @@ class WatcherAgent:
         self.model = model
         self.api_getter = VancouverAPIGetter()
         self.drivebc = DriveBCGetter()
+        self.translink = TransLinkGetter()
         self.system_prompt = (
             "You are the Watcher agent for Situate Vancouver, a real-time city monitoring system. "
             "You receive live records from two sources: DriveBC (accidents, incidents, hazards) "
@@ -37,6 +39,7 @@ class WatcherAgent:
             "4. NEVER invent incidents. All values must come directly from the provided records.\n"
             "5. Use the record's description as raw_details and coordinates.lat/lng for the map pin.\n\n"
             "incident_type must be one of: traffic_incident | transit_delay | weather_disruption | emergency | public_safety\n"
+            "For TransLink alerts: use transit_delay. Map effect field: NO_SERVICE/SIGNIFICANT_DELAYS → high severity, REDUCED_SERVICE → medium.\n"
             "severity: map DriveBC MAJOR→high, MODERATE→medium, MINOR→low, otherwise use judgement\n"
             "coordinates: use the record's coordinates field when available\n"
             "timestamp: ISO 8601 UTC"
@@ -79,15 +82,24 @@ class WatcherAgent:
             limit=20,
         )
 
+        # Step 3 — fetch TransLink service alerts for transit queries
+        translink_alerts: list[dict] = []
+        if incident_type in ("transit", "general", "emergency"):
+            translink_alerts = self.translink.fetch(
+                location=location,
+                route_name=feed_data,  # pass the raw query so route names are matched
+                limit=10,
+            )
+
         live_data = {
             "vancouver_open_data": van_data,
-            "drivebc_events": drivebc_events,
+            "drivebc_events":      drivebc_events,
+            "translink_alerts":    translink_alerts,
         }
         # Expose for the Orchestrator to pass downstream to the Retriever
         self.last_live_data = live_data
 
-        # Hard check — if both sources returned no usable records, skip the LLM
-        # entirely and return event_detected=False immediately.
+        # Hard check — if all sources returned no usable records, skip the LLM entirely.
         drivebc_has_data = bool(drivebc_events) and not all(
             "error" in e for e in drivebc_events
         )
@@ -95,7 +107,10 @@ class WatcherAgent:
             records and not all("error" in r for r in records)
             for records in van_data.values()
         )
-        if not drivebc_has_data and not van_has_data:
+        translink_has_data = bool(translink_alerts) and not all(
+            "error" in a for a in translink_alerts
+        )
+        if not drivebc_has_data and not van_has_data and not translink_has_data:
             return DetectedIncident(
                 event_detected=False,
                 incident_type="traffic_incident",
@@ -108,14 +123,16 @@ class WatcherAgent:
                 timestamp=datetime.now(timezone.utc).isoformat(),
             )
 
-        # Step 3 — build prompt with the combined real data
+        # Step 4 — build prompt with all combined real data
         user_message = (
             f"Feed source: {source}\n"
             f"Queried location: {location or 'unspecified'}\n"
             f"Incident type queried: {incident_type}\n\n"
-            f"Live data from DriveBC (accidents, incidents, hazards):\n"
+            f"Live TransLink service alerts (delays, disruptions, cancellations):\n"
+            f"{json.dumps(translink_alerts, indent=2)}\n\n"
+            f"Live DriveBC events (accidents, incidents, hazards):\n"
             f"{json.dumps(drivebc_events, indent=2)}\n\n"
-            f"Live data from Vancouver Open Data (closures, construction, 311):\n"
+            f"Live Vancouver Open Data (closures, construction, 311):\n"
             f"{json.dumps(van_data, indent=2)}"
         )
 

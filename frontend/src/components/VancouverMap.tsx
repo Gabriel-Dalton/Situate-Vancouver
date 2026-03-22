@@ -1,8 +1,9 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import maplibregl from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import { enrichSkytrainNodes, skytrainCircleColorExpr, skytrainStrokeColorExpr } from '../data/skytrainLineKeys'
 import { SKYTRAIN_NODES } from '../data/skytrainStations'
+import { LENS_OVERLAYS } from '../data/lensOverlays'
 import { MOVEMENT_CORRIDORS, STRATEGIC_NODES } from '../data/vancouverGeo'
 import {
   BASEMAP_STYLES,
@@ -10,13 +11,24 @@ import {
   VECTOR_BASEMAP_PITCH,
 } from '../map/basemapConfig'
 import type { InsightLayerKey, InsightLayerState } from '../types/insightLayers'
+import type { MobilityLens } from '../types/mobilityLens'
+import { MOBILITY_LENS_META } from '../types/mobilityLens'
+import type { AiQueryResponse } from './AiQuery'
 import MapBasemapToolbar from './MapBasemapToolbar'
 import MapInsightToolbar from './MapInsightToolbar'
 import './VancouverMap.css'
 
+const SEVERITY_COLORS: Record<AiQueryResponse['severity'], string> = {
+  low: '#22c55e',
+  medium: '#f59e0b',
+  high: '#ef4444',
+  critical: '#ff3b3b',
+}
+
 export type { InsightLayerState } from '../types/insightLayers'
 
 const NODE_LAYERS = ['strategic-nodes-core', 'skytrain-nodes-core'] as const
+const LENS_LAYER_IDS = ['lens-overlay-glow', 'lens-overlay-line'] as const
 
 const INITIAL_BASEMAP: BasemapId = 'dark'
 const VAN_CENTRE: [number, number] = [-123.1207, 49.2827]
@@ -29,6 +41,8 @@ function applyInsightLayers(map: maplibregl.Map, layers: InsightLayerState) {
     'strategic-nodes-glow',
     'strategic-nodes-core',
     'corridors-line',
+    'incident-glow',
+    'incident-core',
   ] as const
   for (const id of ids) {
     if (!map.getLayer(id)) continue
@@ -36,10 +50,55 @@ function applyInsightLayers(map: maplibregl.Map, layers: InsightLayerState) {
       map.setLayoutProperty(id, 'visibility', vis(layers.skytrainNodes))
     } else if (id.startsWith('strategic')) {
       map.setLayoutProperty(id, 'visibility', vis(layers.strategicNodes))
+    } else if (id.startsWith('incident')) {
+      map.setLayoutProperty(id, 'visibility', vis(layers.incidentMarker))
     } else {
       map.setLayoutProperty(id, 'visibility', vis(layers.movementCorridors))
     }
   }
+}
+
+function installLensOverlay(map: maplibregl.Map, lens: MobilityLens) {
+  const color = MOBILITY_LENS_META[lens].color
+  const data = LENS_OVERLAYS[lens]
+
+  if (map.getSource('lens-overlay')) {
+    ;(map.getSource('lens-overlay') as maplibregl.GeoJSONSource).setData(data)
+    for (const id of LENS_LAYER_IDS) {
+      if (!map.getLayer(id)) continue
+      if (id.endsWith('-glow')) {
+        map.setPaintProperty(id, 'line-color', color)
+      } else {
+        map.setPaintProperty(id, 'line-color', color)
+      }
+    }
+    return
+  }
+
+  map.addSource('lens-overlay', { type: 'geojson', data })
+  map.addLayer({
+    id: 'lens-overlay-glow',
+    type: 'line',
+    source: 'lens-overlay',
+    paint: {
+      'line-color': color,
+      'line-width': 8,
+      'line-opacity': 0.12,
+      'line-blur': 5,
+    },
+  })
+  map.addLayer({
+    id: 'lens-overlay-line',
+    type: 'line',
+    source: 'lens-overlay',
+    paint: {
+      'line-color': color,
+      'line-width': 2.5,
+      'line-opacity': 0.72,
+      'line-blur': 0.25,
+      'line-dasharray': [4, 2.5],
+    },
+  })
 }
 
 function installInsightOverlay(map: maplibregl.Map) {
@@ -115,22 +174,101 @@ export type FocusLocation = {
 
 type Props = {
   layers: InsightLayerState
-  onToggleLayer?: (key: InsightLayerKey) => void
+  onToggleLayer: (key: InsightLayerKey) => void
+  lens: MobilityLens
+  incident?: AiQueryResponse | null
   focusLocation?: FocusLocation
 }
 
-export default function VancouverMap({ layers, onToggleLayer, focusLocation }: Props) {
+function installIncidentLayer(map: maplibregl.Map, inc: AiQueryResponse) {
+  const SRC_ID = 'incident-point'
+  const GLOW_ID = 'incident-glow'
+  const CORE_ID = 'incident-core'
+  const { lat, lng } = inc.coordinates
+  const color = SEVERITY_COLORS[inc.severity] ?? SEVERITY_COLORS.low
+
+  const geojson: GeoJSON.FeatureCollection<GeoJSON.Point> = {
+    type: 'FeatureCollection',
+    features: [
+      {
+        type: 'Feature',
+        geometry: { type: 'Point', coordinates: [lng, lat] },
+        properties: { verdict: inc.verdict, location: inc.location, severity: inc.severity },
+      },
+    ],
+  }
+
+  if (map.getSource(SRC_ID)) {
+    ;(map.getSource(SRC_ID) as maplibregl.GeoJSONSource).setData(geojson)
+    if (map.getLayer(GLOW_ID)) map.setPaintProperty(GLOW_ID, 'circle-color', color)
+    if (map.getLayer(CORE_ID)) map.setPaintProperty(CORE_ID, 'circle-color', color)
+  } else {
+    map.addSource(SRC_ID, { type: 'geojson', data: geojson })
+    map.addLayer({
+      id: GLOW_ID,
+      type: 'circle',
+      source: SRC_ID,
+      paint: {
+        'circle-radius': 22,
+        'circle-color': color,
+        'circle-opacity': 0.22,
+        'circle-blur': 0.9,
+      },
+    })
+    map.addLayer({
+      id: CORE_ID,
+      type: 'circle',
+      source: SRC_ID,
+      paint: {
+        'circle-radius': 7,
+        'circle-color': color,
+        'circle-opacity': 0.96,
+        'circle-stroke-width': 2,
+        'circle-stroke-color': '#001b3d',
+      },
+    })
+  }
+}
+
+export default function VancouverMap({
+  layers,
+  onToggleLayer,
+  lens,
+  incident,
+  focusLocation,
+}: Props) {
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<maplibregl.Map | null>(null)
   const styleReadyRef = useRef(false)
   const layersRef = useRef(layers)
+  const lensRef = useRef(lens)
+  const incidentRef = useRef(incident ?? null)
   const interactionsBoundRef = useRef(false)
   const focusMarkerRef = useRef<maplibregl.Marker | null>(null)
   const [basemap, setBasemap] = useState<BasemapId>(INITIAL_BASEMAP)
+  const [cursorInfo, setCursorInfo] = useState({ lat: VAN_CENTRE[1], lng: VAN_CENTRE[0], zoom: 11.35 })
+
+  const updateCursorInfo = useCallback((map: maplibregl.Map, e?: maplibregl.MapMouseEvent) => {
+    const z = map.getZoom()
+    if (e) {
+      setCursorInfo({ lat: e.lngLat.lat, lng: e.lngLat.lng, zoom: z })
+    } else {
+      const c = map.getCenter()
+      setCursorInfo({ lat: c.lat, lng: c.lng, zoom: z })
+    }
+  }, [])
 
   useLayoutEffect(() => {
     layersRef.current = layers
   }, [layers])
+
+  useLayoutEffect(() => {
+    lensRef.current = lens
+  }, [lens])
+
+  useLayoutEffect(() => {
+    incidentRef.current = incident ?? null
+  }, [incident])
 
   useEffect(() => {
     const el = containerRef.current
@@ -165,35 +303,53 @@ export default function VancouverMap({ layers, onToggleLayer, focusLocation }: P
       if (!f?.geometry || f.geometry.type !== 'Point') return
       const coords = f.geometry.coordinates.slice() as [number, number]
       const name = String(f.properties?.name ?? 'Node')
-      const lens = String(f.properties?.lens ?? '')
+      const lensText = String(f.properties?.lens ?? '')
 
       while (Math.abs(e.lngLat.lng - coords[0]) > 180) {
         coords[0] += e.lngLat.lng > coords[0] ? 360 : -360
       }
 
-      new maplibregl.Popup({ maxWidth: '280px', className: 'van-popup' })
-        .setLngLat(coords)
-        .setHTML(
-          `<div class="van-popup__title">${escapeHtml(name)}</div>` +
-            `<div class="van-popup__body">${escapeHtml(lens)}</div>`,
-        )
-        .addTo(map)
+      const targetZoom = Math.max(map.getZoom(), 14)
+      map.flyTo({
+        center: coords,
+        zoom: targetZoom,
+        duration: 800,
+        easing: (t) => 1 - Math.pow(1 - t, 3),
+      })
+
+      map.once('moveend', () => {
+        new maplibregl.Popup({ maxWidth: '280px', className: 'van-popup', offset: 12 })
+          .setLngLat(coords)
+          .setHTML(
+            `<div class="van-popup__title">${escapeHtml(name)}</div>` +
+              `<div class="van-popup__body">${escapeHtml(lensText)}</div>`,
+          )
+          .addTo(map)
+      })
     }
 
     const onMapMouseMove = (e: maplibregl.MapMouseEvent) => {
       const feats = map.queryRenderedFeatures(e.point, { layers: [...NODE_LAYERS] })
       map.getCanvas().style.cursor = feats.length ? 'pointer' : ''
+      updateCursorInfo(map, e)
     }
+
+    const onZoom = () => updateCursorInfo(map)
+    const onMoveEnd = () => updateCursorInfo(map)
 
     const onStyleLoad = () => {
       installInsightOverlay(map)
+      installLensOverlay(map, lensRef.current)
       applyInsightLayers(map, layersRef.current)
+      if (incidentRef.current) installIncidentLayer(map, incidentRef.current)
       styleReadyRef.current = true
 
       if (!interactionsBoundRef.current) {
         interactionsBoundRef.current = true
         map.on('click', onMapClick)
         map.on('mousemove', onMapMouseMove)
+        map.on('zoom', onZoom)
+        map.on('moveend', onMoveEnd)
       }
     }
 
@@ -204,6 +360,8 @@ export default function VancouverMap({ layers, onToggleLayer, focusLocation }: P
       map.off('style.load', onStyleLoad)
       map.off('click', onMapClick)
       map.off('mousemove', onMapMouseMove)
+      map.off('zoom', onZoom)
+      map.off('moveend', onMoveEnd)
       interactionsBoundRef.current = false
       styleReadyRef.current = false
       map.remove()
@@ -219,7 +377,42 @@ export default function VancouverMap({ layers, onToggleLayer, focusLocation }: P
 
   useEffect(() => {
     const map = mapRef.current
-    if (!map) return
+    if (!map || !styleReadyRef.current) return
+    installLensOverlay(map, lens)
+  }, [lens])
+
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map || !styleReadyRef.current) return
+
+    if (!incident) {
+      if (map.getLayer('incident-glow')) map.removeLayer('incident-glow')
+      if (map.getLayer('incident-core')) map.removeLayer('incident-core')
+      if (map.getSource('incident-point')) map.removeSource('incident-point')
+      return
+    }
+
+    installIncidentLayer(map, incident)
+
+    const { lat, lng } = incident.coordinates
+    map.flyTo({ center: [lng, lat], zoom: 15, duration: 900, easing: (t) => 1 - Math.pow(1 - t, 3) })
+
+    map.once('moveend', () => {
+      new maplibregl.Popup({ maxWidth: '300px', className: 'van-popup', offset: 14 })
+        .setLngLat([lng, lat])
+        .setHTML(
+          `<div class="van-popup__title">${escapeHtml(incident.location)}</div>` +
+          `<div class="van-popup__body">${escapeHtml(incident.verdict)}</div>` +
+          `<div class="van-popup__body" style="margin-top:4px;opacity:0.7;font-size:0.78em">` +
+          `Severity: ${escapeHtml(incident.severity)}</div>`,
+        )
+        .addTo(map)
+    })
+  }, [incident])
+
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map || !styleReadyRef.current) return
 
     if (focusMarkerRef.current) {
       focusMarkerRef.current.remove()
@@ -258,7 +451,7 @@ export default function VancouverMap({ layers, onToggleLayer, focusLocation }: P
         maxWidth: '260px',
       }).setHTML(
         `<div class="van-popup__title">${escapeHtml(label)}</div>` +
-        `<div class="van-popup__body">${lat.toFixed(4)}, ${lng.toFixed(4)}</div>`,
+          `<div class="van-popup__body">${lat.toFixed(4)}, ${lng.toFixed(4)}</div>`,
       )
       marker.setPopup(popup).togglePopup()
     }
@@ -283,12 +476,25 @@ export default function VancouverMap({ layers, onToggleLayer, focusLocation }: P
     }
   }
 
+  const fmtCoord = (v: number, pos: string, neg: string) => {
+    const abs = Math.abs(v)
+    const d = pos === 'N' || pos === 'S' ? 4 : 4
+    return `${abs.toFixed(d)}° ${v >= 0 ? pos : neg}`
+  }
+
   return (
     <div className="van-map-shell">
       <div ref={containerRef} className="van-map" role="application" aria-label="Vancouver map" />
       <div className="van-map-toolbars">
         <MapBasemapToolbar active={basemap} onSelect={handleBasemap} />
         <MapInsightToolbar layers={layers} onToggleLayer={onToggleLayer} />
+      </div>
+      <div className="van-map-footer" aria-label="Cursor coordinates">
+        <span className="van-map-footer__coord">{fmtCoord(cursorInfo.lat, 'N', 'S')}</span>
+        <span className="van-map-footer__sep" aria-hidden>,</span>
+        <span className="van-map-footer__coord">{fmtCoord(cursorInfo.lng, 'E', 'W')}</span>
+        <span className="van-map-footer__sep" aria-hidden>·</span>
+        <span className="van-map-footer__zoom">z{cursorInfo.zoom.toFixed(1)}</span>
       </div>
     </div>
   )
