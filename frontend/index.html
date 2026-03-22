@@ -590,14 +590,23 @@
         pointer-events: none;
       }
 
+      .sustain-block__inner {
+        max-width: 42rem;
+        margin-inline: auto;
+        text-align: center;
+        position: relative;
+        z-index: 1;
+      }
+
       .sustain__header {
         display: flex;
-        align-items: flex-start;
-        justify-content: space-between;
-        gap: 1rem;
-        flex-wrap: wrap;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 0.75rem;
         margin-bottom: 1.5rem;
         position: relative;
+        text-align: center;
       }
 
       .sustain__label {
@@ -643,8 +652,8 @@
         font-size: 0.9375rem;
         color: rgba(255, 255, 255, 0.75);
         line-height: 1.7;
-        max-width: 38rem;
-        margin: 0;
+        max-width: 36rem;
+        margin: 0 auto;
         position: relative;
       }
 
@@ -654,56 +663,27 @@
       }
 
       .sustain__grid {
-        display: grid;
-        grid-template-columns: 1.2fr 1fr;
-        gap: clamp(1.5rem, 4vw, 2.5rem);
+        display: flex;
+        flex-direction: column;
         align-items: center;
+        gap: clamp(1.5rem, 4vw, 2.25rem);
         position: relative;
-      }
-
-      @media (max-width: 768px) {
-        .sustain__grid {
-          grid-template-columns: 1fr;
-        }
       }
 
       .sustain__col--copy {
         display: flex;
         flex-direction: column;
+        align-items: center;
         gap: 1.5rem;
+        width: 100%;
         min-width: 0;
-      }
-
-      .sustain__stats {
-        display: flex;
-        gap: 2rem;
-        flex-wrap: wrap;
-      }
-
-      .sustain__stat {
-        display: flex;
-        flex-direction: column;
-        gap: 0.15rem;
-      }
-
-      .sustain__stat-value {
-        font-size: 1.5rem;
-        font-weight: 800;
-        color: #fff;
-        letter-spacing: -0.02em;
-      }
-
-      .sustain__stat-label {
-        font-size: 0.6875rem;
-        font-weight: 500;
-        color: rgba(255, 255, 255, 0.45);
-        text-transform: uppercase;
-        letter-spacing: 0.06em;
       }
 
       .sustain__col--widget {
         display: flex;
         flex-direction: column;
+        align-items: center;
+        width: 100%;
         min-width: 0;
       }
 
@@ -711,46 +691,24 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        background: rgba(0, 0, 0, 0.25);
-        border: 1px solid rgba(255, 255, 255, 0.08);
-        border-radius: var(--radius-md);
-        padding: clamp(0.75rem, 2vw, 1.25rem);
-        overflow: hidden;
-        min-height: 200px;
-        box-sizing: border-box;
+        margin-inline: auto;
       }
 
       .widget-host__embed,
       .widget-host [data-widget-type] {
-        width: 100%;
-        min-height: 180px;
         display: flex;
         align-items: center;
         justify-content: center;
       }
 
       .widget-host iframe {
-        width: 100% !important;
-        min-height: 180px !important;
-        max-height: 320px;
-        max-width: 100%;
         border: 0;
-        border-radius: var(--radius-sm);
+        display: block;
       }
 
       .widget-host [class*='tn-'],
       .widget-host [id*='tree-nation'] {
         max-width: 100%;
-      }
-
-      .sustain__footnote {
-        margin-top: 1.25rem;
-        font-size: 0.75rem;
-        color: rgba(255, 255, 255, 0.35);
-        position: relative;
-        max-width: 38rem;
-        border-top: 1px solid rgba(255, 255, 255, 0.06);
-        padding-top: 1rem;
       }
 
       /* Footer */
@@ -899,19 +857,8 @@
         .sustain-block {
           padding: clamp(1.25rem, 4vw, 2rem);
         }
-        .sustain__stats {
-          gap: 1.25rem;
-        }
-        .widget-host {
-          min-height: 160px;
-          padding: 0.75rem;
-        }
-        .widget-host__embed,
-        .widget-host [data-widget-type] {
-          min-height: 140px;
-        }
-        .widget-host iframe {
-          min-height: 140px !important;
+        .sustain-block__inner {
+          max-width: none;
         }
       }
 
@@ -1300,54 +1247,42 @@
       <!-- Sustainability -->
       <section class="sustain-section" id="sustainability">
         <div class="sustain-block">
-          <div class="sustain__header">
-            <div>
-              <p class="sustain__label">Sustainability</p>
-              <p class="sustain__title">Built efficiently, not just intelligently</p>
+          <div class="sustain-block__inner">
+            <div class="sustain__header">
+              <div>
+                <p class="sustain__label">Sustainability</p>
+                <p class="sustain__title">Built efficiently, not just intelligently</p>
+              </div>
+              <span class="sustain__badge">Carbon offset</span>
             </div>
-            <span class="sustain__badge">Carbon offset</span>
-          </div>
 
-          <div class="sustain__grid">
-            <div class="sustain__col sustain__col--copy">
-              <p class="sustain__body">
-                Situate Vancouver is designed to be <strong>lightweight, accessible, and
-                performance-focused</strong>. The goal is not only to make city information more
-                useful, but to do so in a way that supports faster load times, lower digital
-                overhead, and a cleaner web experience. <strong>Each page view is carbon-offset</strong>
-                through Tree-Nation.
-              </p>
-              <div class="sustain__stats" aria-label="Carbon summary">
-                <div class="sustain__stat">
-                  <span class="sustain__stat-value">0.00g</span>
-                  <span class="sustain__stat-label">CO<sub>2</sub> / view</span>
-                </div>
-                <div class="sustain__stat">
-                  <span class="sustain__stat-value">100%</span>
-                  <span class="sustain__stat-label">Offset</span>
-                </div>
+            <div class="sustain__grid">
+              <div class="sustain__col sustain__col--copy">
+                <p class="sustain__body">
+                  Situate Vancouver is designed to be <strong>lightweight, accessible, and
+                  performance-focused</strong>. The goal is not only to make city information more
+                  useful, but to do so in a way that supports faster load times, lower digital
+                  overhead, and a cleaner web experience. <strong>Each page view is carbon-offset</strong>
+                  through Tree-Nation.
+                </p>
               </div>
-            </div>
-            <div class="sustain__col sustain__col--widget">
-              <div
-                class="widget-host notranslate"
-                translate="no"
-                aria-label="Tree-Nation website carbon offset certification"
-              >
+              <div class="sustain__col sustain__col--widget">
                 <div
-                  class="widget-host__embed"
-                  data-widget-type="offset-website"
-                  data-tree-nation-code="876caf22312dcddf"
-                  data-lang="en"
-                  data-theme="dark"
-                ></div>
+                  class="widget-host notranslate"
+                  translate="no"
+                  aria-label="Tree-Nation website carbon offset certification"
+                >
+                  <div
+                    class="widget-host__embed"
+                    data-widget-type="offset-website"
+                    data-tree-nation-code="876caf22312dcddf"
+                    data-lang="en"
+                    data-theme="dark"
+                  ></div>
+                </div>
               </div>
             </div>
           </div>
-          <p class="sustain__footnote">
-            Carbon offsetting is provided by Tree-Nation. Live figures appear once the widget has
-            finished loading.
-          </p>
         </div>
       </section>
 
