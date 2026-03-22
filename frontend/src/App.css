@@ -236,50 +236,7 @@
 }
 
 #ls-notice {
-  background: transparent !important;
-}
-
-#ls-notice .ls-ni {
-  background: rgba(0, 15, 36, 0.95) !important;
-  border-top-color: rgba(241, 245, 249, 0.1) !important;
-  backdrop-filter: blur(12px);
-}
-
-#ls-notice #ls-ntxt {
-  color: #8fa3b8 !important;
-}
-
-#ls-notice #ls-ntxt strong {
-  color: #e8eef5 !important;
-}
-
-#ls-notice #ls-norig {
-  background: rgba(0, 170, 239, 0.18) !important;
-  border-color: rgba(0, 170, 239, 0.28) !important;
-  color: #00aaef !important;
-}
-
-#ls-notice #ls-norig:hover {
-  background: rgba(0, 170, 239, 0.25) !important;
-}
-
-#ls-notice #ls-undo {
-  background: rgba(0, 27, 61, 0.65) !important;
-  border-color: rgba(241, 245, 249, 0.12) !important;
-  color: #8fa3b8 !important;
-}
-
-#ls-notice #ls-undo:hover {
-  border-color: #00aaef !important;
-  color: #00aaef !important;
-}
-
-#ls-notice #ls-nclose {
-  color: #5c728a !important;
-}
-
-#ls-notice #ls-nclose:hover {
-  background: rgba(0, 27, 61, 0.5) !important;
+  display: none !important;
 }
 
 .insight-shell__pill {

@@ -1018,6 +1018,7 @@
 
   function applyCanadianMode() {
     if (canadianActive) return;
+    if (!document.querySelector('.landing')) return;
     canadianActive = true;
     canadianOriginals = [];
 
