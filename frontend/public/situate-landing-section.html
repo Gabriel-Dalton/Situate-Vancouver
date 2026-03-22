@@ -12,13 +12,14 @@
     />
     <style>
       :root {
+        --color-primary: #002040;
         --color-bg: #ffffff;
-        --color-surface: #f8f9fb;
+        --color-surface: #f7f8fa;
         --color-text: #111827;
         --color-text-secondary: #4b5563;
         --color-text-muted: #9ca3af;
-        --color-accent: #0066ff;
-        --color-accent-soft: rgba(0, 102, 255, 0.08);
+        --color-accent: #0CA8C8;
+        --color-accent-soft: rgba(12, 168, 200, 0.08);
         --color-border: #e5e7eb;
         --color-green: #059669;
         --color-green-soft: rgba(5, 150, 105, 0.08);
@@ -41,9 +42,9 @@
       }
 
       .landing {
-        max-width: 1080px;
+        max-width: 1120px;
         margin: 0 auto;
-        padding: 0 clamp(1rem, 4vw, 2rem);
+        padding: 0 clamp(1.25rem, 5vw, 2.5rem);
       }
 
       /* ── Header ── */
@@ -55,22 +56,17 @@
         border-bottom: 1px solid var(--color-border);
       }
 
-      .header__brand {
-        min-width: 0;
-      }
-
-      /* Horizontal lockup: icon + wordmark (compact, responsive) */
       .brand-lockup {
         display: inline-flex;
         align-items: center;
-        gap: clamp(0.4rem, 1.5vw, 0.7rem);
-        box-sizing: border-box;
+        gap: 16px;
         min-width: 0;
+        text-decoration: none;
       }
 
       .brand-lockup__icon-wrap {
-        width: clamp(2rem, 4.2vw, 2.625rem);
-        height: clamp(2rem, 4.2vw, 2.625rem);
+        width: 42px;
+        height: 42px;
         flex-shrink: 0;
         display: flex;
         align-items: center;
@@ -88,10 +84,10 @@
         margin: 0;
         font-family: var(--font);
         font-weight: 800;
-        font-size: clamp(0.62rem, 1.75vw, 0.8125rem);
+        font-size: clamp(0.625rem, 1.75vw, 0.8125rem);
         letter-spacing: 0.15em;
-        line-height: 1.05;
-        color: #002040;
+        line-height: 1;
+        color: var(--color-primary);
         text-transform: uppercase;
         white-space: nowrap;
       }
@@ -116,8 +112,8 @@
         font-family: inherit;
         font-size: 0.8125rem;
         font-weight: 600;
-        padding: 0.5rem 1rem;
-        background: var(--color-text);
+        padding: 0.5rem 1.125rem;
+        background: var(--color-primary);
         color: #fff;
         border: none;
         border-radius: var(--radius-sm);
@@ -125,7 +121,7 @@
         transition: background 0.15s;
       }
 
-      .header__cta:hover { background: #1f2937; }
+      .header__cta:hover { background: #001730; }
 
       @media (max-width: 640px) {
         .header__nav { gap: 1rem; }
@@ -134,7 +130,7 @@
 
       /* ── Hero ── */
       .hero {
-        padding: clamp(3rem, 8vw, 5rem) 0 clamp(2rem, 5vw, 3rem);
+        padding: clamp(2.5rem, 6vw, 3.5rem) 0 clamp(2rem, 5vw, 3rem);
         max-width: 640px;
       }
 
@@ -162,16 +158,18 @@
       .hero__title {
         font-size: clamp(2rem, 5vw, 3.25rem);
         font-weight: 800;
-        line-height: 1.1;
+        line-height: 1.08;
         letter-spacing: -0.035em;
+        color: var(--color-primary);
         margin-bottom: 1rem;
       }
 
       .hero__desc {
         font-size: clamp(1rem, 2vw, 1.125rem);
         color: var(--color-text-secondary);
-        line-height: 1.6;
-        margin-bottom: 1.75rem;
+        line-height: 1.65;
+        margin-bottom: 2rem;
+        max-width: 540px;
       }
 
       .hero__actions {
@@ -184,7 +182,7 @@
         font-family: inherit;
         font-size: 0.875rem;
         font-weight: 600;
-        padding: 0.65rem 1.25rem;
+        padding: 0.7rem 1.35rem;
         border-radius: var(--radius-sm);
         border: 1px solid transparent;
         cursor: pointer;
@@ -196,12 +194,12 @@
       }
 
       .btn--primary {
-        background: var(--color-text);
+        background: var(--color-primary);
         color: #fff;
-        border-color: var(--color-text);
+        border-color: var(--color-primary);
       }
 
-      .btn--primary:hover { background: #1f2937; border-color: #1f2937; }
+      .btn--primary:hover { background: #001730; border-color: #001730; }
 
       .btn--secondary {
         background: var(--color-bg);
@@ -211,10 +209,7 @@
 
       .btn--secondary:hover { background: var(--color-surface); border-color: #d1d5db; }
 
-      .btn__arrow {
-        transition: transform 0.15s;
-      }
-
+      .btn__arrow { transition: transform 0.15s; }
       .btn:hover .btn__arrow { transform: translateX(2px); }
 
       /* ── Features grid ── */
@@ -239,133 +234,158 @@
       }
 
       .feature__icon {
-        width: 2.25rem;
-        height: 2.25rem;
+        width: 2.5rem;
+        height: 2.5rem;
         border-radius: var(--radius-sm);
-        background: var(--color-surface);
+        background: var(--color-accent-soft);
         display: grid;
         place-items: center;
         margin-bottom: 0.75rem;
-        color: var(--color-text);
+        color: var(--color-accent);
       }
 
       .feature__icon svg { width: 1.125rem; height: 1.125rem; }
 
       .feature__name {
-        font-size: 0.875rem;
-        font-weight: 600;
-        margin-bottom: 0.25rem;
+        font-size: 0.9375rem;
+        font-weight: 700;
+        margin-bottom: 0.3rem;
+        color: var(--color-primary);
       }
 
       .feature__text {
         font-size: 0.8125rem;
         color: var(--color-text-muted);
-        line-height: 1.5;
+        line-height: 1.55;
       }
 
-      /* ── Two-column row ── */
-      .split {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: clamp(1rem, 3vw, 1.5rem);
+
+      /* ── Sustainability block ── */
+      .sustain-block {
         margin-bottom: clamp(2rem, 5vw, 3rem);
-      }
-
-      @media (max-width: 640px) {
-        .split { grid-template-columns: 1fr; }
-      }
-
-      .card {
-        background: var(--color-surface);
-        border: 1px solid var(--color-border);
+        background: var(--color-primary);
         border-radius: var(--radius-lg);
-        padding: clamp(1.25rem, 3vw, 1.75rem);
+        padding: clamp(2rem, 4vw, 2.75rem);
+        color: #fff;
+        position: relative;
+        overflow: hidden;
       }
 
-      .card__label {
+      .sustain-block::before {
+        content: '';
+        position: absolute;
+        top: -40%;
+        right: -10%;
+        width: 320px;
+        height: 320px;
+        border-radius: 50%;
+        background: rgba(12, 168, 200, 0.06);
+        pointer-events: none;
+      }
+
+      .sustain__header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 1rem;
+        flex-wrap: wrap;
+        margin-bottom: 1rem;
+        position: relative;
+      }
+
+      .sustain__label {
         font-size: 0.6875rem;
         font-weight: 600;
         text-transform: uppercase;
-        letter-spacing: 0.08em;
-        color: var(--color-text-muted);
+        letter-spacing: 0.1em;
+        color: rgba(255, 255, 255, 0.5);
         margin-bottom: 0.5rem;
       }
 
-      .card__body {
-        font-size: 0.9375rem;
-        color: var(--color-text-secondary);
-        line-height: 1.65;
-      }
-
-      .card__actions {
-        margin-top: 1rem;
-        display: flex;
-        gap: 0.5rem;
-        align-items: center;
-        flex-wrap: wrap;
-      }
-
-      .btn--small {
-        font-size: 0.8125rem;
-        padding: 0.45rem 0.85rem;
-      }
-
-      .toast {
-        font-size: 0.8125rem;
-        color: var(--color-green);
-        font-weight: 500;
-        opacity: 0;
-        transition: opacity 0.2s;
-      }
-
-      .toast.is-on { opacity: 1; }
-
-      /* ── Sustain card ── */
-      .sustain__head {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 0.75rem;
-        flex-wrap: wrap;
-        margin-bottom: 0.75rem;
-      }
-
       .sustain__title {
-        font-size: 0.9375rem;
-        font-weight: 700;
-        letter-spacing: -0.01em;
+        font-size: clamp(1.25rem, 3vw, 1.5rem);
+        font-weight: 800;
+        letter-spacing: -0.02em;
+        line-height: 1.2;
       }
 
       .sustain__badge {
         display: inline-flex;
         align-items: center;
-        gap: 0.3rem;
+        gap: 0.35rem;
         font-size: 0.6875rem;
         font-weight: 600;
         text-transform: uppercase;
         letter-spacing: 0.06em;
-        color: var(--color-green);
-        background: var(--color-green-soft);
-        padding: 0.3rem 0.6rem;
+        color: #3ddc97;
+        background: rgba(61, 220, 151, 0.12);
+        padding: 0.35rem 0.7rem;
         border-radius: var(--radius-pill);
+        flex-shrink: 0;
+      }
+
+      .sustain__badge::before {
+        content: '';
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: #3ddc97;
+      }
+
+      .sustain__grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: clamp(1.5rem, 3vw, 2rem);
+        align-items: start;
+        position: relative;
+      }
+
+      @media (max-width: 640px) {
+        .sustain__grid { grid-template-columns: 1fr; }
       }
 
       .sustain__copy {
-        font-size: 0.875rem;
-        color: var(--color-text-secondary);
-        line-height: 1.6;
+        font-size: 0.9375rem;
+        color: rgba(255, 255, 255, 0.75);
+        line-height: 1.7;
       }
 
       .sustain__copy strong {
-        color: var(--color-text);
+        color: #fff;
         font-weight: 600;
       }
 
+      .sustain__stat-row {
+        display: flex;
+        gap: 1.5rem;
+        margin-top: 1.25rem;
+      }
+
+      .sustain__stat {
+        display: flex;
+        flex-direction: column;
+        gap: 0.15rem;
+      }
+
+      .sustain__stat-value {
+        font-size: 1.375rem;
+        font-weight: 800;
+        color: #fff;
+        letter-spacing: -0.02em;
+      }
+
+      .sustain__stat-label {
+        font-size: 0.6875rem;
+        font-weight: 500;
+        color: rgba(255, 255, 255, 0.45);
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+      }
+
       .widget-host {
-        margin-top: 1rem;
-        padding: clamp(0.75rem, 2vw, 1rem);
-        background: var(--color-text);
+        background: rgba(0, 0, 0, 0.2);
         border-radius: var(--radius-md);
+        padding: clamp(0.75rem, 2vw, 1rem);
         overflow-x: auto;
         -webkit-overflow-scrolling: touch;
       }
@@ -373,9 +393,10 @@
       .widget-host [data-widget-type] { min-height: 120px; }
 
       .sustain__footnote {
-        margin-top: 0.75rem;
+        margin-top: 1rem;
         font-size: 0.75rem;
-        color: var(--color-text-muted);
+        color: rgba(255, 255, 255, 0.35);
+        grid-column: 1 / -1;
       }
 
       /* ── Footer ── */
@@ -418,23 +439,21 @@
     <div class="landing">
       <!-- Header -->
       <header class="header">
-        <div class="header__brand">
-          <div class="brand-lockup" role="img" aria-label="Situate Vancouver">
-            <div class="brand-lockup__icon-wrap" aria-hidden="true">
-              <img
-                src="situate-vancouver-logo-standard-icon.svg"
-                alt=""
-                width="42"
-                height="42"
-                decoding="async"
-              />
-            </div>
-            <span class="brand-lockup__wordmark" aria-hidden="true">Situate Vancouver</span>
+        <div class="brand-lockup" role="img" aria-label="Situate Vancouver">
+          <div class="brand-lockup__icon-wrap" aria-hidden="true">
+            <img
+              src="situate-vancouver-logo-standard-icon.svg"
+              alt=""
+              width="42"
+              height="42"
+              decoding="async"
+            />
           </div>
+          <span class="brand-lockup__wordmark" aria-hidden="true">Situate Vancouver</span>
         </div>
         <nav class="header__nav" aria-label="Main navigation">
           <a href="#features" class="header__link">Features</a>
-          <a href="#about" class="header__link">About</a>
+          <a href="#sustainability" class="header__link">Sustainability</a>
           <button type="button" class="header__cta">Open map</button>
         </nav>
       </header>
@@ -491,31 +510,35 @@
         </div>
       </div>
 
-      <!-- Pitch + Sustainability -->
-      <div class="split" id="about">
-        <div class="card">
-          <p class="card__label">Pitch</p>
-          <p class="card__body" id="sv-pitch-text">
-            Situate Vancouver is a lightweight, map-based platform that turns
-            real-time city data into clear, human explanations of what is
-            happening, where it is affecting people, and what will happen next.
-          </p>
-          <div class="card__actions">
-            <button type="button" class="btn btn--secondary btn--small" id="sv-copy-pitch">Copy pitch</button>
-            <span class="toast" id="sv-toast" role="status" aria-live="polite"></span>
+      <!-- Sustainability block -->
+      <section class="sustain-block" id="sustainability">
+        <div class="sustain__header">
+          <div>
+            <p class="sustain__label">Sustainability</p>
+            <p class="sustain__title">Every page view offsets CO<sub>2</sub></p>
           </div>
+          <span class="sustain__badge">Carbon aware</span>
         </div>
 
-        <div class="card">
-          <div class="sustain__head">
-            <p class="sustain__title">Sustainable by design</p>
-            <span class="sustain__badge">Carbon aware</span>
+        <div class="sustain__grid">
+          <div>
+            <p class="sustain__copy">
+              We keep the experience <strong>lightweight</strong> so maps load
+              quickly and use less energy. <strong>Every page view is
+              carbon-offset</strong> through Tree Nation, helping make our site
+              more sustainable with each visit.
+            </p>
+            <div class="sustain__stat-row">
+              <div class="sustain__stat">
+                <span class="sustain__stat-value">0.00g</span>
+                <span class="sustain__stat-label">CO<sub>2</sub> / view</span>
+              </div>
+              <div class="sustain__stat">
+                <span class="sustain__stat-value">100%</span>
+                <span class="sustain__stat-label">Offset</span>
+              </div>
+            </div>
           </div>
-          <p class="sustain__copy">
-            We keep the experience <strong>lightweight</strong> so maps load
-            quickly and use less energy. <strong>Every page view is
-            carbon-offset</strong> through Tree Nation.
-          </p>
           <div
             class="widget-host"
             aria-label="Tree Nation website carbon offset widget"
@@ -531,7 +554,7 @@
             Offsetting provided by Tree Nation. Figures update as the widget loads.
           </p>
         </div>
-      </div>
+      </section>
 
       <!-- Footer -->
       <footer class="footer">
@@ -544,54 +567,5 @@
     </div>
 
     <script src="https://widgets.tree-nation.com/js/widgets/v3/widgets.min.js"></script>
-    <script>
-      (function () {
-        var pitchEl = document.getElementById('sv-pitch-text');
-        var copyBtn = document.getElementById('sv-copy-pitch');
-        var toast = document.getElementById('sv-toast');
-
-        function showToast(msg) {
-          if (!toast) return;
-          toast.textContent = msg;
-          toast.classList.add('is-on');
-          clearTimeout(showToast._t);
-          showToast._t = setTimeout(function () {
-            toast.classList.remove('is-on');
-            toast.textContent = '';
-          }, 2200);
-        }
-
-        if (copyBtn && pitchEl) {
-          copyBtn.addEventListener('click', function () {
-            var text = pitchEl.textContent.replace(/\s+/g, ' ').trim();
-            if (navigator.clipboard && navigator.clipboard.writeText) {
-              navigator.clipboard.writeText(text).then(
-                function () { showToast('Copied'); },
-                function () { fallbackCopy(text); }
-              );
-            } else {
-              fallbackCopy(text);
-            }
-          });
-        }
-
-        function fallbackCopy(text) {
-          var ta = document.createElement('textarea');
-          ta.value = text;
-          ta.setAttribute('readonly', '');
-          ta.style.position = 'fixed';
-          ta.style.left = '-9999px';
-          document.body.appendChild(ta);
-          ta.select();
-          try {
-            document.execCommand('copy');
-            showToast('Copied');
-          } catch (e) {
-            showToast('Select and copy manually');
-          }
-          document.body.removeChild(ta);
-        }
-      })();
-    </script>
   </body>
 </html>
