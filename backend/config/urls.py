@@ -21,4 +21,5 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/', include('apps.core.urls')),
     path('api/vancouver-opendata/', include('apps.vancouver_opendata.urls')),
+    path('api/open511-bc/', include('apps.open511_bc.urls')),
 ]

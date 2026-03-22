@@ -1,13 +1,17 @@
+import datetime
 from unittest.mock import MagicMock, patch
 
 import httpx
 from django.test import TestCase, override_settings
+from django.utils import timezone
 from rest_framework import status
 from rest_framework.test import APIClient
 
+from apps.open511_bc.models import Open511EventsSnapshot
 from apps.vancouver_opendata.exceptions import VancouverOpenDataApiError
 
 
+@override_settings(HEALTH_CHECK_OPEN511_BC=False)
 class AggregateHealthAPITests(TestCase):
     def setUp(self) -> None:
         self.client = APIClient()
@@ -213,6 +217,76 @@ class AggregateHealthAPITests(TestCase):
         self.assertEqual(van['health_source_url'], 'https://example.com/api/health/')
         mock_build_ckan.assert_not_called()
         mock_probe.assert_not_called()
+
+    @override_settings(HEALTH_CHECK_AI=False, HEALTH_CHECK_OPEN511_BC=True, OPEN511_EVENTS_CACHE_STALE_AFTER_SECONDS=300)
+    @patch('apps.core.health_checks.build_ckan_client')
+    @patch('apps.core.health_checks.run_ckan_smoke_probe')
+    def test_health_includes_open511_bc_fresh_snapshot(
+        self,
+        mock_probe: MagicMock,
+        mock_build_ckan: MagicMock,
+    ) -> None:
+        mock_build_ckan.return_value = MagicMock()
+        mock_probe.return_value = ('catalog_datasets', {'total_count': 1})
+        Open511EventsSnapshot.objects.update_or_create(
+            pk=1,
+            defaults={
+                'payload': {'events': [{'id': 'drivebc.ca/1'}]},
+                'fetch_params': {},
+                'fetched_at': timezone.now(),
+            },
+        )
+
+        r = self.client.get('/api/health/')
+        self.assertEqual(r.status_code, status.HTTP_200_OK)
+        body = r.json()
+        self.assertEqual(body['status'], 'healthy')
+        o5 = body['checks']['open511_bc']
+        self.assertEqual(o5['status'], 'ok')
+        self.assertEqual(o5['event_count'], 1)
+
+    @override_settings(HEALTH_CHECK_AI=False, HEALTH_CHECK_OPEN511_BC=True, OPEN511_EVENTS_CACHE_STALE_AFTER_SECONDS=300)
+    @patch('apps.core.health_checks.build_ckan_client')
+    @patch('apps.core.health_checks.run_ckan_smoke_probe')
+    def test_health_degraded_when_open511_no_snapshot(
+        self,
+        mock_probe: MagicMock,
+        mock_build_ckan: MagicMock,
+    ) -> None:
+        mock_build_ckan.return_value = MagicMock()
+        mock_probe.return_value = ('catalog_datasets', {'total_count': 1})
+        Open511EventsSnapshot.objects.all().delete()
+
+        r = self.client.get('/api/health/')
+        self.assertEqual(r.status_code, status.HTTP_200_OK)
+        body = r.json()
+        self.assertEqual(body['status'], 'degraded')
+        self.assertEqual(body['checks']['open511_bc']['status'], 'not_configured')
+
+    @override_settings(HEALTH_CHECK_AI=False, HEALTH_CHECK_OPEN511_BC=True, OPEN511_EVENTS_CACHE_STALE_AFTER_SECONDS=1)
+    @patch('apps.core.health_checks.build_ckan_client')
+    @patch('apps.core.health_checks.run_ckan_smoke_probe')
+    def test_health_degraded_when_open511_snapshot_stale(
+        self,
+        mock_probe: MagicMock,
+        mock_build_ckan: MagicMock,
+    ) -> None:
+        mock_build_ckan.return_value = MagicMock()
+        mock_probe.return_value = ('catalog_datasets', {'total_count': 1})
+        Open511EventsSnapshot.objects.update_or_create(
+            pk=1,
+            defaults={
+                'payload': {'events': []},
+                'fetch_params': {},
+                'fetched_at': timezone.now() - datetime.timedelta(seconds=120),
+            },
+        )
+
+        r = self.client.get('/api/health/')
+        self.assertEqual(r.status_code, status.HTTP_200_OK)
+        body = r.json()
+        self.assertEqual(body['status'], 'degraded')
+        self.assertEqual(body['checks']['open511_bc']['status'], 'degraded')
 
 
 class AIQueryProxyAPITests(TestCase):

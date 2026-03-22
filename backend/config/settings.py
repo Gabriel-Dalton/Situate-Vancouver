@@ -83,6 +83,7 @@ INSTALLED_APPS = [
     'corsheaders',
     'apps.core.apps.CoreConfig',
     'apps.vancouver_opendata.apps.VancouverOpenDataConfig',
+    'apps.open511_bc.apps.Open511BCConfig',
 ]
 
 MIDDLEWARE = [
@@ -213,3 +214,23 @@ HEALTH_VANCOUVER_OPENDATA_STATUS_URL = os.environ.get(
     'HEALTH_VANCOUVER_OPENDATA_STATUS_URL',
     '',
 ).strip()
+
+# --- Open511 BC (DriveBC) — public API, no key ---
+_open511_base = os.environ.get(
+    'OPEN511_BC_BASE_URL',
+    'https://api.open511.gov.bc.ca',
+).rstrip('/')
+OPEN511_BC_BASE_URL = _open511_base
+OPEN511_BC_TIMEOUT_SECONDS = float(os.environ.get('OPEN511_BC_TIMEOUT_SECONDS', '15'))
+OPEN511_BC_ENFORCE_HOST_ALLOWLIST = os.environ.get(
+    'OPEN511_BC_ENFORCE_HOST_ALLOWLIST',
+    'true',
+).lower() in ('1', 'true', 'yes')
+HEALTH_CHECK_OPEN511_BC = os.environ.get(
+    'HEALTH_CHECK_OPEN511_BC',
+    'true',
+).lower() in ('1', 'true', 'yes')
+# Seconds before a stored snapshot is considered stale (used by the cached-events endpoint).
+OPEN511_EVENTS_CACHE_STALE_AFTER_SECONDS = int(
+    os.environ.get('OPEN511_EVENTS_CACHE_STALE_AFTER_SECONDS', '300'),
+)

@@ -70,8 +70,11 @@ export function AiQueryBar({ onResponse }: AiQueryBarProps) {
 
     setLoading(true)
     try {
-      const url = `/api/query/${encodeURIComponent(trimmed)}`
-      const res = await fetch(url)
+      const res = await fetch('/api/query/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify({ query: trimmed }),
+      })
 
       let data: Record<string, unknown> | null = null
       const ct = res.headers.get('content-type') ?? ''
