@@ -1,0 +1,27 @@
+---
+description: English-only code comments; project documentation lives in docs/
+alwaysApply: true
+---
+
+# Comments and documentation
+
+## Code comments (English only)
+
+- Write **all** inline and block comments in source files in **English** (including `//`, `/* */`, `#`, docstrings, JSDoc/TSDoc, etc.).
+- Do not use other languages for comments, including Persian/Farsi.
+- **User-facing strings** (UI copy, API messages shown to end users) may stay in the product’s target language if the project requires it—this rule targets **developer comments** only.
+
+```typescript
+// ❌ BAD
+// محاسبه مجموع
+
+// ✅ GOOD
+// Compute the running total
+```
+
+## Documentation location
+
+- Store **project documentation** under **`docs/`** at the **repository root** (same level as `README.md` if present).
+- Examples: architecture notes, how-to guides, ADRs, API docs written as Markdown, design specs meant for the team.
+- Prefer **`docs/<topic>.md`** (or a small subdirectory tree under `docs/` for larger sets) instead of leaving loose `NOTES.md` or `GUIDE.md` files in random folders.
+- The root **`README.md`** may remain at the root as the primary entry point; link from it into `docs/` when detail lives there.
