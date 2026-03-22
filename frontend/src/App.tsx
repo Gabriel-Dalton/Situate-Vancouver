@@ -4,6 +4,7 @@
  */
 import { lazy, Suspense, useCallback, useEffect, useState } from 'react'
 import type { InsightLayerState } from './components/VancouverMap'
+import StatusPanel from './components/StatusPanel'
 import './App.css'
 
 const VancouverMap = lazy(() => import('./components/VancouverMap'))
@@ -91,6 +92,12 @@ export default function App() {
         </main>
 
         <aside className="insight-shell__rail insight-shell__rail--right" aria-label="Signals">
+          <section className="insight-panel">
+            <h2 className="insight-panel__heading">Service status</h2>
+            <p className="insight-panel__hint">Live health from /api/health/ — polled every 30 s.</p>
+            <StatusPanel />
+          </section>
+
           <section className="insight-panel">
             <h2 className="insight-panel__heading">City signals</h2>
             <p className="insight-panel__hint">Placeholder tiles until API feeds land.</p>
