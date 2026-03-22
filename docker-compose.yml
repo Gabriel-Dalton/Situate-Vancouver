@@ -1,0 +1,27 @@
+services:
+  backend:
+    build: ./backend
+    ports:
+      - '8000:8000'
+    environment:
+      DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1,backend
+      DJANGO_CORS_ALLOWED_ORIGINS: http://localhost:5173,http://127.0.0.1:5173,http://frontend:5173
+      AI_SERVICE_URL: http://ai-service:8001
+
+  ai-service:
+    build: ./ai-service
+    ports:
+      - '8001:8001'
+    environment:
+      CORS_ALLOWED_ORIGINS: http://localhost:5173,http://127.0.0.1:5173,http://frontend:5173,http://localhost:8000,http://backend:8000
+
+  frontend:
+    build: ./frontend
+    ports:
+      - '5173:5173'
+    environment:
+      API_PROXY_TARGET: http://backend:8000
+      AI_PROXY_TARGET: http://ai-service:8001
+    depends_on:
+      - backend
+      - ai-service
