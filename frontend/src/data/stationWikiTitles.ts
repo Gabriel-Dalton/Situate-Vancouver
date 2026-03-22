@@ -1,7 +1,15 @@
 /**
- * SkyTrain station name → Wikipedia article title.
+ * Strategic node and SkyTrain station names → Wikipedia article titles.
  * Used to fetch thumbnail images from the Wikipedia REST API.
  */
+export const NODE_WIKI_TITLE: Record<string, string> = {
+  'Central Business District': 'Downtown_Vancouver',
+  'Granville Island / False Creek': 'Granville_Island',
+  Kitsilano: 'Kitsilano',
+  'Mount Pleasant': 'Mount_Pleasant,_Vancouver',
+  'Commercial–East Hastings': 'Commercial_Drive_(Vancouver)',
+}
+
 export const STATION_WIKI_TITLE: Record<string, string> = {
   '22nd Street': '22nd_Street_station_(SkyTrain)',
   '29th Avenue': '29th_Avenue_station',
@@ -62,15 +70,16 @@ export const STATION_WIKI_TITLE: Record<string, string> = {
 const thumbCache = new Map<string, string | null>()
 
 /**
- * Fetches a thumbnail URL for a station from the Wikipedia REST API.
+ * Fetches a thumbnail URL for a named node (SkyTrain station or strategic node)
+ * from the Wikipedia REST API.
  * Returns null if no image is available. Results are cached in memory.
  */
-export async function fetchStationThumb(stationName: string): Promise<string | null> {
-  if (thumbCache.has(stationName)) return thumbCache.get(stationName)!
+export async function fetchStationThumb(name: string): Promise<string | null> {
+  if (thumbCache.has(name)) return thumbCache.get(name)!
 
-  const title = STATION_WIKI_TITLE[stationName]
+  const title = STATION_WIKI_TITLE[name] ?? NODE_WIKI_TITLE[name]
   if (!title) {
-    thumbCache.set(stationName, null)
+    thumbCache.set(name, null)
     return null
   }
 
@@ -79,15 +88,15 @@ export async function fetchStationThumb(stationName: string): Promise<string | n
       `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(title)}`,
     )
     if (!resp.ok) {
-      thumbCache.set(stationName, null)
+      thumbCache.set(name, null)
       return null
     }
     const data = await resp.json()
     const url: string | null = data.thumbnail?.source ?? data.originalimage?.source ?? null
-    thumbCache.set(stationName, url)
+    thumbCache.set(name, url)
     return url
   } catch {
-    thumbCache.set(stationName, null)
+    thumbCache.set(name, null)
     return null
   }
 }

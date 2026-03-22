@@ -386,7 +386,9 @@ export default function VancouverMap({
         : String(f.properties?.lens ?? '')
       const lineKey = String(f.properties?.lineKey ?? '')
       const isSkytrainNode = f.layer?.id === 'skytrain-nodes-core'
+      const isStrategicNode = f.layer?.id === 'strategic-nodes-core'
       const lineColor = (lineKey && SKYTRAIN_LINE_COLORS[lineKey as keyof typeof SKYTRAIN_LINE_COLORS]) || ''
+      const accentColor = isSkytrainNode ? lineColor : isStrategicNode ? '#00aaef' : ''
 
       while (Math.abs(e.lngLat.lng - coords[0]) > 180) {
         coords[0] += e.lngLat.lng > coords[0] ? 360 : -360
@@ -401,10 +403,10 @@ export default function VancouverMap({
       })
 
       map.once('moveend', () => {
-        const accentBar = lineColor
-          ? `<div class="van-popup__accent" style="background:${lineColor}"></div>`
+        const accentBar = accentColor
+          ? `<div class="van-popup__accent" style="background:${accentColor}"></div>`
           : ''
-        const shimmer = isSkytrainNode
+        const shimmer = isSkytrainNode || isStrategicNode
           ? `<div class="van-popup__img-wrap"><div class="van-popup__shimmer" id="popup-img-slot"></div></div>`
           : ''
         const severityTag = isOpen511 && f.properties?.severity
@@ -424,7 +426,7 @@ export default function VancouverMap({
           )
           .addTo(map)
 
-        if (isSkytrainNode) {
+        if (isSkytrainNode || isStrategicNode) {
           fetchStationThumb(name).then((url) => {
             const slot = popup.getElement()?.querySelector('#popup-img-slot')
             if (!slot) return
