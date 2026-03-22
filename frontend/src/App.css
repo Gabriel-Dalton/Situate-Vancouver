@@ -7,7 +7,8 @@
 
 .insight-shell__header {
   flex-shrink: 0;
-  display: flex;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
   align-items: center;
   gap: 1rem;
   padding: 0.55rem 1.15rem;
@@ -40,9 +41,227 @@
   align-items: center;
   gap: 0.65rem;
   flex-wrap: wrap;
-  justify-content: flex-end;
-  margin-left: auto;
+  justify-self: end;
+}
+
+.insight-shell__lang {
+  display: flex;
+  align-items: center;
   flex-shrink: 0;
+}
+
+/* ─── Language switcher dark-theme overrides ─── */
+
+#ls-root,
+#ls-notice {
+  --lsa: #00aaef !important;
+  --lsah: #0999b5 !important;
+  --lsas: rgba(0, 170, 239, 0.18) !important;
+  --lsah2: rgba(12, 168, 200, 0.16) !important;
+  --lsbg: rgba(0, 27, 61, 0.65) !important;
+  --lssf: #000f24 !important;
+  --lsbd: rgba(241, 245, 249, 0.12) !important;
+  --lst: #e8eef5 !important;
+  --lst2: #8fa3b8 !important;
+  --lstm: #5c728a !important;
+  --lsf: 'IBM Plex Sans', system-ui, sans-serif !important;
+  --lsfh: 'IBM Plex Sans', system-ui, sans-serif !important;
+  --lsr: 16px !important;
+  --lsrsm: 12px !important;
+  --lssh: 0 24px 64px rgba(0, 0, 0, 0.5), 0 8px 24px rgba(0, 0, 0, 0.35) !important;
+}
+
+#ls-root #ls-trigger {
+  background: rgba(0, 20, 48, 0.85) !important;
+  border-color: rgba(0, 170, 239, 0.2) !important;
+  color: #e8eef5 !important;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(0, 170, 239, 0.08) !important;
+  backdrop-filter: blur(12px);
+}
+
+#ls-root #ls-trigger:hover {
+  background: rgba(0, 28, 62, 0.95) !important;
+  border-color: #00aaef !important;
+  box-shadow: 0 4px 20px rgba(0, 170, 239, 0.2), 0 0 0 1px rgba(0, 170, 239, 0.15) !important;
+}
+
+#ls-root #ls-trigger.ls-on {
+  background: #00aaef !important;
+  border-color: #00aaef !important;
+  color: #fff !important;
+  box-shadow: 0 2px 12px rgba(0, 170, 239, 0.4) !important;
+}
+
+#ls-root #ls-trigger.ls-on:hover {
+  background: #0999b5 !important;
+  border-color: #0999b5 !important;
+}
+
+#ls-root #ls-panel {
+  background: #000f24 !important;
+  border-color: rgba(241, 245, 249, 0.12) !important;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.5), 0 8px 24px rgba(0, 0, 0, 0.35) !important;
+}
+
+#ls-root .ls-ph {
+  border-bottom-color: rgba(241, 245, 249, 0.08) !important;
+  background: linear-gradient(180deg, rgba(0, 27, 61, 0.5) 0%, #000f24 100%) !important;
+}
+
+#ls-root .ls-ph h2 {
+  color: #e8eef5 !important;
+}
+
+#ls-root .ls-ph p {
+  color: #5c728a !important;
+}
+
+#ls-root .ls-x {
+  color: #5c728a !important;
+}
+
+#ls-root .ls-x:hover {
+  background: rgba(0, 27, 61, 0.65) !important;
+  color: #e8eef5 !important;
+}
+
+#ls-root #ls-search {
+  background: rgba(0, 27, 61, 0.5) !important;
+  border-color: rgba(241, 245, 249, 0.12) !important;
+  color: #e8eef5 !important;
+}
+
+#ls-root #ls-search::placeholder {
+  color: #5c728a !important;
+}
+
+#ls-root #ls-search:focus {
+  background: rgba(0, 20, 48, 0.8) !important;
+  border-color: #00aaef !important;
+  box-shadow: 0 0 0 3px rgba(0, 170, 239, 0.18) !important;
+}
+
+#ls-root .ls-chip {
+  background: rgba(0, 27, 61, 0.4) !important;
+  border-color: rgba(241, 245, 249, 0.1) !important;
+}
+
+#ls-root .ls-chip:hover {
+  background: rgba(0, 27, 61, 0.7) !important;
+  border-color: rgba(241, 245, 249, 0.18) !important;
+}
+
+#ls-root .ls-chip.ls-sel {
+  background: rgba(0, 170, 239, 0.14) !important;
+  border-color: #00aaef !important;
+}
+
+#ls-root .ls-cn,
+#ls-root .ls-ln {
+  color: #e8eef5 !important;
+}
+
+#ls-root .ls-cv,
+#ls-root .ls-lv {
+  color: #5c728a !important;
+}
+
+#ls-root .ls-li {
+  border-color: rgba(241, 245, 249, 0.06) !important;
+}
+
+#ls-root .ls-li:hover {
+  background: rgba(0, 27, 61, 0.6) !important;
+  border-color: rgba(241, 245, 249, 0.12) !important;
+}
+
+#ls-root .ls-li.ls-sel {
+  background: rgba(0, 170, 239, 0.12) !important;
+  border-color: #00aaef !important;
+}
+
+#ls-root .ls-pf {
+  border-top-color: rgba(241, 245, 249, 0.08) !important;
+}
+
+#ls-root .ls-disc {
+  background: rgba(0, 20, 48, 0.6) !important;
+  border-color: rgba(241, 245, 249, 0.06) !important;
+}
+
+#ls-root .ls-disc p {
+  color: #5c728a !important;
+}
+
+#ls-root #ls-reset {
+  background: transparent !important;
+  border-color: rgba(241, 245, 249, 0.12) !important;
+  color: #8fa3b8 !important;
+}
+
+#ls-root #ls-reset:hover {
+  background: rgba(0, 27, 61, 0.5) !important;
+  border-color: #00aaef !important;
+  color: #00aaef !important;
+}
+
+#ls-root #ls-scroll::-webkit-scrollbar-thumb {
+  background: rgba(241, 245, 249, 0.1);
+}
+
+#ls-root #ls-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(241, 245, 249, 0.2);
+}
+
+#ls-root #ls-nores {
+  color: #5c728a !important;
+}
+
+#ls-notice {
+  background: transparent !important;
+}
+
+#ls-notice .ls-ni {
+  background: rgba(0, 15, 36, 0.95) !important;
+  border-top-color: rgba(241, 245, 249, 0.1) !important;
+  backdrop-filter: blur(12px);
+}
+
+#ls-notice #ls-ntxt {
+  color: #8fa3b8 !important;
+}
+
+#ls-notice #ls-ntxt strong {
+  color: #e8eef5 !important;
+}
+
+#ls-notice #ls-norig {
+  background: rgba(0, 170, 239, 0.18) !important;
+  border-color: rgba(0, 170, 239, 0.28) !important;
+  color: #00aaef !important;
+}
+
+#ls-notice #ls-norig:hover {
+  background: rgba(0, 170, 239, 0.25) !important;
+}
+
+#ls-notice #ls-undo {
+  background: rgba(0, 27, 61, 0.65) !important;
+  border-color: rgba(241, 245, 249, 0.12) !important;
+  color: #8fa3b8 !important;
+}
+
+#ls-notice #ls-undo:hover {
+  border-color: #00aaef !important;
+  color: #00aaef !important;
+}
+
+#ls-notice #ls-nclose {
+  color: #5c728a !important;
+}
+
+#ls-notice #ls-nclose:hover {
+  background: rgba(0, 27, 61, 0.5) !important;
 }
 
 .insight-shell__pill {
@@ -638,16 +857,21 @@
 
 @media (max-width: 480px) {
   .insight-shell__header {
-    gap: 0.35rem 0.5rem;
+    grid-template-columns: 1fr;
+    justify-items: center;
+    gap: 0.35rem;
     padding: 0.4rem 0.5rem;
-    flex-wrap: wrap;
+  }
+
+  .insight-shell__brand {
+    justify-self: start;
+  }
+
+  .insight-shell__header-meta {
+    justify-self: end;
   }
 
   .insight-shell__clock {
     display: none;
-  }
-
-  .insight-shell__header-meta {
-    margin-left: 0;
   }
 }

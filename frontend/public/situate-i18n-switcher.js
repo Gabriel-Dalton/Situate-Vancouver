@@ -106,7 +106,7 @@
     vi: 'vn', cy: 'gb-wls', xh: 'za', yi: 'il', yo: 'ng', zu: 'za',
   };
 
-  var SUGGESTED = ['en-CA','fr','es','de','zh-CN','ja','ar','pt','hi','ru'];
+  var SUGGESTED = ['en-CA','fa','en','fr','es','de','zh-CN','ja','ar','pt','hi','ru'];
   var ORIGINAL  = 'en';
   var STORE_KEY = 'ls_selected_lang';
 
@@ -290,7 +290,7 @@
         'box-shadow:0 0 0 1px rgba(0,0,0,.08);background:var(--lsbg)}' +
       '#ls-trigger.ls-on .ls-trig-flag{box-shadow:0 0 0 1px rgba(255,255,255,.35)}' +
       '#ls-trig-flag .ls-fi--trig.fi{width:22px!important;height:16px!important;' +
-        'background-size:cover!important;background-position:50%!important}' +
+        'background-size:contain!important;background-position:center!important;background-repeat:no-repeat!important}' +
       '#ls-trig-flag .ls-fi-fallback{width:100%;height:100%}' +
       '#ls-trig-flag .ls-fi-globe{width:14px;height:14px}' +
       '#ls-trig-lbl{font-size:.75rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase}' +
@@ -403,7 +403,7 @@
       '.ls-chip.ls-sel{border-color:var(--lsa);background:var(--lsas);box-shadow:0 0 0 1px var(--lsa)}' +
       '.ls-cf{display:flex;align-items:center;justify-content:center;flex-shrink:0;width:30px;height:22px}' +
       '#ls-root .ls-cf .ls-fi.fi{width:28px!important;height:19px!important;min-width:28px;border-radius:3px;' +
-        'background-size:cover!important;background-position:50%!important}' +
+        'background-size:contain!important;background-position:center!important;background-repeat:no-repeat!important}' +
       '#ls-root .ls-cf .ls-fi-fallback{width:28px;height:19px}' +
       '#ls-root .ls-cf .ls-fi-globe{width:15px;height:15px}' +
       '.ls-ct{min-width:0;flex:1}' +
@@ -813,7 +813,13 @@
       if (inp) inp.focus();
     }, 80);
     setTimeout(function () {
-      var sel = document.querySelector('.ls-li.ls-sel,.ls-chip.ls-sel');
+      var scrollEl = document.getElementById('ls-scroll');
+      if (scrollEl) scrollEl.scrollTop = 0;
+      // Prefer the Suggested chip so default UK English (and others in SUGGESTED) stay visible
+      // without jumping to the same language far down in "All languages".
+      var chip = document.querySelector('#ls-sugg .ls-chip.ls-sel');
+      var li = document.querySelector('#ls-ll .ls-li.ls-sel');
+      var sel = chip || li;
       if (sel) sel.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
     }, 200);
   }
@@ -900,7 +906,6 @@
       '.landing.ca-mode {' +
         '--color-accent: #d80621;' +
         '--color-accent-soft: rgba(216, 6, 33, 0.08);' +
-        '--color-primary: #d80621;' +
       '}' +
       /* Red buttons */
       '.ca-mode .btn--primary {' +
@@ -930,23 +935,14 @@
         'color: #d80621 !important;' +
         'background: rgba(216, 6, 33, 0.08) !important;' +
       '}' +
-      '.ca-mode .feature__name {' +
-        'color: #d80621 !important;' +
-      '}' +
       /* Red section labels */
       '.ca-mode .section-label {' +
-        'color: #d80621 !important;' +
-      '}' +
-      '.ca-mode .section-title {' +
         'color: #d80621 !important;' +
       '}' +
       /* Red audience card icons */
       '.ca-mode .audience-card__icon {' +
         'color: #d80621 !important;' +
         'background: rgba(216, 6, 33, 0.08) !important;' +
-      '}' +
-      '.ca-mode .audience-card__name {' +
-        'color: #d80621 !important;' +
       '}' +
       /* Red lang count */
       '.ca-mode .lang-count {' +
@@ -955,14 +951,6 @@
       /* Sustainability block red override */
       '.ca-mode .sustain-block {' +
         'background: #d80621 !important;' +
-      '}' +
-      /* Query card headings */
-      '.ca-mode .query-card__q {' +
-        'color: #d80621 !important;' +
-      '}' +
-      /* Brand wordmark */
-      '.ca-mode .brand-lockup__wordmark {' +
-        'color: #d80621 !important;' +
       '}' +
       /* Canadian welcome banner */
       '.ca-welcome-banner {' +

@@ -107,17 +107,25 @@ function installInsightOverlay(map: maplibregl.Map) {
   })
 }
 
+export type FocusLocation = {
+  lng: number
+  lat: number
+  label?: string
+} | null
+
 type Props = {
   layers: InsightLayerState
-  onToggleLayer: (key: InsightLayerKey) => void
+  onToggleLayer?: (key: InsightLayerKey) => void
+  focusLocation?: FocusLocation
 }
 
-export default function VancouverMap({ layers, onToggleLayer }: Props) {
+export default function VancouverMap({ layers, onToggleLayer, focusLocation }: Props) {
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<maplibregl.Map | null>(null)
   const styleReadyRef = useRef(false)
   const layersRef = useRef(layers)
   const interactionsBoundRef = useRef(false)
+  const focusMarkerRef = useRef<maplibregl.Marker | null>(null)
   const [basemap, setBasemap] = useState<BasemapId>(INITIAL_BASEMAP)
 
   useLayoutEffect(() => {
@@ -208,6 +216,60 @@ export default function VancouverMap({ layers, onToggleLayer }: Props) {
     if (!map || !styleReadyRef.current) return
     applyInsightLayers(map, layers)
   }, [layers])
+
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map) return
+
+    if (focusMarkerRef.current) {
+      focusMarkerRef.current.remove()
+      focusMarkerRef.current = null
+    }
+
+    if (!focusLocation) return
+
+    const { lng, lat, label } = focusLocation
+
+    map.flyTo({
+      center: [lng, lat],
+      zoom: 14.5,
+      pitch: 45,
+      bearing: 0,
+      duration: 2200,
+      essential: true,
+    })
+
+    const el = document.createElement('div')
+    el.className = 'van-focus-marker'
+    el.innerHTML =
+      '<span class="van-focus-marker__ring van-focus-marker__ring--outer"></span>' +
+      '<span class="van-focus-marker__ring van-focus-marker__ring--mid"></span>' +
+      '<span class="van-focus-marker__dot"></span>'
+
+    const marker = new maplibregl.Marker({ element: el, anchor: 'center' })
+      .setLngLat([lng, lat])
+      .addTo(map)
+
+    if (label) {
+      const popup = new maplibregl.Popup({
+        offset: 28,
+        closeButton: false,
+        className: 'van-popup',
+        maxWidth: '260px',
+      }).setHTML(
+        `<div class="van-popup__title">${escapeHtml(label)}</div>` +
+        `<div class="van-popup__body">${lat.toFixed(4)}, ${lng.toFixed(4)}</div>`,
+      )
+      marker.setPopup(popup).togglePopup()
+    }
+
+    focusMarkerRef.current = marker
+
+    return () => {
+      marker.remove()
+      focusMarkerRef.current = null
+    }
+  }, [focusLocation])
 
   const handleBasemap = (id: BasemapId) => {
     setBasemap(id)

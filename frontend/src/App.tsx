@@ -2,8 +2,8 @@
  * Situate Vancouver — insight workspace (map-first). Dev/proxy and health-check context for
  * wiring APIs lives in `src/lib/stackIntegrationNotes.ts` (comments only).
  */
-import { lazy, Suspense, useCallback, useEffect, useState } from 'react'
-import type { InsightLayerState } from './components/VancouverMap'
+import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react'
+import type { InsightLayerState, FocusLocation } from './components/VancouverMap'
 import { SKYTRAIN_LEGEND, SKYTRAIN_LINE_COLORS } from './data/skytrainLineKeys'
 import BrandLockup from './components/BrandLockup'
 import StatusPanel from './components/StatusPanel'
@@ -24,6 +24,26 @@ export default function App() {
   const [aiResponse, setAiResponse] = useState<AiQueryResponse | null>(null)
   const [aiPanelOpen, setAiPanelOpen] = useState(false)
 
+  useEffect(() => {
+    function relocate() {
+      const mount = document.getElementById('situate-lang-mount')
+      const root = document.getElementById('ls-root')
+      if (mount && root && root.parentElement !== mount) {
+        root.classList.add('ls-inline')
+        mount.appendChild(root)
+        return true
+      }
+      return false
+    }
+    if (relocate()) return
+
+    const observer = new MutationObserver(() => {
+      if (relocate()) observer.disconnect()
+    })
+    observer.observe(document.body, { childList: true, subtree: true })
+    return () => observer.disconnect()
+  }, [])
+
   const toggleLayer = useCallback((key: keyof InsightLayerState) => {
     setLayers((prev) => ({ ...prev, [key]: !prev[key] }))
   }, [])
@@ -37,15 +57,24 @@ export default function App() {
     setAiPanelOpen(false)
   }, [])
 
+  const focusLocation: FocusLocation = useMemo(() => {
+    if (!aiResponse || !aiPanelOpen) return null
+    const { lat, lng } = aiResponse.coordinates
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null
+    if (aiResponse.query_type === 'error') return null
+    return { lat, lng, label: aiResponse.location }
+  }, [aiResponse, aiPanelOpen])
+
   return (
     <div className="insight-shell">
       <header className="insight-shell__header">
         <div className="insight-shell__brand">
-          <BrandLockup variant="onDark" />
+          <BrandLockup variant="onDark" href="/" />
           <p className="insight-shell__subtitle">City-scale insight canvas</p>
         </div>
         <AiQueryBar onResponse={handleAiResponse} />
         <div className="insight-shell__header-meta">
+          <div id="situate-lang-mount" className="insight-shell__lang" aria-label="Language" />
           <span className="insight-shell__pill">Metro · Lower Mainland</span>
           <span className="insight-shell__clock" aria-live="polite">
             <LiveClock />
@@ -64,7 +93,7 @@ export default function App() {
                 </div>
               }
             >
-              <VancouverMap layers={layers} />
+              <VancouverMap layers={layers} focusLocation={focusLocation} />
             </Suspense>
           </div>
           <AiResponsePanel
@@ -141,7 +170,7 @@ export default function App() {
               </div>
             }
           >
-            <VancouverMap layers={layers} onToggleLayer={toggleLayer} />
+            <VancouverMap layers={layers} onToggleLayer={toggleLayer} focusLocation={focusLocation} />
           </Suspense>
         </main>
 
