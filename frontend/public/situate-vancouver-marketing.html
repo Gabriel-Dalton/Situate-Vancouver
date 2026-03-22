@@ -3,7 +3,28 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Situate Vancouver</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <title>City intelligence | Situate Vancouver</title>
+    <meta
+      name="description"
+      content="Real-time city awareness for Vancouver — traffic, transit, weather, and public data in one map-based experience."
+    />
+    <meta property="og:title" content="City intelligence | Situate Vancouver" />
+    <meta
+      property="og:description"
+      content="Real-time city awareness for Vancouver — traffic, transit, weather, and public data in one map-based experience."
+    />
+    <meta property="og:type" content="website" />
+    <meta
+      property="og:image"
+      content="https://www.ageforty.com/situate-vancouver-logo-standard-icon.svg"
+    />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="City intelligence | Situate Vancouver" />
+    <meta
+      name="twitter:description"
+      content="Real-time city awareness for Vancouver — traffic, transit, weather, and public data in one map-based experience."
+    />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -196,6 +217,16 @@
       .hero {
         padding: clamp(2.5rem, 6vw, 4rem) 0 clamp(2rem, 5vw, 3rem);
         max-width: 680px;
+      }
+
+      .hero__mark {
+        margin-bottom: 1.5rem;
+      }
+
+      .hero__mark img {
+        width: clamp(56px, 14vw, 88px);
+        height: auto;
+        display: block;
       }
 
       .hero__badge {
@@ -800,6 +831,15 @@
 
       <!-- Hero -->
       <section class="hero">
+        <div class="hero__mark" aria-hidden="true">
+          <img
+            src="/situate-vancouver-logo-standard-icon.svg"
+            alt=""
+            width="88"
+            height="88"
+            decoding="async"
+          />
+        </div>
         <span class="hero__badge">City intelligence platform</span>
         <h1 class="hero__title">Understand what's happening in the city, instantly.</h1>
         <p class="hero__desc">

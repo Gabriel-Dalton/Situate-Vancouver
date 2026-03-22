@@ -6,6 +6,8 @@ import { lazy, Suspense, useCallback, useEffect, useState } from 'react'
 import type { InsightLayerState } from './components/VancouverMap'
 import BrandLockup from './components/BrandLockup'
 import StatusPanel from './components/StatusPanel'
+import { AiQueryBar, AiResponsePanel } from './components/AiQuery'
+import type { AiQueryResponse } from './components/AiQuery'
 import './App.css'
 
 const VancouverMap = lazy(() => import('./components/VancouverMap'))
@@ -17,9 +19,20 @@ const DEFAULT_LAYERS: InsightLayerState = {
 
 export default function App() {
   const [layers, setLayers] = useState<InsightLayerState>(DEFAULT_LAYERS)
+  const [aiResponse, setAiResponse] = useState<AiQueryResponse | null>(null)
+  const [aiPanelOpen, setAiPanelOpen] = useState(false)
 
   const toggleLayer = useCallback((key: keyof InsightLayerState) => {
     setLayers((prev) => ({ ...prev, [key]: !prev[key] }))
+  }, [])
+
+  const handleAiResponse = useCallback((response: AiQueryResponse) => {
+    setAiResponse(response)
+    setAiPanelOpen(true)
+  }, [])
+
+  const closeAiPanel = useCallback(() => {
+    setAiPanelOpen(false)
   }, [])
 
   return (
@@ -29,6 +42,7 @@ export default function App() {
           <BrandLockup variant="onDark" />
           <p className="insight-shell__subtitle">City-scale insight canvas</p>
         </div>
+        <AiQueryBar onResponse={handleAiResponse} />
         <div className="insight-shell__header-meta">
           <span className="insight-shell__pill">Metro · Lower Mainland</span>
           <span className="insight-shell__clock" aria-live="polite">
@@ -36,6 +50,12 @@ export default function App() {
           </span>
         </div>
       </header>
+
+      <AiResponsePanel
+        response={aiResponse}
+        onClose={closeAiPanel}
+        visible={aiPanelOpen}
+      />
 
       <div className="insight-shell__body">
         <aside className="insight-shell__rail insight-shell__rail--left" aria-label="Layers and scope">
