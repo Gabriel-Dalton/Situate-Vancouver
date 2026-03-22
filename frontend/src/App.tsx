@@ -68,7 +68,7 @@ export default function App() {
                 </div>
               }
             >
-              <VancouverMap layers={layers} />
+              <VancouverMap layers={layers} onToggleLayer={toggleLayer} lens={lens} />
             </Suspense>
           </div>
           <AiResponsePanel
