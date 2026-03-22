@@ -1,8 +1,10 @@
 import json
+from datetime import datetime, timezone
 
 from app.openai_config import build_openai_client
 from app.services.vancouver_api import VancouverAPIGetter
-from .schemas import DetectedIncident
+from app.services.drivebc import DriveBCGetter
+from .schemas import Coordinates, DetectedIncident
 
 
 class WatcherAgent:
@@ -20,16 +22,24 @@ class WatcherAgent:
         self.client = build_openai_client()
         self.model = model
         self.api_getter = VancouverAPIGetter()
+        self.drivebc = DriveBCGetter()
         self.system_prompt = (
             "You are the Watcher agent for Situate Vancouver, a real-time city monitoring system. "
-            "You receive raw feed data AND live records fetched from the Vancouver Open Data portal. "
-            "Use both to classify the situation into a structured incident for display on a map.\n\n"
+            "You receive live records from two sources: DriveBC (accidents, incidents, hazards) "
+            "and Vancouver Open Data (road closures, construction, 311 requests).\n\n"
+            "RULES:\n"
+            "1. Set event_detected=true if ANY of the provided records mention the queried location "
+            "in their description, headline, or project fields — even partial matches count "
+            "(e.g. 'Knight Street' matches 'Knight Street Bridge').\n"
+            "2. NOTE: DriveBC often labels roads as 'Other Roads' — always check the description "
+            "field for the actual location name, not just the road name field.\n"
+            "3. Set event_detected=false ONLY if no records mention the queried location at all.\n"
+            "4. NEVER invent incidents. All values must come directly from the provided records.\n"
+            "5. Use the record's description as raw_details and coordinates.lat/lng for the map pin.\n\n"
             "incident_type must be one of: traffic_incident | transit_delay | weather_disruption | emergency | public_safety\n"
-            "severity must be one of: low | medium | high | critical\n"
-            "coordinates: use geo_point_2d from the records when available, otherwise estimate "
-            "for the Vancouver area (~49.28°N, 123.12°W)\n"
-            "timestamp: ISO 8601 UTC\n\n"
-            "Be specific about Vancouver geography — name exact streets, stations, and bridges."
+            "severity: map DriveBC MAJOR→high, MODERATE→medium, MINOR→low, otherwise use judgement\n"
+            "coordinates: use the record's coordinates field when available\n"
+            "timestamp: ISO 8601 UTC"
         )
 
     def watch(
@@ -55,19 +65,58 @@ class WatcherAgent:
         Returns:
             DetectedIncident ready for map pin creation.
         """
-        # Step 1 — fetch live records from Vancouver Open Data
-        live_data = self.api_getter.fetch(
+        # Step 1 — fetch from Vancouver Open Data (construction, closures, 311)
+        van_data = self.api_getter.fetch(
             incident_type=incident_type,
             location=location,
             limit=10,
         )
 
-        # Step 2 — build prompt with both the raw input and real data
+        # Step 2 — fetch from DriveBC (live accidents, incidents, hazards)
+        drivebc_events = self.drivebc.fetch(
+            incident_type=incident_type,
+            location=location,
+            limit=20,
+        )
+
+        live_data = {
+            "vancouver_open_data": van_data,
+            "drivebc_events": drivebc_events,
+        }
+        # Expose for the Orchestrator to pass downstream to the Retriever
+        self.last_live_data = live_data
+
+        # Hard check — if both sources returned no usable records, skip the LLM
+        # entirely and return event_detected=False immediately.
+        drivebc_has_data = bool(drivebc_events) and not all(
+            "error" in e for e in drivebc_events
+        )
+        van_has_data = any(
+            records and not all("error" in r for r in records)
+            for records in van_data.values()
+        )
+        if not drivebc_has_data and not van_has_data:
+            return DetectedIncident(
+                event_detected=False,
+                incident_type="traffic_incident",
+                location=location or "Vancouver",
+                coordinates=Coordinates(lat=49.2827, lng=-123.1207),
+                severity="low",
+                summary="No live data found for this query.",
+                raw_details="No matching records returned by DriveBC or Vancouver Open Data.",
+                affects_transit=False,
+                timestamp=datetime.now(timezone.utc).isoformat(),
+            )
+
+        # Step 3 — build prompt with the combined real data
         user_message = (
-            f"Feed source: {source}\n\n"
-            f"Raw feed data:\n{feed_data}\n\n"
-            f"Live Vancouver Open Data records ({incident_type}):\n"
-            f"{json.dumps(live_data, indent=2)}"
+            f"Feed source: {source}\n"
+            f"Queried location: {location or 'unspecified'}\n"
+            f"Incident type queried: {incident_type}\n\n"
+            f"Live data from DriveBC (accidents, incidents, hazards):\n"
+            f"{json.dumps(drivebc_events, indent=2)}\n\n"
+            f"Live data from Vancouver Open Data (closures, construction, 311):\n"
+            f"{json.dumps(van_data, indent=2)}"
         )
 
         response = self.client.beta.chat.completions.parse(

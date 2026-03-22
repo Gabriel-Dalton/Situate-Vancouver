@@ -7,7 +7,7 @@ from pydantic import BaseModel, Field
 
 class DecomposedQuery(BaseModel):
     intent: str = Field(
-        description="Primary intent: traffic | weather | emergency | obstruction | construction | transit | general"
+        description="Primary intent: traffic | weather | emergency | obstruction | construction | transit | natural_disaster | general"
     )
     location: str = Field(
         description="Canonical Vancouver location name. Empty string if none."
@@ -114,7 +114,7 @@ class ReasonerOutput(BaseModel):
 class QueryResponse(BaseModel):
     original_query: str = Field(description="The raw question asked by the user")
     query_type: str = Field(
-        description="Classified intent: traffic | weather | emergency | obstruction | construction | transit | general"
+        description="Classified intent: traffic | weather | emergency | obstruction | construction | transit | natural_disaster | general"
     )
     verdict: str = Field(description="Plain-English answer to the user's question")
     severity: str = Field(description="low | medium | high | critical")
