@@ -4,6 +4,8 @@ from .reasoner import ReasonerAgent
 from .decomposer import QueryDecomposer
 from .schemas import Coordinates, DetectedIncident, QueryResponse
 
+_NO_DATA_COORDINATES = Coordinates(lat=49.2827, lng=-123.1207)  # Vancouver city centre
+
 
 class OrchestratorAgent:
     """
@@ -120,6 +122,24 @@ class OrchestratorAgent:
             location=decomposed.location,
         )
         live_data = getattr(self.watcher, "last_live_data", None)
+
+        # Hard guard: no live data found → return immediately, never call Reasoner
+        if not incident.event_detected:
+            return QueryResponse(
+                original_query=user_query,
+                query_type=decomposed.intent,
+                verdict="No live data is currently available for this query from our feeds.",
+                severity="low",
+                location=decomposed.location or "Vancouver",
+                coordinates=_NO_DATA_COORDINATES,
+                cause="No matching incidents found in DriveBC or Vancouver Open Data.",
+                impact="Unknown — no active incident data for this location.",
+                recommended_actions=["Check DriveBC (drivebc.ca) for the latest road conditions."],
+                estimated_duration="N/A",
+                related_alerts=[],
+                cache_hit=False,
+                confidence=0.0,
+            )
 
         # Step 3 — retrieve context grounded in the actual API records
         context = self.retriever.retrieve(
