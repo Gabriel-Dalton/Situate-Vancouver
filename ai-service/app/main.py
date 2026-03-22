@@ -3,7 +3,7 @@ import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.routers import health
+from app.routers import health, incidents
 
 _origins = os.environ.get(
     'CORS_ALLOWED_ORIGINS',
@@ -21,6 +21,7 @@ app.add_middleware(
 )
 
 app.include_router(health.router, tags=['health'])
+app.include_router(incidents.router)
 
 
 @app.get('/')
