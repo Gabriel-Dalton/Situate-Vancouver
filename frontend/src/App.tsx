@@ -4,7 +4,10 @@
  */
 import { lazy, Suspense, useCallback, useEffect, useState } from 'react'
 import type { InsightLayerState } from './components/VancouverMap'
+import LensSelector from './components/LensSelector'
 import { SKYTRAIN_LEGEND, SKYTRAIN_LINE_COLORS } from './data/skytrainLineKeys'
+import type { MobilityLens } from './types/mobilityLens'
+import { LENS_SIGNALS, MOBILITY_LENS_META } from './types/mobilityLens'
 import BrandLockup from './components/BrandLockup'
 import StatusPanel from './components/StatusPanel'
 import './App.css'
@@ -19,6 +22,7 @@ const DEFAULT_LAYERS: InsightLayerState = {
 
 export default function App() {
   const [layers, setLayers] = useState<InsightLayerState>(DEFAULT_LAYERS)
+  const [lens, setLens] = useState<MobilityLens>('cycle')
 
   const toggleLayer = useCallback((key: keyof InsightLayerState) => {
     setLayers((prev) => ({ ...prev, [key]: !prev[key] }))
@@ -41,6 +45,14 @@ export default function App() {
 
       <div className="insight-shell__body">
         <aside className="insight-shell__rail insight-shell__rail--left" aria-label="Layers and scope">
+          <section className="insight-panel">
+            <h2 className="insight-panel__heading">Mobility lens</h2>
+            <p className="insight-panel__hint">
+              Choose how you move — the map and signals adapt to your context.
+            </p>
+            <LensSelector active={lens} onSelect={setLens} />
+          </section>
+
           <section className="insight-panel">
             <h2 className="insight-panel__heading">Insight layers</h2>
             <p className="insight-panel__hint">
@@ -105,7 +117,7 @@ export default function App() {
               </div>
             }
           >
-            <VancouverMap layers={layers} onToggleLayer={toggleLayer} />
+            <VancouverMap layers={layers} onToggleLayer={toggleLayer} lens={lens} />
           </Suspense>
         </main>
 
@@ -117,11 +129,20 @@ export default function App() {
           </section>
 
           <section className="insight-panel">
-            <h2 className="insight-panel__heading">City signals</h2>
-            <p className="insight-panel__hint">Placeholder tiles until API feeds land.</p>
-            <SignalTile label="Activity index" value="—" trend="Awaiting stream" />
-            <SignalTile label="Mobility stress" value="—" trend="Awaiting stream" />
-            <SignalTile label="Equity lens" value="—" trend="Awaiting stream" />
+            <h2 className="insight-panel__heading">
+              {MOBILITY_LENS_META[lens].label} signals
+            </h2>
+            <p className="insight-panel__hint">
+              City data scoped to the active mobility lens.
+            </p>
+            {LENS_SIGNALS[lens].map((sig) => (
+              <SignalTile
+                key={sig.label}
+                label={sig.label}
+                value={sig.value}
+                trend={sig.trend}
+              />
+            ))}
           </section>
         </aside>
       </div>
