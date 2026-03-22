@@ -150,7 +150,11 @@ function LiveClock() {
     const t = window.setInterval(() => setNow(new Date()), 1000)
     return () => window.clearInterval(t)
   }, [])
-  return <>{formatClock(now)}</>
+  return (
+    <>
+      {formatClock(now)} <span className="insight-shell__tz">{getTimezone(now)}</span>
+    </>
+  )
 }
 
 function formatClock(d: Date): string {
@@ -163,5 +167,14 @@ function formatClock(d: Date): string {
     }).format(d)
   } catch {
     return d.toLocaleTimeString()
+  }
+}
+
+function getTimezone(d: Date): string {
+  try {
+    const parts = new Intl.DateTimeFormat(undefined, { timeZoneName: 'short' }).formatToParts(d)
+    return parts.find((p) => p.type === 'timeZoneName')?.value ?? ''
+  } catch {
+    return ''
   }
 }

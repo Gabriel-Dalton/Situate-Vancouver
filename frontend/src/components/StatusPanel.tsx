@@ -15,10 +15,10 @@ interface HealthResponse {
 }
 
 const STATUS_LABEL: Record<string, string> = {
-  ok: 'Operational',
-  error: 'Error',
-  not_configured: 'Not configured',
-  skipped: 'Skipped',
+  ok: 'OK',
+  error: 'ERR',
+  not_configured: 'N/A',
+  skipped: 'SKIP',
 }
 
 const POLL_INTERVAL_MS = 30_000
@@ -27,16 +27,16 @@ export default function StatusPanel() {
   const [health, setHealth] = useState<HealthResponse | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
+  const [lastChecked, setLastChecked] = useState<Date | null>(null)
 
   const fetchHealth = useCallback(async () => {
     try {
       const res = await fetch('/api/health/')
-      if (!res.ok && res.status !== 503) {
-        throw new Error(`HTTP ${res.status}`)
-      }
+      // Always try to parse JSON — backend may return valid health data with 500
       const data: HealthResponse = await res.json()
       setHealth(data)
       setError(null)
+      setLastChecked(new Date())
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to reach API')
       setHealth(null)
@@ -54,7 +54,7 @@ export default function StatusPanel() {
   if (loading) {
     return (
       <div className="status-panel">
-        <p className="status-panel__loading">Checking services…</p>
+        <p className="status-panel__loading">Probing…</p>
       </div>
     )
   }
@@ -82,7 +82,7 @@ export default function StatusPanel() {
       <div className={`status-panel__overall status-panel__overall--${health.status}`}>
         <span className="status-panel__overall-dot" />
         <span className="status-panel__overall-label">
-          {health.status === 'healthy' ? 'All systems operational' :
+          {health.status === 'healthy' ? 'All systems nominal' :
            health.status === 'degraded' ? 'Degraded' : 'Unhealthy'}
         </span>
       </div>
@@ -90,6 +90,12 @@ export default function StatusPanel() {
       {entries.map(([name, check]) => (
         <ServiceCheckRow key={name} name={name} check={check} />
       ))}
+
+      {lastChecked && (
+        <span className="status-panel__timestamp">
+          Last probe {lastChecked.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })}
+        </span>
+      )}
     </div>
   )
 }
@@ -110,7 +116,9 @@ function ServiceCheckRow({ name, check }: { name: string; check: ServiceCheck })
         {check.latency_ms != null && (
           <span className="status-check__latency">{check.latency_ms.toFixed(0)} ms</span>
         )}
-        <span className="status-check__msg">{check.message}</span>
+        {check.message && (
+          <span className="status-check__msg">{check.message}</span>
+        )}
       </div>
     </div>
   )
