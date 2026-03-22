@@ -434,9 +434,10 @@
       .footer__link:hover { color: var(--color-text); }
 
       /* ── Entry animation ── */
-      .landing { opacity: 0; transform: translateY(8px); animation: fadeUp 0.4s ease forwards; }
-      @keyframes fadeUp { to { opacity: 1; transform: translateY(0); } }
-      @media (prefers-reduced-motion: reduce) { .landing { animation: none; opacity: 1; transform: none; } }
+      /* Opacity-only entry: avoid transform so position:fixed overlays (e.g. language modal) stay viewport-anchored */
+      .landing { opacity: 0; animation: fadeUp 0.4s ease forwards; }
+      @keyframes fadeUp { to { opacity: 1; } }
+      @media (prefers-reduced-motion: reduce) { .landing { animation: none; opacity: 1; } }
 
       /* ── Language switcher (header slot + Situate theme for languagechangeridea.js) ── */
       .header__lang {
