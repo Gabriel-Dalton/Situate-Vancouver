@@ -28,6 +28,7 @@ export default defineConfig(({ mode }) => {
   const fileEnv = loadEnv(mode, repoRoot, '')
   const djangoTarget = resolveDjangoProxyOrigin(fileEnv)
   const prodHealthUrl = `${djangoTarget}/api/health/`
+  const prodQueryUrl = `${djangoTarget}/api/query/`
   const aiTarget =
     fileEnv.AI_PROXY_TARGET || process.env.AI_PROXY_TARGET || 'http://127.0.0.1:8001'
   // Optional: Host header sent to Django (e.g. 127.0.0.1:1111) when API_PROXY_TARGET uses a public hostname.
@@ -65,6 +66,7 @@ export default defineConfig(({ mode }) => {
       path.join(os.tmpdir(), 'situate-vancouver-frontend-vite'),
     define: {
       __SITUATE_PROD_HEALTH_URL__: JSON.stringify(prodHealthUrl),
+      __SITUATE_PROD_QUERY_URL__: JSON.stringify(prodQueryUrl),
     },
     plugins: [djangoHealthForwardPlugin(djangoTarget, apiProxyForwardHost), react()],
     optimizeDeps: {
