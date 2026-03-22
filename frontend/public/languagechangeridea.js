@@ -23,6 +23,7 @@
     { code: 'da',    name: 'Danish',                native: 'Dansk'            },
     { code: 'nl',    name: 'Dutch',                 native: 'Nederlands'       },
     { code: 'en',    name: 'English',               native: 'English'          },
+    { code: 'en-CA', name: 'Canadian English',       native: 'Canadian English'  },
     { code: 'et',    name: 'Estonian',              native: 'Eesti'            },
     { code: 'fi',    name: 'Finnish',               native: 'Suomi'            },
     { code: 'fr',    name: 'French',                native: 'Français'         },
@@ -94,7 +95,7 @@
   var FI_MAP = {
     af: 'za', sq: 'al', am: 'et', ar: 'sa', hy: 'am', az: 'az', eu: 'es-pv',
     be: 'by', bn: 'bd', bs: 'ba', bg: 'bg', ca: 'es-ct', 'zh-CN': 'cn', 'zh-TW': 'tw',
-    hr: 'hr', cs: 'cz', da: 'dk', nl: 'nl', en: 'gb', et: 'ee', fi: 'fi', fr: 'fr',
+    hr: 'hr', cs: 'cz', da: 'dk', nl: 'nl', en: 'gb', 'en-CA': 'ca', et: 'ee', fi: 'fi', fr: 'fr',
     gl: 'es-ga', ka: 'ge', de: 'de', el: 'gr', gu: 'in', ht: 'ht', ha: 'ng', he: 'il',
     hi: 'in', hu: 'hu', is: 'is', ig: 'ng', id: 'id', ga: 'ie', it: 'it', ja: 'jp',
     kn: 'in', kk: 'kz', km: 'kh', ko: 'kr', lo: 'la', lv: 'lv', lt: 'lt', lb: 'lu',
@@ -845,21 +846,89 @@
     if (undoFrom == null || undoFrom === '') return;
     var target = undoFrom;
     undoFrom = null;
+    /* Undo Canadian mode if active */
+    if (current === 'en-CA') removeCanadianMode();
     current = target;
     writeStore(current);
     syncUI();
-    applyTranslation(target);
+    if (target === 'en-CA') { applyCanadianMode(); }
+    else { applyTranslation(target); }
+  }
+
+  /* ── Canadian English Easter-egg ── */
+  var canadianActive = false;
+  var canadianOriginals = [];
+
+  var CA_REPLACEMENTS = [
+    [/\bsorry\b/gi, 'sooorry'],
+    [/\byou\b/gi, 'ya'],
+    [/\babout\b/gi, 'aboot'],
+    [/\bhouse\b/gi, 'hoose'],
+    [/\btraffic\b/gi, 'traffic, eh'],
+    [/\bdisruptions?\b/gi, function(m){ return m + ', sorry aboot that'; }],
+    [/\bweather\b/gi, 'weather (probably snow)'],
+    [/\bunderstand\b/gi, 'understand, eh'],
+    [/\.\s*$/gm, ', eh.'],
+  ];
+
+  function applyCanadianMode() {
+    if (canadianActive) return;
+    canadianActive = true;
+    canadianOriginals = [];
+    var walker = document.createTreeWalker(
+      document.querySelector('.landing') || document.body,
+      NodeFilter.SHOW_TEXT,
+      { acceptNode: function(n) {
+          var p = n.parentElement;
+          if (!p) return NodeFilter.FILTER_REJECT;
+          if (p.closest('.notranslate,[translate="no"],#ls-root,#ls-panel,#ls-notice,.brand-lockup,.header__nav')) return NodeFilter.FILTER_REJECT;
+          if (p.tagName === 'SCRIPT' || p.tagName === 'STYLE') return NodeFilter.FILTER_REJECT;
+          return n.textContent.trim() ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT;
+        }
+      }
+    );
+    var node;
+    while ((node = walker.nextNode())) {
+      var orig = node.textContent;
+      var text = orig;
+      for (var i = 0; i < CA_REPLACEMENTS.length; i++) {
+        text = text.replace(CA_REPLACEMENTS[i][0], CA_REPLACEMENTS[i][1]);
+      }
+      if (text !== orig) {
+        canadianOriginals.push({ node: node, text: orig });
+        node.textContent = text;
+      }
+    }
+  }
+
+  function removeCanadianMode() {
+    if (!canadianActive) return;
+    for (var i = 0; i < canadianOriginals.length; i++) {
+      try { canadianOriginals[i].node.textContent = canadianOriginals[i].text; } catch(e) {}
+    }
+    canadianOriginals = [];
+    canadianActive = false;
   }
 
   function selectLang(code) {
     var prev = current;
     if (code === prev) return;
+
+    /* Undo Canadian mode when switching away */
+    if (prev === 'en-CA') removeCanadianMode();
+
     undoFrom = prev;
     current = code;
     writeStore(code);
     syncUI();
     closePanel();
-    applyTranslation(code);
+
+    if (code === 'en-CA') {
+      /* Canadian English: don't call Google Translate, just canadianise the page */
+      applyCanadianMode();
+    } else {
+      applyTranslation(code);
+    }
   }
 
 
@@ -942,7 +1011,11 @@
       if (code && code !== ORIGINAL) { current = code; writeStore(code); syncUI(); return; }
     }
     var saved = readStore();
-    if (saved && saved !== ORIGINAL) { current = saved; syncUI(); }
+    if (saved && saved !== ORIGINAL) {
+      current = saved;
+      syncUI();
+      if (saved === 'en-CA') applyCanadianMode();
+    }
   }
 
 
