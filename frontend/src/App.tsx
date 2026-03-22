@@ -1,323 +1,162 @@
-import { useCallback, useEffect, useState } from 'react'
+/**
+ * Situate Vancouver — insight workspace (map-first). Dev/proxy and health-check context for
+ * wiring APIs lives in `src/lib/stackIntegrationNotes.ts` (comments only).
+ */
+import { lazy, Suspense, useCallback, useEffect, useState } from 'react'
+import type { InsightLayerState } from './components/VancouverMap'
 import './App.css'
 
-type ProbePhase = 'loading' | 'done'
+const VancouverMap = lazy(() => import('./components/VancouverMap'))
 
-type ProbeResult = {
-  phase: ProbePhase
-  ok: boolean
-  latencyMs: number | null
-  checkedAt: number | null
-  httpStatus: number | null
-  summary: string
-  detail: string | null
-  payload: Record<string, unknown> | null
+const DEFAULT_LAYERS: InsightLayerState = {
+  strategicNodes: true,
+  movementCorridors: true,
 }
 
-function loadingProbe(): ProbeResult {
-  return {
-    phase: 'loading',
-    ok: false,
-    latencyMs: null,
-    checkedAt: null,
-    httpStatus: null,
-    summary: 'Probing',
-    detail: null,
-    payload: null,
-  }
+export default function App() {
+  const [layers, setLayers] = useState<InsightLayerState>(DEFAULT_LAYERS)
+
+  const toggleLayer = useCallback((key: keyof InsightLayerState) => {
+    setLayers((prev) => ({ ...prev, [key]: !prev[key] }))
+  }, [])
+
+  return (
+    <div className="insight-shell">
+      <header className="insight-shell__header">
+        <div className="insight-shell__brand">
+          <span className="insight-shell__mark" aria-hidden />
+          <div>
+            <h1 className="insight-shell__title">Situate Vancouver</h1>
+            <p className="insight-shell__subtitle">City-scale insight canvas</p>
+          </div>
+        </div>
+        <div className="insight-shell__header-meta">
+          <span className="insight-shell__pill">Metro · Lower Mainland</span>
+          <span className="insight-shell__clock" aria-live="polite">
+            <LiveClock />
+          </span>
+        </div>
+      </header>
+
+      <div className="insight-shell__body">
+        <aside className="insight-shell__rail insight-shell__rail--left" aria-label="Layers and scope">
+          <section className="insight-panel">
+            <h2 className="insight-panel__heading">Insight layers</h2>
+            <p className="insight-panel__hint">
+              Toggle geometry that will later bind to Django / AI outputs. Data is local seed GeoJSON
+              for now.
+            </p>
+            <LayerToggle
+              id="layer-nodes"
+              label="Strategic nodes"
+              description="Priority places and narrative lenses"
+              checked={layers.strategicNodes}
+              onChange={() => toggleLayer('strategicNodes')}
+            />
+            <LayerToggle
+              id="layer-corridors"
+              label="Movement corridors"
+              description="Spines for mobility / planning overlays"
+              checked={layers.movementCorridors}
+              onChange={() => toggleLayer('movementCorridors')}
+            />
+          </section>
+
+          <section className="insight-panel">
+            <h2 className="insight-panel__heading">Scope</h2>
+            <ul className="insight-scope">
+              <li>
+                <span className="insight-scope__k">Bounding box</span>
+                <span className="insight-scope__v">City of Vancouver core + inner burbs</span>
+              </li>
+              <li>
+                <span className="insight-scope__k">Basemap</span>
+                <span className="insight-scope__v">CARTO Dark Matter (vector)</span>
+              </li>
+            </ul>
+          </section>
+        </aside>
+
+        <main className="insight-shell__map-wrap">
+          <Suspense
+            fallback={
+              <div className="map-skeleton" role="status" aria-label="Loading map">
+                <div className="map-skeleton__grid" aria-hidden />
+                <p className="map-skeleton__text">Initializing map canvas…</p>
+              </div>
+            }
+          >
+            <VancouverMap layers={layers} />
+          </Suspense>
+        </main>
+
+        <aside className="insight-shell__rail insight-shell__rail--right" aria-label="Signals">
+          <section className="insight-panel">
+            <h2 className="insight-panel__heading">City signals</h2>
+            <p className="insight-panel__hint">Placeholder tiles until API feeds land.</p>
+            <SignalTile label="Activity index" value="—" trend="Awaiting stream" />
+            <SignalTile label="Mobility stress" value="—" trend="Awaiting stream" />
+            <SignalTile label="Equity lens" value="—" trend="Awaiting stream" />
+          </section>
+        </aside>
+      </div>
+    </div>
+  )
 }
 
-async function probeHealth(url: string, signal?: AbortSignal): Promise<ProbeResult> {
-  const t0 = performance.now()
-  try {
-    const res = await fetch(url, { signal })
-    const latencyMs = Math.round(performance.now() - t0)
-    const checkedAt = Date.now()
-    const text = await res.text()
-    let payload: Record<string, unknown> | null = null
-    let parseError: string | null = null
-
-    if (text) {
-      try {
-        const parsed: unknown = JSON.parse(text)
-        payload =
-          parsed !== null && typeof parsed === 'object' && !Array.isArray(parsed)
-            ? (parsed as Record<string, unknown>)
-            : { value: parsed }
-      } catch {
-        parseError = 'Response is not valid JSON.'
-      }
-    }
-
-    if (!res.ok) {
-      return {
-        phase: 'done',
-        ok: false,
-        latencyMs,
-        checkedAt,
-        httpStatus: res.status,
-        summary: `HTTP ${res.status}`,
-        detail: parseError ?? (text.slice(0, 480) || null),
-        payload,
-      }
-    }
-
-    if (parseError) {
-      return {
-        phase: 'done',
-        ok: false,
-        latencyMs,
-        checkedAt,
-        httpStatus: res.status,
-        summary: 'Invalid JSON',
-        detail: parseError,
-        payload: null,
-      }
-    }
-
-    const statusField = payload?.status
-    const degraded =
-      typeof statusField === 'string' && !['ok', 'healthy', 'up'].includes(statusField.toLowerCase())
-
-    return {
-      phase: 'done',
-      ok: !degraded,
-      latencyMs,
-      checkedAt,
-      httpStatus: res.status,
-      summary: degraded ? String(statusField) : 'Operational',
-      detail: degraded ? JSON.stringify(payload, null, 2) : null,
-      payload,
-    }
-  } catch (e) {
-    const latencyMs = Math.round(performance.now() - t0)
-    const checkedAt = Date.now()
-    const name = e instanceof Error ? e.name : 'Error'
-    const message = e instanceof Error ? e.message : String(e)
-    const aborted = e instanceof DOMException && e.name === 'AbortError'
-    return {
-      phase: 'done',
-      ok: false,
-      latencyMs: aborted ? null : latencyMs,
-      checkedAt,
-      httpStatus: null,
-      summary: aborted ? 'Cancelled' : 'Unreachable',
-      detail: aborted ? null : `${name}: ${message}`,
-      payload: null,
-    }
-  }
+function LayerToggle({
+  id,
+  label,
+  description,
+  checked,
+  onChange,
+}: {
+  id: string
+  label: string
+  description: string
+  checked: boolean
+  onChange: () => void
+}) {
+  return (
+    <label className="layer-toggle" htmlFor={id}>
+      <input id={id} className="layer-toggle__input" type="checkbox" checked={checked} onChange={onChange} />
+      <span className="layer-toggle__ui" aria-hidden />
+      <span className="layer-toggle__copy">
+        <span className="layer-toggle__label">{label}</span>
+        <span className="layer-toggle__desc">{description}</span>
+      </span>
+    </label>
+  )
 }
 
-function formatTime(ts: number | null): string {
-  if (ts == null) return '—'
+function SignalTile({ label, value, trend }: { label: string; value: string; trend: string }) {
+  return (
+    <div className="signal-tile">
+      <span className="signal-tile__label">{label}</span>
+      <span className="signal-tile__value">{value}</span>
+      <span className="signal-tile__trend">{trend}</span>
+    </div>
+  )
+}
+
+function LiveClock() {
+  const [now, setNow] = useState(() => new Date())
+  useEffect(() => {
+    const t = window.setInterval(() => setNow(new Date()), 1000)
+    return () => window.clearInterval(t)
+  }, [])
+  return <>{formatClock(now)}</>
+}
+
+function formatClock(d: Date): string {
   try {
     return new Intl.DateTimeFormat(undefined, {
       hour: '2-digit',
       minute: '2-digit',
       second: '2-digit',
       hour12: false,
-    }).format(new Date(ts))
+    }).format(d)
   } catch {
-    return new Date(ts).toLocaleTimeString()
+    return d.toLocaleTimeString()
   }
 }
-
-type ServiceCardProps = {
-  name: string
-  role: string
-  path: string
-  result: ProbeResult
-}
-
-function ServiceCard({ name, role, path, result }: ServiceCardProps) {
-  const loading = result.phase === 'loading'
-  const statusClass =
-    loading ? 'is-loading' : result.ok ? 'is-ok' : result.summary === 'Cancelled' ? 'is-muted' : 'is-bad'
-
-  return (
-    <article className="svc-card" aria-busy={loading}>
-      <header className="svc-card__head">
-        <div className="svc-card__titles">
-          <h2 className="svc-card__name">{name}</h2>
-          <p className="svc-card__role">{role}</p>
-        </div>
-        <div className={`svc-card__pip ${statusClass}`} title={loading ? 'Checking' : result.summary}>
-          <span className="svc-card__pip-dot" />
-        </div>
-      </header>
-
-      <div className="svc-card__endpoint">
-        <span className="svc-card__method">GET</span>
-        <code className="svc-card__path">{path}</code>
-      </div>
-
-      <dl className="svc-card__metrics">
-        <div>
-          <dt>State</dt>
-          <dd>{loading ? 'Probing…' : result.summary}</dd>
-        </div>
-        <div>
-          <dt>Latency</dt>
-          <dd>{result.latencyMs != null ? `${result.latencyMs} ms` : '—'}</dd>
-        </div>
-        <div>
-          <dt>HTTP</dt>
-          <dd>{result.httpStatus ?? '—'}</dd>
-        </div>
-        <div>
-          <dt>Checked</dt>
-          <dd>{formatTime(result.checkedAt)}</dd>
-        </div>
-      </dl>
-
-      {!loading && !result.ok && result.detail && (
-        <div className="svc-card__issue">
-          <span className="svc-card__issue-label">Signal</span>
-          <pre className="svc-card__issue-body">{result.detail}</pre>
-        </div>
-      )}
-
-      {!loading && result.ok && result.payload && (
-        <div className="svc-card__payload">
-          <span className="svc-card__payload-label">Payload</span>
-          <pre className="svc-card__payload-body">{JSON.stringify(result.payload, null, 2)}</pre>
-        </div>
-      )}
-
-      {!loading && !result.ok && (
-        <details className="svc-card__technical">
-          <summary>Technical context</summary>
-          <ul>
-            <li>
-              Browser calls <code>{path}</code>; Vite proxies to your local API ports (see README).
-            </li>
-            <li>
-              If this shows “Unreachable”, the target process is likely down or the proxy target env vars
-              do not match your setup.
-            </li>
-          </ul>
-        </details>
-      )}
-    </article>
-  )
-}
-
-function App() {
-  const [django, setDjango] = useState<ProbeResult>(loadingProbe)
-  const [ai, setAi] = useState<ProbeResult>(loadingProbe)
-  const [tick, setTick] = useState(0)
-
-  const runProbes = useCallback(async (signal: AbortSignal) => {
-    setDjango((s) => ({ ...s, phase: 'loading' }))
-    setAi((s) => ({ ...s, phase: 'loading' }))
-
-    const [d, a] = await Promise.all([
-      probeHealth('/api/health/', signal),
-      probeHealth('/ai/health', signal),
-    ])
-
-    if (!signal.aborted) {
-      setDjango(d)
-      setAi(a)
-    }
-  }, [])
-
-  useEffect(() => {
-    const ac = new AbortController()
-    runProbes(ac.signal)
-    return () => ac.abort()
-  }, [runProbes, tick])
-
-  useEffect(() => {
-    const id = window.setInterval(() => setTick((n) => n + 1), 15000)
-    return () => window.clearInterval(id)
-  }, [])
-
-  const refresh = () => setTick((n) => n + 1)
-
-  const anyLoading = django.phase === 'loading' || ai.phase === 'loading'
-  const allOk = django.phase === 'done' && ai.phase === 'done' && django.ok && ai.ok
-
-  return (
-    <div className="ops">
-      <div className="ops__grid" aria-hidden />
-
-      <header className="ops__topbar">
-        <div className="ops__brand">
-          <span className="ops__brand-mark" aria-hidden />
-          <div>
-            <span className="ops__brand-name">Situate Vancouver</span>
-            <span className="ops__brand-tag">Operations</span>
-          </div>
-        </div>
-        <div className="ops__topbar-actions">
-          <span className={`ops__fleet ${allOk ? 'ops__fleet--ok' : ''}`} role="status">
-            {anyLoading ? 'Scanning…' : allOk ? 'All services nominal' : 'Attention required'}
-          </span>
-          <button type="button" className="ops__btn" onClick={refresh} disabled={anyLoading}>
-            Refresh
-          </button>
-        </div>
-      </header>
-
-      <main className="ops__main">
-        <section className="ops__hero" aria-labelledby="ops-title">
-          <p className="ops__eyebrow">Stack health</p>
-          <h1 id="ops-title" className="ops__title">
-            Integration transparency
-          </h1>
-          <p className="ops__lede">
-            Live probes against Django and the AI service through the Vite dev proxy. When APIs are wired,
-            status, latency, and payloads stay visible here.
-          </p>
-        </section>
-
-        <section className="ops__cards" aria-label="Service endpoints">
-          <ServiceCard
-            name="Django API"
-            role="Core platform · proxied /api → :8000"
-            path="/api/health/"
-            result={django}
-          />
-          <ServiceCard
-            name="AI service"
-            role="FastAPI · proxied /ai → :8001"
-            path="/ai/health"
-            result={ai}
-          />
-        </section>
-
-        <section className="ops__infra" aria-label="Expected local topology">
-          <h2 className="ops__infra-title">Expected topology (local)</h2>
-          <div className="ops__infra-grid">
-            <div className="ops__infra-cell">
-              <span className="ops__infra-k">Django</span>
-              <span className="ops__infra-v">127.0.0.1:8000</span>
-            </div>
-            <div className="ops__infra-cell">
-              <span className="ops__infra-k">FastAPI</span>
-              <span className="ops__infra-v">127.0.0.1:8001</span>
-            </div>
-            <div className="ops__infra-cell">
-              <span className="ops__infra-k">Frontend</span>
-              <span className="ops__infra-v">Vite (this host)</span>
-            </div>
-            <div className="ops__infra-cell ops__infra-cell--wide">
-              <span className="ops__infra-k">Proxy overrides</span>
-              <span className="ops__infra-v mono">
-                API_PROXY_TARGET, AI_PROXY_TARGET
-              </span>
-            </div>
-          </div>
-        </section>
-      </main>
-
-      <footer className="ops__foot">
-        <span>Situate stack · Django + FastAPI + Vite</span>
-        <span className="ops__foot-muted">Auto-refresh every 15s</span>
-      </footer>
-    </div>
-  )
-}
-
-export default App
