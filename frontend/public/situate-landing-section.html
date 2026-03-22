@@ -3,732 +3,517 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Situate Vancouver · Landing</title>
+    <title>Situate Vancouver</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
       rel="stylesheet"
     />
     <style>
       :root {
-        --color-primary: #001b3d;
-        --color-secondary: #6f7788;
-        --color-tertiary: #00aeef;
-        --color-neutral: #77777a;
-        --color-surface: #eef0f4;
-        --color-surface-muted: #e4e7ec;
-        --color-surface-elevated: #ffffff;
-        --color-inverted: #2a2f3a;
-        --color-border: rgba(0, 27, 61, 0.1);
-        --color-border-strong: rgba(0, 27, 61, 0.16);
-        --radius-xl: 24px;
-        --radius-lg: 18px;
+        --color-bg: #ffffff;
+        --color-surface: #f8f9fb;
+        --color-text: #111827;
+        --color-text-secondary: #4b5563;
+        --color-text-muted: #9ca3af;
+        --color-accent: #0066ff;
+        --color-accent-soft: rgba(0, 102, 255, 0.08);
+        --color-border: #e5e7eb;
+        --color-green: #059669;
+        --color-green-soft: rgba(5, 150, 105, 0.08);
+        --radius-lg: 16px;
         --radius-md: 12px;
-        --radius-sm: 10px;
+        --radius-sm: 8px;
         --radius-pill: 999px;
-        --font: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-        --shadow-shell: 0 4px 6px rgba(0, 27, 61, 0.04), 0 24px 64px rgba(0, 27, 61, 0.1);
-        --shadow-card: 0 1px 0 rgba(255, 255, 255, 0.65) inset, 0 12px 40px rgba(0, 27, 61, 0.06);
+        --font: 'Inter', system-ui, -apple-system, sans-serif;
       }
 
-      * {
-        box-sizing: border-box;
-      }
+      * { box-sizing: border-box; margin: 0; }
 
       body {
-        margin: 0;
         font-family: var(--font);
         font-size: 1rem;
-        line-height: 1.55;
-        color: var(--color-primary);
-        background-color: #000f24;
-        background-image:
-          radial-gradient(ellipse 100% 80% at 50% -30%, rgba(0, 174, 239, 0.14), transparent 50%),
-          radial-gradient(circle at 1px 1px, rgba(255, 255, 255, 0.07) 1px, transparent 0);
-        background-size: 100% 100%, 24px 24px;
-        min-height: 100svh;
+        line-height: 1.6;
+        color: var(--color-text);
+        background: var(--color-bg);
+        -webkit-font-smoothing: antialiased;
       }
 
-      .sv-landing {
-        max-width: 1180px;
+      .landing {
+        max-width: 1080px;
         margin: 0 auto;
-        padding: clamp(1.25rem, 4vw, 3rem) clamp(1rem, 4vw, 1.75rem) clamp(2rem, 5vw, 3.5rem);
+        padding: 0 clamp(1rem, 4vw, 2rem);
       }
 
-      .sv-landing__shell {
-        background: var(--color-surface);
-        border-radius: var(--radius-xl);
-        box-shadow: var(--shadow-shell);
-        padding: clamp(1.25rem, 3.5vw, 2.25rem);
-        border: 1px solid rgba(255, 255, 255, 0.06);
-        opacity: 0;
-        transform: translateY(14px);
-        transition: opacity 0.5s ease, transform 0.5s ease;
-      }
-
-      .sv-landing__shell.is-visible {
-        opacity: 1;
-        transform: translateY(0);
-      }
-
-      @media (prefers-reduced-motion: reduce) {
-        .sv-landing__shell {
-          transition: none;
-          opacity: 1;
-          transform: none;
-        }
-      }
-
-      .sv-landing__top {
+      /* ── Header ── */
+      .header {
         display: flex;
-        flex-direction: column;
-        gap: 1rem;
-        margin-bottom: clamp(1.25rem, 3vw, 1.75rem);
-      }
-
-      @media (min-width: 640px) {
-        .sv-landing__top {
-          flex-direction: row;
-          align-items: center;
-          justify-content: space-between;
-        }
-      }
-
-      .sv-landing__brand {
-        display: inline-flex;
         align-items: center;
-        gap: 0.75rem;
+        justify-content: space-between;
+        padding: 1.25rem 0;
+        border-bottom: 1px solid var(--color-border);
       }
 
-      .sv-landing__brand-mark {
-        width: 2.75rem;
-        height: 2.75rem;
-        border-radius: var(--radius-md);
-        background: linear-gradient(145deg, var(--color-tertiary) 0%, #0096d1 100%);
-        box-shadow: 0 6px 20px rgba(0, 174, 239, 0.35);
+      .header__brand {
+        display: flex;
+        align-items: center;
+        gap: 0.625rem;
       }
 
-      .sv-landing__brand-name {
+      .header__mark {
+        width: 2rem;
+        height: 2rem;
+        border-radius: var(--radius-sm);
+        background: var(--color-accent);
+      }
+
+      .header__name {
         font-weight: 700;
-        font-size: 1.125rem;
-        letter-spacing: -0.025em;
-        color: var(--color-primary);
+        font-size: 1rem;
+        letter-spacing: -0.02em;
       }
 
-      .sv-pill-nav {
-        display: inline-flex;
+      .header__nav {
+        display: flex;
         align-items: center;
-        gap: 0.35rem;
-        padding: 0.35rem;
-        background: var(--color-surface-elevated);
-        border: 1px solid var(--color-border);
-        border-radius: var(--radius-pill);
-        box-shadow: 0 1px 2px rgba(0, 27, 61, 0.04);
+        gap: 2rem;
       }
 
-      .sv-pill-nav__item {
-        display: grid;
-        place-items: center;
-        width: 2.5rem;
-        height: 2.5rem;
+      .header__link {
+        font-size: 0.875rem;
+        font-weight: 500;
+        color: var(--color-text-secondary);
+        text-decoration: none;
+        transition: color 0.15s;
+      }
+
+      .header__link:hover { color: var(--color-text); }
+
+      .header__cta {
+        font-family: inherit;
+        font-size: 0.8125rem;
+        font-weight: 600;
+        padding: 0.5rem 1rem;
+        background: var(--color-text);
+        color: #fff;
         border: none;
         border-radius: var(--radius-sm);
-        background: transparent;
-        color: var(--color-secondary);
         cursor: pointer;
-        transition: background 0.15s, color 0.15s;
+        transition: background 0.15s;
       }
 
-      .sv-pill-nav__item:hover {
-        background: var(--color-surface-muted);
-        color: var(--color-primary);
+      .header__cta:hover { background: #1f2937; }
+
+      @media (max-width: 640px) {
+        .header__nav { gap: 1rem; }
+        .header__link { display: none; }
       }
 
-      .sv-pill-nav__item--active {
-        background: #0a0a0a;
+      /* ── Hero ── */
+      .hero {
+        padding: clamp(3rem, 8vw, 5rem) 0 clamp(2rem, 5vw, 3rem);
+        max-width: 640px;
+      }
+
+      .hero__badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.375rem;
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: var(--color-accent);
+        background: var(--color-accent-soft);
+        padding: 0.3rem 0.75rem;
+        border-radius: var(--radius-pill);
+        margin-bottom: 1.25rem;
+      }
+
+      .hero__badge::before {
+        content: '';
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: var(--color-accent);
+      }
+
+      .hero__title {
+        font-size: clamp(2rem, 5vw, 3.25rem);
+        font-weight: 800;
+        line-height: 1.1;
+        letter-spacing: -0.035em;
+        margin-bottom: 1rem;
+      }
+
+      .hero__desc {
+        font-size: clamp(1rem, 2vw, 1.125rem);
+        color: var(--color-text-secondary);
+        line-height: 1.6;
+        margin-bottom: 1.75rem;
+      }
+
+      .hero__actions {
+        display: flex;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+      }
+
+      .btn {
+        font-family: inherit;
+        font-size: 0.875rem;
+        font-weight: 600;
+        padding: 0.65rem 1.25rem;
+        border-radius: var(--radius-sm);
+        border: 1px solid transparent;
+        cursor: pointer;
+        transition: all 0.15s;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+
+      .btn--primary {
+        background: var(--color-text);
         color: #fff;
+        border-color: var(--color-text);
       }
 
-      .sv-pill-nav__item--active:hover {
-        background: #1a1a1a;
-        color: #fff;
+      .btn--primary:hover { background: #1f2937; border-color: #1f2937; }
+
+      .btn--secondary {
+        background: var(--color-bg);
+        color: var(--color-text);
+        border-color: var(--color-border);
       }
 
-      .sv-landing__grid {
+      .btn--secondary:hover { background: var(--color-surface); border-color: #d1d5db; }
+
+      .btn__arrow {
+        transition: transform 0.15s;
+      }
+
+      .btn:hover .btn__arrow { transform: translateX(2px); }
+
+      /* ── Features grid ── */
+      .features {
         display: grid;
-        gap: clamp(0.75rem, 2vw, 1rem);
-        grid-template-columns: 1fr;
-      }
-
-      @media (min-width: 900px) {
-        .sv-landing__grid {
-          grid-template-columns: 1.2fr 0.8fr;
-          grid-template-rows: auto auto auto;
-        }
-
-        .sv-landing__hero {
-          grid-column: 1 / -1;
-        }
-
-        .sv-landing__pitch {
-          grid-column: 1 / 2;
-        }
-
-        .sv-landing__aside {
-          grid-column: 2 / 3;
-          grid-row: 2 / 4;
-        }
-
-        .sv-landing__sustain {
-          grid-column: 1 / 2;
-        }
-      }
-
-      .sv-card {
-        background: var(--color-surface-elevated);
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1px;
+        background: var(--color-border);
         border: 1px solid var(--color-border);
         border-radius: var(--radius-lg);
-        padding: clamp(1.15rem, 3vw, 1.65rem);
-        box-shadow: var(--shadow-card);
-      }
-
-      .sv-landing__hero .sv-card {
-        background: linear-gradient(155deg, var(--color-primary) 0%, #00152e 55%, #000f22 100%);
-        color: #fff;
-        border: 1px solid rgba(0, 174, 239, 0.12);
-        padding: clamp(1.35rem, 4vw, 2.35rem);
-        position: relative;
         overflow: hidden;
+        margin-bottom: clamp(2rem, 5vw, 3rem);
       }
 
-      .sv-landing__hero .sv-card::after {
-        content: '';
-        position: absolute;
-        inset: -40% 40% auto -20%;
-        height: 70%;
-        background: radial-gradient(ellipse, rgba(0, 174, 239, 0.18), transparent 70%);
-        pointer-events: none;
+      @media (max-width: 640px) {
+        .features { grid-template-columns: 1fr; }
       }
 
-      .sv-landing__hero .sv-card > * {
-        position: relative;
-        z-index: 1;
+      .feature {
+        background: var(--color-bg);
+        padding: clamp(1.25rem, 3vw, 1.75rem);
       }
 
-      .sv-landing__eyebrow {
-        font-size: 0.6875rem;
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.14em;
-        color: rgba(255, 255, 255, 0.5);
-        margin: 0 0 0.85rem;
-      }
-
-      .sv-landing__headline {
-        font-size: clamp(1.6rem, 4.2vw, 2.5rem);
-        font-weight: 700;
-        line-height: 1.12;
-        letter-spacing: -0.035em;
-        margin: 0 0 1rem;
-      }
-
-      .sv-landing__sub {
-        font-size: clamp(1rem, 2.1vw, 1.125rem);
-        font-weight: 400;
-        color: rgba(255, 255, 255, 0.78);
-        margin: 0 0 1.5rem;
-        max-width: 38rem;
-      }
-
-      .sv-landing__actions {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 0.6rem;
-        align-items: center;
-      }
-
-      .sv-btn {
-        font-family: inherit;
-        font-size: 0.875rem;
-        font-weight: 600;
-        padding: 0.7rem 1.2rem;
+      .feature__icon {
+        width: 2.25rem;
+        height: 2.25rem;
         border-radius: var(--radius-sm);
-        cursor: pointer;
-        border: 2px solid transparent;
-        transition: background 0.18s, color 0.18s, border-color 0.18s, transform 0.12s;
-        min-height: 44px;
-      }
-
-      .sv-btn:active {
-        transform: scale(0.98);
-      }
-
-      .sv-btn--primary {
-        background: #0a0a0a;
-        color: #fff;
-        border-color: #0a0a0a;
-      }
-
-      .sv-btn--primary:hover {
-        background: #1a1a1a;
-        border-color: #1a1a1a;
-      }
-
-      .sv-btn--outline-hero {
-        background: transparent;
-        color: #fff;
-        border-color: rgba(255, 255, 255, 0.4);
-      }
-
-      .sv-btn--outline-hero:hover {
-        border-color: rgba(255, 255, 255, 0.85);
-        background: rgba(255, 255, 255, 0.06);
-      }
-
-      .sv-btn--accent {
-        background: var(--color-tertiary);
-        color: #fff;
-        border-color: var(--color-tertiary);
-      }
-
-      .sv-btn--accent:hover {
-        filter: brightness(1.05);
-      }
-
-      .sv-btn--secondary-light {
-        background: #f7f8fa;
-        color: #0a0a0a;
-        border-color: var(--color-border-strong);
-      }
-
-      .sv-btn--secondary-light:hover {
-        background: #fff;
-        border-color: rgba(0, 27, 61, 0.22);
-      }
-
-      .sv-btn--inverted {
-        background: var(--color-inverted);
-        color: #fff;
-        border-color: var(--color-inverted);
-      }
-
-      .sv-btn--inverted:hover {
-        background: #353b48;
-        border-color: #353b48;
-      }
-
-      .sv-landing__pitch-title {
-        font-size: 0.6875rem;
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.11em;
-        color: var(--color-neutral);
-        margin: 0 0 0.55rem;
-      }
-
-      .sv-landing__pitch-body {
-        margin: 0;
-        font-size: 0.9375rem;
-        color: var(--color-secondary);
-        line-height: 1.62;
-      }
-
-      .sv-landing__copy-row {
-        margin-top: 1rem;
-        display: flex;
-        flex-wrap: wrap;
-        gap: 0.5rem 0.75rem;
-        align-items: center;
-      }
-
-      .sv-btn--small {
-        font-size: 0.8125rem;
-        padding: 0.5rem 0.95rem;
-        min-height: 40px;
-      }
-
-      .sv-btn--pitch {
-        background: var(--color-primary);
-        color: #fff;
-        border-color: var(--color-primary);
-      }
-
-      .sv-btn--pitch:hover {
-        background: #002a5c;
-        border-color: #002a5c;
-      }
-
-      .sv-toast {
-        font-size: 0.8125rem;
-        color: var(--color-tertiary);
-        font-weight: 600;
-        min-height: 1.25rem;
-        opacity: 0;
-        transition: opacity 0.25s ease;
-      }
-
-      .sv-toast.is-on {
-        opacity: 1;
-      }
-
-      .sv-landing__aside {
-        display: flex;
-        flex-direction: column;
-        gap: clamp(0.65rem, 2vw, 0.85rem);
-      }
-
-      .sv-mini {
-        display: flex;
-        align-items: flex-start;
-        gap: 0.85rem;
-        padding: 1rem 1.1rem;
-        background: var(--color-surface-elevated);
-        border: 1px solid var(--color-border);
-        border-radius: var(--radius-md);
-        box-shadow: 0 1px 0 rgba(255, 255, 255, 0.5) inset;
-      }
-
-      .sv-mini__icon {
-        flex-shrink: 0;
-        width: 2.35rem;
-        height: 2.35rem;
-        border-radius: var(--radius-sm);
-        background: var(--color-primary);
-        color: #fff;
+        background: var(--color-surface);
         display: grid;
         place-items: center;
+        margin-bottom: 0.75rem;
+        color: var(--color-text);
       }
 
-      .sv-mini__icon svg {
-        width: 1.1rem;
-        height: 1.1rem;
-      }
+      .feature__icon svg { width: 1.125rem; height: 1.125rem; }
 
-      .sv-mini__label {
-        font-size: 0.8125rem;
-        font-weight: 600;
-        color: var(--color-primary);
-        margin: 0 0 0.2rem;
-      }
-
-      .sv-mini__text {
-        margin: 0;
-        font-size: 0.8125rem;
-        color: var(--color-neutral);
-        line-height: 1.45;
-      }
-
-      .sv-search {
-        display: flex;
-        align-items: center;
-        gap: 0.55rem;
-        padding: 0.65rem 1rem;
-        background: var(--color-surface-muted);
-        border: 1px solid var(--color-border);
-        border-radius: var(--radius-pill);
-        max-width: 100%;
-      }
-
-      .sv-search svg {
-        flex-shrink: 0;
-        color: var(--color-neutral);
-        opacity: 0.75;
-      }
-
-      .sv-search input {
-        flex: 1;
-        min-width: 0;
-        border: none;
-        background: transparent;
-        font-family: inherit;
+      .feature__name {
         font-size: 0.875rem;
-        color: var(--color-primary);
-        outline: none;
+        font-weight: 600;
+        margin-bottom: 0.25rem;
       }
 
-      .sv-search input::placeholder {
-        color: var(--color-neutral);
+      .feature__text {
+        font-size: 0.8125rem;
+        color: var(--color-text-muted);
+        line-height: 1.5;
       }
 
-      .sv-landing__sustain .sv-card {
-        background: linear-gradient(180deg, var(--color-surface-elevated) 0%, #fafbfc 100%);
+      /* ── Two-column row ── */
+      .split {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: clamp(1rem, 3vw, 1.5rem);
+        margin-bottom: clamp(2rem, 5vw, 3rem);
       }
 
-      .sv-sustain__head {
-        display: flex;
-        flex-direction: column;
-        gap: 0.35rem;
-        margin-bottom: 0.85rem;
+      @media (max-width: 640px) {
+        .split { grid-template-columns: 1fr; }
       }
 
-      @media (min-width: 480px) {
-        .sv-sustain__head {
-          flex-direction: row;
-          flex-wrap: wrap;
-          align-items: flex-start;
-          justify-content: space-between;
-          gap: 0.75rem;
-        }
+      .card {
+        background: var(--color-surface);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-lg);
+        padding: clamp(1.25rem, 3vw, 1.75rem);
       }
 
-      .sv-sustain__title {
-        font-size: 1rem;
-        font-weight: 700;
-        letter-spacing: -0.02em;
-        color: var(--color-primary);
-        margin: 0;
-      }
-
-      .sv-sustain__badge {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.35rem;
+      .card__label {
         font-size: 0.6875rem;
         font-weight: 600;
         text-transform: uppercase;
         letter-spacing: 0.08em;
-        color: var(--color-tertiary);
-        background: rgba(0, 174, 239, 0.1);
-        border: 1px solid rgba(0, 174, 239, 0.22);
-        padding: 0.35rem 0.65rem;
+        color: var(--color-text-muted);
+        margin-bottom: 0.5rem;
+      }
+
+      .card__body {
+        font-size: 0.9375rem;
+        color: var(--color-text-secondary);
+        line-height: 1.65;
+      }
+
+      .card__actions {
+        margin-top: 1rem;
+        display: flex;
+        gap: 0.5rem;
+        align-items: center;
+        flex-wrap: wrap;
+      }
+
+      .btn--small {
+        font-size: 0.8125rem;
+        padding: 0.45rem 0.85rem;
+      }
+
+      .toast {
+        font-size: 0.8125rem;
+        color: var(--color-green);
+        font-weight: 500;
+        opacity: 0;
+        transition: opacity 0.2s;
+      }
+
+      .toast.is-on { opacity: 1; }
+
+      /* ── Sustain card ── */
+      .sustain__head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+        margin-bottom: 0.75rem;
+      }
+
+      .sustain__title {
+        font-size: 0.9375rem;
+        font-weight: 700;
+        letter-spacing: -0.01em;
+      }
+
+      .sustain__badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.3rem;
+        font-size: 0.6875rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: var(--color-green);
+        background: var(--color-green-soft);
+        padding: 0.3rem 0.6rem;
         border-radius: var(--radius-pill);
-        width: fit-content;
       }
 
-      .sv-sustain__copy {
-        margin: 0 0 1rem;
+      .sustain__copy {
         font-size: 0.875rem;
-        color: var(--color-secondary);
-        line-height: 1.58;
-        max-width: 52ch;
+        color: var(--color-text-secondary);
+        line-height: 1.6;
       }
 
-      .sv-sustain__copy strong {
-        color: var(--color-primary);
+      .sustain__copy strong {
+        color: var(--color-text);
         font-weight: 600;
       }
 
-      .sv-tree-widget-host {
-        margin-top: 0.25rem;
+      .widget-host {
+        margin-top: 1rem;
         padding: clamp(0.75rem, 2vw, 1rem);
-        background: var(--color-primary);
+        background: var(--color-text);
         border-radius: var(--radius-md);
-        border: 1px solid rgba(0, 174, 239, 0.15);
         overflow-x: auto;
         -webkit-overflow-scrolling: touch;
       }
 
-      .sv-tree-widget-host [data-widget-type] {
-        min-height: 120px;
+      .widget-host [data-widget-type] { min-height: 120px; }
+
+      .sustain__footnote {
+        margin-top: 0.75rem;
+        font-size: 0.75rem;
+        color: var(--color-text-muted);
       }
 
-      .sv-sustain__footnote {
-        margin: 0.75rem 0 0;
-        font-size: 0.75rem;
-        color: var(--color-neutral);
-        line-height: 1.45;
+      /* ── Footer ── */
+      .footer {
+        padding: 2rem 0;
+        border-top: 1px solid var(--color-border);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 0.75rem;
       }
+
+      .footer__copy {
+        font-size: 0.8125rem;
+        color: var(--color-text-muted);
+      }
+
+      .footer__links {
+        display: flex;
+        gap: 1.5rem;
+      }
+
+      .footer__link {
+        font-size: 0.8125rem;
+        color: var(--color-text-muted);
+        text-decoration: none;
+        transition: color 0.15s;
+      }
+
+      .footer__link:hover { color: var(--color-text); }
+
+      /* ── Entry animation ── */
+      .landing { opacity: 0; transform: translateY(8px); animation: fadeUp 0.4s ease forwards; }
+      @keyframes fadeUp { to { opacity: 1; transform: translateY(0); } }
+      @media (prefers-reduced-motion: reduce) { .landing { animation: none; opacity: 1; transform: none; } }
     </style>
   </head>
   <body>
-    <section class="sv-landing" aria-labelledby="sv-headline">
-      <div class="sv-landing__shell" id="sv-shell">
-        <div class="sv-landing__top">
-          <div class="sv-landing__brand">
-            <span class="sv-landing__brand-mark" aria-hidden="true"></span>
-            <span class="sv-landing__brand-name">Situate Vancouver</span>
-          </div>
-          <nav class="sv-pill-nav" aria-label="Quick navigation (demo)">
-            <button type="button" class="sv-pill-nav__item sv-pill-nav__item--active" aria-current="page" title="Home">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                <path
-                  d="M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-5v-6H10v6H5a1 1 0 0 1-1-1v-9.5Z"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linejoin="round"
-                />
-              </svg>
-            </button>
-            <button type="button" class="sv-pill-nav__item" title="Search">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                <path
-                  d="M10.5 18a7.5 7.5 0 1 1 0-15 7.5 7.5 0 0 1 0 15ZM21 21l-4.35-4.35"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                />
-              </svg>
-            </button>
-            <button type="button" class="sv-pill-nav__item" title="Account">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                <path
-                  d="M20 21a8 8 0 1 0-16 0M12 13a4 4 0 1 0-4-4 4 4 0 0 0 4 4Z"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                />
-              </svg>
-            </button>
-          </nav>
+    <div class="landing">
+      <!-- Header -->
+      <header class="header">
+        <div class="header__brand">
+          <span class="header__mark" aria-hidden="true"></span>
+          <span class="header__name">Situate Vancouver</span>
         </div>
+        <nav class="header__nav" aria-label="Main navigation">
+          <a href="#features" class="header__link">Features</a>
+          <a href="#about" class="header__link">About</a>
+          <button type="button" class="header__cta">Open map</button>
+        </nav>
+      </header>
 
-        <div class="sv-landing__grid">
-          <div class="sv-landing__hero">
-            <div class="sv-card">
-              <p class="sv-landing__eyebrow">City intelligence</p>
-              <h1 id="sv-headline" class="sv-landing__headline">
-                Understand what is happening in the city, instantly.
-              </h1>
-              <p class="sv-landing__sub" id="sv-sub">
-                A real-time map that explains why your city is moving the way it is.
-              </p>
-              <div class="sv-landing__actions">
-                <button type="button" class="sv-btn sv-btn--primary">Open the map</button>
-                <button type="button" class="sv-btn sv-btn--outline-hero">How it works</button>
-                <button type="button" class="sv-btn sv-btn--accent" id="sv-cycle-sub" aria-label="Show another subheadline">
-                  Another angle
-                </button>
-              </div>
-            </div>
-          </div>
+      <!-- Hero -->
+      <section class="hero">
+        <span class="hero__badge">City intelligence platform</span>
+        <h1 class="hero__title">Understand your city, instantly.</h1>
+        <p class="hero__desc">
+          A real-time map that turns open city data into clear, human explanations
+          of what is happening, where it matters, and what comes next.
+        </p>
+        <div class="hero__actions">
+          <button type="button" class="btn btn--primary">
+            Open the map
+            <svg class="btn__arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </button>
+          <button type="button" class="btn btn--secondary">How it works</button>
+        </div>
+      </section>
 
-          <div class="sv-landing__pitch">
-            <div class="sv-card">
-              <p class="sv-landing__pitch-title">One-liner (judges / intro)</p>
-              <p class="sv-landing__pitch-body" id="sv-pitch-text">
-                Situate Vancouver is a lightweight, map-based platform that turns real-time city data into
-                clear, human explanations of what is happening, where it is affecting people, and what will
-                happen next.
-              </p>
-              <div class="sv-landing__copy-row">
-                <button type="button" class="sv-btn sv-btn--secondary-light sv-btn--small">
-                  Learn more
-                </button>
-                <button type="button" class="sv-btn sv-btn--pitch sv-btn--small" id="sv-copy-pitch">
-                  Copy pitch
-                </button>
-                <span class="sv-toast" id="sv-toast" role="status" aria-live="polite"></span>
-              </div>
-            </div>
-          </div>
-
-          <div class="sv-landing__aside">
-            <div class="sv-mini">
-              <span class="sv-mini__icon" aria-hidden="true">
-                <svg viewBox="0 0 24 24" fill="none">
-                  <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2" />
-                  <path
-                    d="M12 5v2M12 17v2M5 12h2M17 12h2"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                  />
-                </svg>
-              </span>
-              <div>
-                <p class="sv-mini__label">Real-time</p>
-                <p class="sv-mini__text">Live context from open data, built for everyone.</p>
-              </div>
-            </div>
-            <div class="sv-mini">
-              <span class="sv-mini__icon" aria-hidden="true">
-                <svg viewBox="0 0 24 24" fill="none">
-                  <path d="M4 19 12 5l8 14H4Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round" />
-                </svg>
-              </span>
-              <div>
-                <p class="sv-mini__label">Clarity</p>
-                <p class="sv-mini__text">See what is happening, where, and what it means next.</p>
-              </div>
-            </div>
-            <div class="sv-mini">
-              <span class="sv-mini__icon" aria-hidden="true">
-                <svg viewBox="0 0 24 24" fill="none">
-                  <path
-                    d="M13 2 3 14h8l-1 8L21 10h-8l1-8Z"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linejoin="round"
-                  />
-                </svg>
-              </span>
-              <div>
-                <p class="sv-mini__label">Lightweight</p>
-                <p class="sv-mini__text">Fast pages, minimal chrome, and data where you need it.</p>
-              </div>
-            </div>
-            <div class="sv-search" role="search">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                <path
-                  d="M10.5 18a7.5 7.5 0 1 1 0-15 7.5 7.5 0 0 1 0 15ZM21 21l-4.35-4.35"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                />
-              </svg>
-              <input type="search" placeholder="Search a neighbourhood or event" aria-label="Search" />
-            </div>
-          </div>
-
-          <div class="sv-landing__sustain">
-            <div class="sv-card">
-              <div class="sv-sustain__head">
-                <h2 class="sv-sustain__title">Sustainable by design</h2>
-                <span class="sv-sustain__badge" title="Third-party carbon tracking">Carbon aware</span>
-              </div>
-              <p class="sv-sustain__copy">
-                We keep the experience <strong>lightweight</strong> so maps and copy load quickly and use less
-                energy per visit. <strong>Every page view is carbon-offset</strong> through Tree Nation, so
-                exploring the city here does not add net emissions on your conscience.
-              </p>
-              <div
-                class="sv-tree-widget-host"
-                aria-label="Tree Nation website carbon offset widget"
-              >
-                <div
-                  data-widget-type="offset-website"
-                  data-tree-nation-code="876caf22312dcddf"
-                  data-lang="en"
-                  data-theme="dark"
-                ></div>
-              </div>
-              <p class="sv-sustain__footnote">
-                Offsetting is provided by Tree Nation. Figures update as their widget loads.
-              </p>
-            </div>
-          </div>
+      <!-- Features -->
+      <div class="features" id="features">
+        <div class="feature">
+          <span class="feature__icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none">
+              <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2"/>
+              <path d="M12 5v2M12 17v2M5 12h2M17 12h2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+          </span>
+          <p class="feature__name">Real-time data</p>
+          <p class="feature__text">Live context from open data feeds, built for everyone.</p>
+        </div>
+        <div class="feature">
+          <span class="feature__icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none">
+              <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7S2 12 2 12Z" stroke="currentColor" stroke-width="2"/>
+              <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2"/>
+            </svg>
+          </span>
+          <p class="feature__name">Clear insights</p>
+          <p class="feature__text">See what is happening, where, and what it means next.</p>
+        </div>
+        <div class="feature">
+          <span class="feature__icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none">
+              <path d="M13 2 3 14h8l-1 8L21 10h-8l1-8Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+            </svg>
+          </span>
+          <p class="feature__name">Lightweight</p>
+          <p class="feature__text">Fast pages, minimal footprint, data where you need it.</p>
         </div>
       </div>
-    </section>
+
+      <!-- Pitch + Sustainability -->
+      <div class="split" id="about">
+        <div class="card">
+          <p class="card__label">Pitch</p>
+          <p class="card__body" id="sv-pitch-text">
+            Situate Vancouver is a lightweight, map-based platform that turns
+            real-time city data into clear, human explanations of what is
+            happening, where it is affecting people, and what will happen next.
+          </p>
+          <div class="card__actions">
+            <button type="button" class="btn btn--secondary btn--small" id="sv-copy-pitch">Copy pitch</button>
+            <span class="toast" id="sv-toast" role="status" aria-live="polite"></span>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="sustain__head">
+            <p class="sustain__title">Sustainable by design</p>
+            <span class="sustain__badge">Carbon aware</span>
+          </div>
+          <p class="sustain__copy">
+            We keep the experience <strong>lightweight</strong> so maps load
+            quickly and use less energy. <strong>Every page view is
+            carbon-offset</strong> through Tree Nation.
+          </p>
+          <div
+            class="widget-host"
+            aria-label="Tree Nation website carbon offset widget"
+          >
+            <div
+              data-widget-type="offset-website"
+              data-tree-nation-code="876caf22312dcddf"
+              data-lang="en"
+              data-theme="dark"
+            ></div>
+          </div>
+          <p class="sustain__footnote">
+            Offsetting provided by Tree Nation. Figures update as the widget loads.
+          </p>
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <footer class="footer">
+        <span class="footer__copy">&copy; 2026 Situate Vancouver</span>
+        <nav class="footer__links" aria-label="Footer navigation">
+          <a href="#" class="footer__link">GitHub</a>
+          <a href="#" class="footer__link">Contact</a>
+        </nav>
+      </footer>
+    </div>
 
     <script src="https://widgets.tree-nation.com/js/widgets/v3/widgets.min.js"></script>
     <script>
       (function () {
-        var shell = document.getElementById('sv-shell');
-        if (shell) {
-          requestAnimationFrame(function () {
-            shell.classList.add('is-visible');
-          });
-        }
-
-        var sublines = [
-          'A real-time map that explains why your city is moving the way it is.',
-          'One question. One map. Total clarity on what is happening around you.',
-          'Live city context powered by open data, built for everyone.',
-          'See what is happening, where it is happening, and what it means next.',
-        ];
-        var subEl = document.getElementById('sv-sub');
-        var cycleBtn = document.getElementById('sv-cycle-sub');
-        var subIndex = 0;
-
-        if (cycleBtn && subEl) {
-          cycleBtn.addEventListener('click', function () {
-            subIndex = (subIndex + 1) % sublines.length;
-            subEl.textContent = sublines[subIndex];
-          });
-        }
-
         var pitchEl = document.getElementById('sv-pitch-text');
         var copyBtn = document.getElementById('sv-copy-pitch');
         var toast = document.getElementById('sv-toast');
@@ -737,8 +522,8 @@
           if (!toast) return;
           toast.textContent = msg;
           toast.classList.add('is-on');
-          window.clearTimeout(showToast._t);
-          showToast._t = window.setTimeout(function () {
+          clearTimeout(showToast._t);
+          showToast._t = setTimeout(function () {
             toast.classList.remove('is-on');
             toast.textContent = '';
           }, 2200);
@@ -749,12 +534,8 @@
             var text = pitchEl.textContent.replace(/\s+/g, ' ').trim();
             if (navigator.clipboard && navigator.clipboard.writeText) {
               navigator.clipboard.writeText(text).then(
-                function () {
-                  showToast('Copied to clipboard');
-                },
-                function () {
-                  fallbackCopy(text);
-                }
+                function () { showToast('Copied'); },
+                function () { fallbackCopy(text); }
               );
             } else {
               fallbackCopy(text);
@@ -772,7 +553,7 @@
           ta.select();
           try {
             document.execCommand('copy');
-            showToast('Copied to clipboard');
+            showToast('Copied');
           } catch (e) {
             showToast('Select and copy manually');
           }
