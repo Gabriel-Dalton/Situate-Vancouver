@@ -105,7 +105,7 @@ export default function App() {
               </div>
             }
           >
-            <VancouverMap layers={layers} />
+            <VancouverMap layers={layers} onToggleLayer={toggleLayer} />
           </Suspense>
         </main>
 

@@ -1,8 +1,86 @@
+.van-map-shell {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+
 .van-map {
   position: absolute;
   inset: 0;
   background: var(--harbor-navy-deep);
   touch-action: none;
+}
+
+/* Palantir-style map chrome: grouped vertical icon strips */
+.van-map-toolbars {
+  position: absolute;
+  z-index: 2;
+  left: 0.65rem;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  pointer-events: none;
+}
+
+.van-map-toolbars > * {
+  pointer-events: auto;
+}
+
+.map-icon-toolbar {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 4px;
+  border-radius: 4px;
+  border: 1px solid rgba(241, 245, 249, 0.1);
+  background: rgba(0, 12, 28, 0.92);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(12px);
+}
+
+.map-icon-toolbar__btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-radius: 3px;
+  color: var(--text-muted);
+  background: transparent;
+  cursor: pointer;
+  transition:
+    background 0.12s ease,
+    color 0.12s ease,
+    box-shadow 0.12s ease;
+}
+
+.map-icon-toolbar__btn:hover {
+  color: var(--pacific-slate);
+  background: rgba(0, 170, 239, 0.12);
+}
+
+.map-icon-toolbar__btn--active {
+  color: var(--data-cyan);
+  background: rgba(0, 170, 239, 0.18);
+  box-shadow: inset 0 0 0 1px rgba(0, 170, 239, 0.35);
+}
+
+.map-icon-toolbar__btn:focus-visible {
+  outline: 1px solid var(--data-cyan);
+  outline-offset: 2px;
+}
+
+.map-icon-toolbar__glyph {
+  width: 20px;
+  height: 20px;
+  display: block;
+  pointer-events: none;
 }
 
 .van-map .maplibregl-ctrl-bottom-right {
