@@ -446,7 +446,8 @@
         flex-shrink: 0;
       }
 
-      #ls-root {
+      #ls-root,
+      #ls-notice {
         --lsa: var(--color-accent);
         --lsah: #0999b5;
         --lsas: var(--color-accent-soft);
@@ -474,14 +475,19 @@
         background: var(--color-surface);
       }
 
-      #ls-root #ls-norig {
+      #ls-notice #ls-norig {
         color: var(--color-primary);
         background: var(--color-accent-soft);
         border-color: rgba(12, 168, 200, 0.25);
       }
 
-      #ls-root #ls-norig:hover {
+      #ls-notice #ls-norig:hover {
         background: rgba(12, 168, 200, 0.14);
+      }
+
+      #ls-notice #ls-undo:hover {
+        border-color: var(--color-accent);
+        color: var(--color-accent);
       }
     </style>
   </head>

@@ -112,6 +112,8 @@
 
   var current   = ORIGINAL;
   var panelOpen = false;
+  
+  var undoFrom  = null;
 
 
   function getLang(code) {
@@ -126,6 +128,14 @@
       .replace(/&/g, '&amp;')
       .replace(/"/g, '&quot;')
       .replace(/</g, '&lt;');
+  }
+
+  function escapeHtml(s) {
+    return String(s)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
   }
 
   function flagIconClass(iso) {
@@ -241,7 +251,7 @@
     
     el.textContent =
       
-      '#ls-root{' +
+      '#ls-root,#ls-notice{' +
         '--lsa:#c44d2a;--lsah:#a33f22;--lsas:rgba(196,77,42,.09);--lsah2:rgba(196,77,42,.15);' +
         '--lsbg:#f8f6f3;--lssf:#fff;--lsbd:#e5e2de;' +
         '--lst:#1a1a1a;--lst2:#4a4a4a;--lstm:#6b6b6b;' +
@@ -475,6 +485,14 @@
         'transition:background var(--lsd) var(--lse);-webkit-tap-highlight-color:transparent;outline:none}' +
       '#ls-norig:hover{background:var(--lsah2)}' +
       '#ls-norig:focus-visible{outline:2px solid var(--lsa);outline-offset:2px}' +
+      '#ls-undo{font-family:var(--lsf);font-size:.79rem;font-weight:600;color:var(--lst2);' +
+        'background:var(--lsbg);border:1px solid var(--lsbd);border-radius:6px;padding:5px 12px;' +
+        'cursor:pointer;white-space:nowrap;' +
+        'transition:background var(--lsd) var(--lse),border-color var(--lsd) var(--lse),color var(--lsd) var(--lse);' +
+        '-webkit-tap-highlight-color:transparent;outline:none;flex-shrink:0}' +
+      '#ls-undo:hover{background:var(--lssf);border-color:var(--lsa);color:var(--lsa)}' +
+      '#ls-undo:focus-visible{outline:2px solid var(--lsa);outline-offset:2px}' +
+      '#ls-undo[hidden]{display:none!important}' +
       '#ls-nclose{display:flex;align-items:center;justify-content:center;' +
         'width:26px;height:26px;border-radius:6px;border:none;' +
         'background:transparent;color:var(--lstm);cursor:pointer;flex-shrink:0;padding:0;' +
@@ -499,6 +517,7 @@
         '#ls-panel{max-height:82dvh}' +
         '.ls-ni{flex-wrap:wrap;gap:7px}' +
         '#ls-ntxt{flex-basis:100%}' +
+        '#ls-undo,#ls-norig{margin-left:0}' +
         '#ls-norig{margin-left:auto}' +
       '}' +
 
@@ -573,16 +592,6 @@
       '<div id="ls-gt-el" aria-hidden="true" style="display:none;position:absolute"></div>' +
 
       
-      '<div id="ls-notice" role="status" aria-live="polite" hidden>' +
-        '<div class="ls-ni">' +
-          S.globeNi +
-          '<span id="ls-ntxt">Viewing a translated version</span>' +
-          '<button id="ls-norig" type="button">View original</button>' +
-          '<button id="ls-nclose" type="button" aria-label="Dismiss notice">' + S.x + '</button>' +
-        '</div>' +
-      '</div>' +
-
-      
       '<button id="ls-trigger" type="button" ' +
           'aria-label="Select language" aria-expanded="false" aria-controls="ls-panel">' +
         '<span id="ls-trig-flag" class="ls-trig-flag"></span>' +
@@ -646,6 +655,22 @@
     } else {
       document.body.appendChild(root);
     }
+
+    
+    var noticeBar = document.createElement('div');
+    noticeBar.id = 'ls-notice';
+    noticeBar.setAttribute('role', 'status');
+    noticeBar.setAttribute('aria-live', 'polite');
+    noticeBar.setAttribute('hidden', '');
+    noticeBar.innerHTML =
+      '<div class="ls-ni">' +
+        S.globeNi +
+        '<span id="ls-ntxt"></span>' +
+        '<button type="button" id="ls-undo" hidden>Previous language</button>' +
+        '<button type="button" id="ls-norig">View original</button>' +
+        '<button type="button" id="ls-nclose" aria-label="Dismiss notice">' + S.x + '</button>' +
+      '</div>';
+    document.body.appendChild(noticeBar);
 
     
     var discLink = document.getElementById('ls-disc-link');
@@ -742,12 +767,36 @@
 
     var notice = document.getElementById('ls-notice');
     var ntxt   = document.getElementById('ls-ntxt');
+    var norig  = document.getElementById('ls-norig');
+    var nundo  = document.getElementById('ls-undo');
     if (current !== ORIGINAL) {
       var lo = getLang(current);
-      ntxt.innerHTML = 'Viewing in <strong>' + (lo ? lo.name : current) + '</strong> — translated version';
+      var native = lo ? lo.native : current;
+      ntxt.innerHTML =
+        'Viewing in <strong class="notranslate" translate="no">' +
+        escapeHtml(native) +
+        '</strong> — translated version';
+      if (norig) {
+        norig.textContent = 'View original';
+        norig.setAttribute('aria-label', 'View original');
+      }
+      if (nundo) {
+        if (undoFrom != null && undoFrom !== '') {
+          nundo.removeAttribute('hidden');
+          nundo.textContent = 'Previous language';
+          nundo.setAttribute('aria-label', 'Go back to previous language');
+        } else {
+          nundo.setAttribute('hidden', '');
+        }
+      }
       notice.removeAttribute('hidden');
     } else {
       notice.setAttribute('hidden', '');
+      if (norig) {
+        norig.textContent = 'View original';
+        norig.setAttribute('aria-label', 'View original');
+      }
+      if (nundo) nundo.setAttribute('hidden', '');
     }
   }
 
@@ -792,13 +841,25 @@
   }
 
 
+  function undoLanguage() {
+    if (undoFrom == null || undoFrom === '') return;
+    var target = undoFrom;
+    undoFrom = null;
+    current = target;
+    writeStore(current);
+    syncUI();
+    applyTranslation(target);
+  }
+
   function selectLang(code) {
     var prev = current;
+    if (code === prev) return;
+    undoFrom = prev;
     current = code;
     writeStore(code);
     syncUI();
     closePanel();
-    if (code !== prev) applyTranslation(code);
+    applyTranslation(code);
   }
 
 
@@ -825,6 +886,7 @@
     var sc     = document.getElementById('ls-sc');
     var reset  = document.getElementById('ls-reset');
     var norig  = document.getElementById('ls-norig');
+    var nundo  = document.getElementById('ls-undo');
     var nclose = document.getElementById('ls-nclose');
     var panel  = document.getElementById('ls-panel');
     var sugg   = document.getElementById('ls-sugg');
@@ -845,6 +907,7 @@
 
     reset.addEventListener('click', function () { selectLang(ORIGINAL); });
     norig.addEventListener('click', function () { selectLang(ORIGINAL); });
+    if (nundo) nundo.addEventListener('click', undoLanguage);
     nclose.addEventListener('click', function () {
       document.getElementById('ls-notice').setAttribute('hidden', '');
     });
