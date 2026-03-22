@@ -119,9 +119,12 @@ class OrchestratorAgent:
             incident_type=decomposed.intent,
             location=decomposed.location,
         )
+        live_data = getattr(self.watcher, "last_live_data", None)
 
-        # Step 3 — retrieve context, now enriched with the real incident data
-        context = self.retriever.retrieve(decomposed_query=decomposed, incident=incident)
+        # Step 3 — retrieve context grounded in the actual API records
+        context = self.retriever.retrieve(
+            decomposed_query=decomposed, incident=incident, live_data=live_data
+        )
 
         analysis = self.reasoner.reason(
             user_query=user_query,

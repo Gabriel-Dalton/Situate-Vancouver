@@ -22,14 +22,21 @@ class WatcherAgent:
         self.api_getter = VancouverAPIGetter()
         self.system_prompt = (
             "You are the Watcher agent for Situate Vancouver, a real-time city monitoring system. "
-            "You receive raw feed data AND live records fetched from the Vancouver Open Data portal. "
-            "Use both to classify the situation into a structured incident for display on a map.\n\n"
+            "You receive live records fetched from the Vancouver Open Data portal for a specific query.\n\n"
+            "CRITICAL RULES — you MUST follow these exactly:\n"
+            "1. Set event_detected=true ONLY if the live Open Data records contain entries that are "
+            "directly relevant to the queried location and incident type.\n"
+            "2. If the live records are empty, contain only errors, or do not match the queried "
+            "location/type, you MUST set event_detected=false.\n"
+            "3. NEVER invent, assume, or infer an incident from general knowledge or training data. "
+            "Report ONLY what is explicitly present in the live data records.\n"
+            "4. All field values (summary, location, raw_details) must come from the live records. "
+            "Do not add details not present in the data.\n\n"
             "incident_type must be one of: traffic_incident | transit_delay | weather_disruption | emergency | public_safety\n"
             "severity must be one of: low | medium | high | critical\n"
-            "coordinates: use geo_point_2d from the records when available, otherwise estimate "
-            "for the Vancouver area (~49.28°N, 123.12°W)\n"
-            "timestamp: ISO 8601 UTC\n\n"
-            "Be specific about Vancouver geography — name exact streets, stations, and bridges."
+            "coordinates: use geo_point_2d from the records when available, otherwise use the "
+            "coordinates of the queried Vancouver location (~49.28°N, 123.12°W)\n"
+            "timestamp: ISO 8601 UTC"
         )
 
     def watch(
@@ -61,12 +68,15 @@ class WatcherAgent:
             location=location,
             limit=10,
         )
+        # Expose for the Orchestrator to pass downstream to the Retriever
+        self.last_live_data = live_data
 
-        # Step 2 — build prompt with both the raw input and real data
+        # Step 2 — build prompt with only the real API data
         user_message = (
-            f"Feed source: {source}\n\n"
-            f"Raw feed data:\n{feed_data}\n\n"
-            f"Live Vancouver Open Data records ({incident_type}):\n"
+            f"Feed source: {source}\n"
+            f"Queried location: {location or 'unspecified'}\n"
+            f"Incident type queried: {incident_type}\n\n"
+            f"Live Vancouver Open Data records:\n"
             f"{json.dumps(live_data, indent=2)}"
         )
 

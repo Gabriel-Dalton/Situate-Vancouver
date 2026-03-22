@@ -10,13 +10,14 @@ class QueryDecomposer:
     """
 
     INTENT_SOURCES = {
-        "traffic":      ["drivebc"],
-        "weather":      ["weathercan"],
-        "emergency":    ["911_dispatch", "public_safety"],
-        "obstruction":  ["drivebc", "public_safety"],
-        "construction": ["drivebc"],
-        "transit":      ["translink"],
-        "general":      ["drivebc", "translink", "weathercan", "911_dispatch"],
+        "traffic":          ["drivebc"],
+        "weather":          ["weathercan"],
+        "emergency":        ["911_dispatch", "public_safety"],
+        "obstruction":      ["drivebc", "public_safety"],
+        "construction":     ["drivebc"],
+        "transit":          ["translink"],
+        "natural_disaster": ["drivebc", "embc", "bc_wildfire", "bc_river_forecast", "geological_survey"],
+        "general":          ["drivebc", "translink", "weathercan", "911_dispatch"],
     }
 
     def __init__(self, model: str = "gpt-4o"):
@@ -25,7 +26,8 @@ class QueryDecomposer:
         self.system_prompt = (
             "You are a query decomposer for Situate Vancouver, a real-time city monitoring system. "
             "Extract structured entities from a natural language query about Vancouver's city conditions.\n\n"
-            "Intent must be one of: traffic | weather | emergency | obstruction | construction | transit | general\n"
+            "Intent must be one of: traffic | weather | emergency | obstruction | construction | transit | natural_disaster | general\n"
+            "Use natural_disaster for wildfires, floods, landslides, earthquakes, tsunamis, and avalanches.\n"
             "time_reference must be one of: current | forecast | historical\n"
             "location: canonical Vancouver name (e.g. 'Burrard Bridge', 'Waterfront Station'). Empty string if none.\n"
             "location_key: snake_case version for cache keys (e.g. 'burrard_bridge'). Empty string if none.\n"
