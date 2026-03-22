@@ -33,15 +33,15 @@ const MSG_APP_UNAVAILABLE =
   'We could not reach the app. Please try again in a few minutes or check your connection.'
 
 /**
- * Production aggregate health JSON. In dev, Vite proxies `/__situate_health` to this URL (see
- * vite.config). Override at build time with `VITE_HEALTH_URL` if your deploy needs a different
- * path (for example same-origin `/api/health/`).
+ * Aggregate `/api/health/` JSON. In dev, the browser calls same-origin `/api/health/`; Vite forwards
+ * to Django using repo-root `.env`: `API_PROXY_TARGET` or `DJANGO_DEV_HOST` + `DJANGO_DEV_PORT`.
+ * Production builds use the URL baked in from that same resolution unless `VITE_HEALTH_URL` is set.
  */
 function healthEndpointUrl(): string {
   const fromEnv = import.meta.env.VITE_HEALTH_URL as string | undefined
   if (fromEnv?.trim()) return fromEnv.trim()
-  if (import.meta.env.DEV) return '/__situate_health'
-  return 'https://www.ageforty.com/api/health/'
+  if (import.meta.env.DEV) return '/api/health/'
+  return __SITUATE_PROD_HEALTH_URL__
 }
 
 function parseHealthPayload(text: string): HealthResponse | null {
@@ -153,10 +153,10 @@ export default function StatusPanel() {
   const fetchHealth = useCallback(async () => {
     const url = healthEndpointUrl()
     try {
-      const res = await fetch(url)
-      const text = await res.text()
+      const text = await (await fetch(url)).text()
       const data = parseHealthPayload(text)
-      setHealth(data && res.ok ? data : syntheticUnhealthy())
+      // Prefer JSON from the wire (including 503 from the dev health forwarder) over `res.ok` alone.
+      setHealth(data ?? syntheticUnhealthy())
       setLastChecked(new Date())
     } catch {
       setHealth(syntheticUnhealthy())

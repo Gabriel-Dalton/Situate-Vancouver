@@ -8,11 +8,26 @@ import { djangoHealthForwardPlugin } from './vite-plugin-django-health'
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const repoRoot = path.resolve(__dirname, '..')
 
+/**
+ * Django origin for Vite `/api` proxy and health forward. Uses `API_PROXY_TARGET` when set;
+ * otherwise `http://DJANGO_DEV_HOST:DJANGO_DEV_PORT` from repo-root `.env` (defaults 127.0.0.1:1111).
+ * Strips a trailing `/api` so `/api/health/` is not requested as `/api/api/health/` (404).
+ */
+function resolveDjangoProxyOrigin(fileEnv: Record<string, string>): string {
+  const explicit = (fileEnv.API_PROXY_TARGET || process.env.API_PROXY_TARGET || '').trim()
+  const host = (fileEnv.DJANGO_DEV_HOST || '127.0.0.1').trim() || '127.0.0.1'
+  const port = (fileEnv.DJANGO_DEV_PORT || '1111').trim() || '1111'
+  let base = explicit || `http://${host}:${port}`
+  base = base.replace(/\/+$/, '')
+  if (base.endsWith('/api')) base = base.slice(0, -4)
+  return base
+}
+
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => {
   const fileEnv = loadEnv(mode, repoRoot, '')
-  const djangoTarget =
-    fileEnv.API_PROXY_TARGET || process.env.API_PROXY_TARGET || 'http://127.0.0.1:1111'
+  const djangoTarget = resolveDjangoProxyOrigin(fileEnv)
+  const prodHealthUrl = `${djangoTarget}/api/health/`
   const aiTarget =
     fileEnv.AI_PROXY_TARGET || process.env.AI_PROXY_TARGET || 'http://127.0.0.1:8001'
   // Optional: Host header sent to Django (e.g. 127.0.0.1:1111) when API_PROXY_TARGET uses a public hostname.
@@ -48,6 +63,9 @@ export default defineConfig(({ mode }) => {
     cacheDir:
       process.env.SITUATE_VITE_CACHE_DIR ||
       path.join(os.tmpdir(), 'situate-vancouver-frontend-vite'),
+    define: {
+      __SITUATE_PROD_HEALTH_URL__: JSON.stringify(prodHealthUrl),
+    },
     plugins: [djangoHealthForwardPlugin(djangoTarget, apiProxyForwardHost), react()],
     optimizeDeps: {
       include: ['maplibre-gl'],
@@ -61,12 +79,6 @@ export default defineConfig(({ mode }) => {
       port: devPort,
       allowedHosts,
       proxy: {
-        // Browser GET to production aggregate health (avoids CORS in local dev).
-        '/__situate_health': {
-          target: 'https://www.ageforty.com',
-          changeOrigin: true,
-          rewrite: () => '/api/health/',
-        },
         '/api': {
           target: djangoTarget,
           changeOrigin: true,
