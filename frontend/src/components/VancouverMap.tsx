@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import maplibregl from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
-import { enrichSkytrainNodes, skytrainCircleColorExpr, skytrainStrokeColorExpr } from '../data/skytrainLineKeys'
+import { enrichSkytrainNodes, skytrainCircleColorExpr, skytrainStrokeColorExpr, SKYTRAIN_LINE_COLORS } from '../data/skytrainLineKeys'
+import { fetchStationThumb } from '../data/stationWikiTitles'
 import { SKYTRAIN_NODES } from '../data/skytrainStations'
 import { LENS_OVERLAYS } from '../data/lensOverlays'
 import { MOVEMENT_CORRIDORS, STRATEGIC_NODES } from '../data/vancouverGeo'
@@ -222,6 +223,9 @@ export default function VancouverMap({ layers, onToggleLayer, lens }: Props) {
       const coords = f.geometry.coordinates.slice() as [number, number]
       const name = String(f.properties?.name ?? 'Node')
       const lensText = String(f.properties?.lens ?? '')
+      const lineKey = String(f.properties?.lineKey ?? '')
+      const isSkytrainNode = f.layer?.id === 'skytrain-nodes-core'
+      const lineColor = (lineKey && SKYTRAIN_LINE_COLORS[lineKey as keyof typeof SKYTRAIN_LINE_COLORS]) || ''
 
       while (Math.abs(e.lngLat.lng - coords[0]) > 180) {
         coords[0] += e.lngLat.lng > coords[0] ? 360 : -360
@@ -236,13 +240,43 @@ export default function VancouverMap({ layers, onToggleLayer, lens }: Props) {
       })
 
       map.once('moveend', () => {
-        new maplibregl.Popup({ maxWidth: '280px', className: 'van-popup', offset: 12 })
+        const accentBar = lineColor
+          ? `<div class="van-popup__accent" style="background:${lineColor}"></div>`
+          : ''
+        const shimmer = isSkytrainNode
+          ? `<div class="van-popup__img-wrap"><div class="van-popup__shimmer" id="popup-img-slot"></div></div>`
+          : ''
+
+        const popup = new maplibregl.Popup({ maxWidth: '300px', className: 'van-popup', offset: 12 })
           .setLngLat(coords)
           .setHTML(
-            `<div class="van-popup__title">${escapeHtml(name)}</div>` +
+            accentBar +
+              shimmer +
+              `<div class="van-popup__title">${escapeHtml(name)}</div>` +
               `<div class="van-popup__body">${escapeHtml(lensText)}</div>`,
           )
           .addTo(map)
+
+        if (isSkytrainNode) {
+          fetchStationThumb(name).then((url) => {
+            const slot = popup.getElement()?.querySelector('#popup-img-slot')
+            if (!slot) return
+            if (url) {
+              const img = document.createElement('img')
+              img.src = url
+              img.alt = name
+              img.className = 'van-popup__img'
+              img.onload = () => {
+                slot.replaceWith(img)
+              }
+              img.onerror = () => {
+                slot.remove()
+              }
+            } else {
+              slot.remove()
+            }
+          })
+        }
       })
     }
 
