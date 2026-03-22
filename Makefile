@@ -1,8 +1,6 @@
-# Django API (backend)
+# Django (backend) + FastAPI (ai-service) + Vite (frontend); bind addresses/ports from repo-root `.env`.
+# See `.env.example` (DJANGO_DEV_*, AI_DEV_*, FRONTEND_DEV_*, API_PROXY_TARGET, AI_PROXY_TARGET, …).
 BACKEND_DIR := backend
-HOST ?= 127.0.0.1
-# Align with frontend/vite.config.ts default API_PROXY_TARGET (127.0.0.1:8000).
-PORT ?= 8000
 
 # Prefer backend venv when present (path is relative to BACKEND_DIR because we `cd` there)
 PYTHON := $(shell command -v python3 2>/dev/null || command -v python 2>/dev/null)
@@ -15,12 +13,11 @@ endif
 help:
 	@echo "Targets:"
 	@echo "  make install      pip install -r backend/requirements.txt (uses .venv if present)"
-	@echo "  make run          Start Django (default $(HOST):$(PORT))"
-	@echo "  make run PORT=8000   Use another port"
-	@echo "Env: shared variables live in repo-root .env (tracked in git)."
+	@echo "  make run          Start FastAPI + Vite frontend + Django (repo-root .env)"
+	@echo "Env: copy .env.example to .env at repo root (Django and dev-run.sh load it)."
 
 install:
 	cd $(BACKEND_DIR) && $(PYTHON) -m pip install -r requirements.txt
 
 run:
-	cd $(BACKEND_DIR) && $(PYTHON) manage.py runserver $(HOST):$(PORT)
+	bash scripts/dev-run.sh

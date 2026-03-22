@@ -1,4 +1,9 @@
-"""Aggregate health: Django process, Vancouver Open Data (Explore API), AI service."""
+"""Aggregate health: Django process, Vancouver Open Data (Explore API), AI service.
+
+AI: GET ``{AI_SERVICE_URL}/health``; JSON must have ``"status": "ok"`` (AI probes OpenAI
+via ``models.list()``). The full body is under ``checks.ai_service.upstream``, including
+``openai`` when the AI service returns it.
+"""
 
 from __future__ import annotations
 
@@ -14,7 +19,8 @@ from apps.vancouver_opendata.exceptions import (
     VancouverOpenDataError,
 )
 
-AI_HEALTH_TIMEOUT_SECONDS = 3.0
+# Must exceed the AI service OpenAI probe timeout so we do not false-fail while upstream is OK.
+AI_HEALTH_TIMEOUT_SECONDS = 10.0
 REMOTE_OPENDATA_HEALTH_TIMEOUT_SECONDS = 12.0
 
 
@@ -129,19 +135,57 @@ def _check_ai_service(checks: dict[str, dict]) -> None:
         with httpx.Client(timeout=AI_HEALTH_TIMEOUT_SECONDS) as client:
             response = client.get(health_url)
         latency_ms = round((time.perf_counter() - started) * 1000, 2)
-        if response.status_code == 200:
+        if response.status_code != 200:
             checks['ai_service'] = {
-                'status': 'ok',
-                'message': 'AI service /health returned HTTP 200',
+                'status': 'error',
+                'message': f'Unexpected HTTP {response.status_code}',
                 'url': health_url,
                 'latency_ms': latency_ms,
             }
             return
+
+        body: dict | None
+        try:
+            raw = response.json()
+        except json.JSONDecodeError:
+            checks['ai_service'] = {
+                'status': 'error',
+                'message': 'AI /health returned non-JSON body',
+                'url': health_url,
+                'latency_ms': latency_ms,
+            }
+            return
+
+        if not isinstance(raw, dict):
+            checks['ai_service'] = {
+                'status': 'error',
+                'message': 'AI /health JSON must be an object',
+                'url': health_url,
+                'latency_ms': latency_ms,
+            }
+            return
+
+        upstream_status = raw.get('status')
+        if upstream_status != 'ok':
+            checks['ai_service'] = {
+                'status': 'error',
+                'message': (
+                    'AI /health reported non-ok status'
+                    if upstream_status is not None
+                    else 'AI /health JSON missing "status": "ok"'
+                ),
+                'url': health_url,
+                'latency_ms': latency_ms,
+                'upstream': raw,
+            }
+            return
+
         checks['ai_service'] = {
-            'status': 'error',
-            'message': f'Unexpected HTTP {response.status_code}',
+            'status': 'ok',
+            'message': 'AI service /health reachable and reports ok',
             'url': health_url,
             'latency_ms': latency_ms,
+            'upstream': raw,
         }
     except httpx.TimeoutException:
         checks['ai_service'] = {

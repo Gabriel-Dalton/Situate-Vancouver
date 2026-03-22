@@ -7,7 +7,7 @@ from app.routers import health, incidents
 
 _origins = os.environ.get(
     'CORS_ALLOWED_ORIGINS',
-    'http://localhost:5173,http://127.0.0.1:5173,http://localhost:8000,http://127.0.0.1:8000',
+    'http://localhost:5173,http://127.0.0.1:5173,http://localhost:1111,http://127.0.0.1:1111',
 )
 _allow_origins = [o.strip() for o in _origins.split(',') if o.strip()]
 

@@ -1,6 +1,6 @@
-import os
 import json
-from openai import OpenAI
+
+from app.openai_config import build_openai_client
 from app.services.vancouver_api import VancouverAPIGetter
 from .schemas import DetectedIncident
 
@@ -17,7 +17,7 @@ class WatcherAgent:
     """
 
     def __init__(self, model: str = "gpt-4o"):
-        self.client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
+        self.client = build_openai_client()
         self.model = model
         self.api_getter = VancouverAPIGetter()
         self.system_prompt = (

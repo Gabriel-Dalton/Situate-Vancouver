@@ -1,5 +1,5 @@
-import os
-from openai import OpenAI
+from app.openai_config import build_openai_client
+
 from .schemas import DetectedIncident, RetrievedContext, ReasonerOutput
 
 
@@ -10,7 +10,7 @@ class ReasonerAgent:
     """
 
     def __init__(self, model: str = "gpt-4o"):
-        self.client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
+        self.client = build_openai_client()
         self.model = model
         self.system_prompt = (
             "You are the Reasoner agent for Situate Vancouver, a real-time city monitoring system. "
