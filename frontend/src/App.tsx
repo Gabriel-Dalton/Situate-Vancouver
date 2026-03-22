@@ -12,7 +12,6 @@ import BrandLockup from './components/BrandLockup'
 import StatusPanel from './components/StatusPanel'
 import { AiQueryBar, AiResponsePanel } from './components/AiQuery'
 import type { AiQueryResponse } from './components/AiQuery'
-import { useOpen511Events } from './hooks/useOpen511Events'
 import './App.css'
 
 const VancouverMap = lazy(() => import('./components/VancouverMap'))
@@ -22,12 +21,10 @@ const DEFAULT_LAYERS: InsightLayerState = {
   movementCorridors: true,
   skytrainNodes: true,
   incidentMarker: true,
-  open511Events: true,
 }
 
 export default function App() {
   const [layers, setLayers] = useState<InsightLayerState>(DEFAULT_LAYERS)
-  const open511Events = useOpen511Events()
   const [lens, setLens] = useState<MobilityLens>('cycle')
   const [aiResponse, setAiResponse] = useState<AiQueryResponse | null>(null)
   const [aiPanelOpen, setAiPanelOpen] = useState(false)
@@ -121,7 +118,6 @@ export default function App() {
                 onToggleLayer={toggleLayer}
                 lens={lens}
                 incident={aiResponse}
-                open511Events={open511Events}
                 focusLocation={focusLocation}
               />
             </Suspense>
@@ -178,13 +174,6 @@ export default function App() {
               checked={layers.incidentMarker}
               onChange={() => toggleLayer('incidentMarker')}
             />
-            <LayerToggle
-              id="layer-open511"
-              label="Live road incidents"
-              description="Active DriveBC incidents on Metro Vancouver roads (auto-refreshes every 5 min)"
-              checked={layers.open511Events}
-              onChange={() => toggleLayer('open511Events')}
-            />
             <div className="skytrain-legend" role="region" aria-label="SkyTrain line colors">
               {SKYTRAIN_LEGEND.map(({ key, shortLabel }) => (
                 <span key={key} className="skytrain-legend__item">
@@ -227,7 +216,6 @@ export default function App() {
               onToggleLayer={toggleLayer}
               lens={lens}
               incident={aiResponse}
-              open511Events={open511Events}
               focusLocation={focusLocation}
             />
           </Suspense>

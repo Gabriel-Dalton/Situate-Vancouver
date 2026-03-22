@@ -1,39 +1,13 @@
-volumes:
-  django-db:
-
 services:
   backend:
     build: ./backend
     ports:
       - '8000:8000'
-    volumes:
-      - django-db:/app/shared-data
     environment:
       # Override via repo-root `.env` or shell when deploying (public hostname required).
       DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS:-localhost,127.0.0.1,backend}
       DJANGO_CORS_ALLOWED_ORIGINS: http://localhost:5173,http://127.0.0.1:5173,http://frontend:5173
       AI_SERVICE_URL: http://ai-service:8001
-      DJANGO_DB_PATH: /app/shared-data/db.sqlite3
-
-  # Refreshes Open511 BC /events snapshot every 5 minutes so the cached endpoint stays live.
-  backend-cron:
-    build: ./backend
-    volumes:
-      - django-db:/app/shared-data
-    command: >
-      sh -c "python manage.py migrate --noinput &&
-             while true; do
-               python manage.py refresh_open511_events
-                 --event-type INCIDENT
-                 --bbox -123.5,49.0,-122.5,49.5;
-               sleep 300;
-             done"
-    environment:
-      DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1,backend
-      AI_SERVICE_URL: http://ai-service:8001
-      DJANGO_DB_PATH: /app/shared-data/db.sqlite3
-    depends_on:
-      - backend
 
   ai-service:
     build: ./ai-service

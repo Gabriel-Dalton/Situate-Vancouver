@@ -123,7 +123,7 @@ WSGI_APPLICATION = 'config.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': Path(os.environ.get('DJANGO_DB_PATH', str(BASE_DIR / 'db.sqlite3'))),
+        'NAME': BASE_DIR / 'db.sqlite3',
     }
 }
 
@@ -230,7 +230,15 @@ HEALTH_CHECK_OPEN511_BC = os.environ.get(
     'HEALTH_CHECK_OPEN511_BC',
     'true',
 ).lower() in ('1', 'true', 'yes')
-# Seconds before a stored snapshot is considered stale (used by the cached-events endpoint).
+# Seconds before a stored snapshot is considered stale (cached-events JSON ``is_stale``).
 OPEN511_EVENTS_CACHE_STALE_AFTER_SECONDS = int(
     os.environ.get('OPEN511_EVENTS_CACHE_STALE_AFTER_SECONDS', '300'),
+)
+# Aggregate health ``checks.open511_bc``: max snapshot age before ``degraded`` (default 24h).
+# Use a looser value than ``OPEN511_EVENTS_CACHE_STALE_AFTER_SECONDS`` when refresh is daily.
+HEALTH_OPEN511_SNAPSHOT_STALE_AFTER_SECONDS = int(
+    os.environ.get(
+        'HEALTH_OPEN511_SNAPSHOT_STALE_AFTER_SECONDS',
+        '86400',
+    ),
 )

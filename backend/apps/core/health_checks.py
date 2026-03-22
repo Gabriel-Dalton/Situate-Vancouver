@@ -146,7 +146,9 @@ def _check_vancouver_opendata_local(checks: dict[str, dict]) -> None:
 
 def _check_open511_bc(checks: dict[str, dict]) -> None:
     """Report Open511 BC health based on the local DB snapshot (no live upstream request)."""
-    stale_after = int(getattr(settings, 'OPEN511_EVENTS_CACHE_STALE_AFTER_SECONDS', 300))
+    stale_after = int(
+        getattr(settings, 'HEALTH_OPEN511_SNAPSHOT_STALE_AFTER_SECONDS', 86400),
+    )
     try:
         snapshot = Open511EventsSnapshot.objects.get(pk=1)
     except Open511EventsSnapshot.DoesNotExist:
@@ -167,10 +169,10 @@ def _check_open511_bc(checks: dict[str, dict]) -> None:
     checks['open511_bc'] = {
         'status': 'degraded' if is_stale else 'ok',
         'message': (
-            f'Snapshot is stale ({round(age_seconds)}s old, threshold {stale_after}s). '
+            f'Snapshot is older than health threshold ({round(age_seconds)}s, max {stale_after}s). '
             'Run: python manage.py refresh_open511_events'
             if is_stale
-            else 'Open511 BC snapshot is current'
+            else 'Open511 BC events snapshot is within the health freshness window'
         ),
         'base_url': settings.OPEN511_BC_BASE_URL,
         'fetched_at': snapshot.fetched_at.isoformat(),

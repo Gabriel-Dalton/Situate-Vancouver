@@ -263,7 +263,11 @@ class AggregateHealthAPITests(TestCase):
         self.assertEqual(body['status'], 'degraded')
         self.assertEqual(body['checks']['open511_bc']['status'], 'not_configured')
 
-    @override_settings(HEALTH_CHECK_AI=False, HEALTH_CHECK_OPEN511_BC=True, OPEN511_EVENTS_CACHE_STALE_AFTER_SECONDS=1)
+    @override_settings(
+        HEALTH_CHECK_AI=False,
+        HEALTH_CHECK_OPEN511_BC=True,
+        HEALTH_OPEN511_SNAPSHOT_STALE_AFTER_SECONDS=1,
+    )
     @patch('apps.core.health_checks.build_ckan_client')
     @patch('apps.core.health_checks.run_ckan_smoke_probe')
     def test_health_degraded_when_open511_snapshot_stale(
