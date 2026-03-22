@@ -1,12 +1,15 @@
 import { useEffect, useLayoutEffect, useRef } from 'react'
 import maplibregl from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
+import { enrichSkytrainNodes, skytrainCircleColorExpr, skytrainStrokeColorExpr } from '../data/skytrainLineKeys'
+import { SKYTRAIN_NODES } from '../data/skytrainStations'
 import { MOVEMENT_CORRIDORS, STRATEGIC_NODES } from '../data/vancouverGeo'
 import './VancouverMap.css'
 
 export type InsightLayerState = {
   strategicNodes: boolean
   movementCorridors: boolean
+  skytrainNodes: boolean
 }
 
 const STYLE_URL = 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json'
@@ -14,10 +17,18 @@ const VAN_CENTRE: [number, number] = [-123.1207, 49.2827]
 
 function applyInsightLayers(map: maplibregl.Map, layers: InsightLayerState) {
   const vis = (on: boolean) => (on ? 'visible' : 'none') as 'visible' | 'none'
-  const ids = ['strategic-nodes-glow', 'strategic-nodes-core', 'corridors-line'] as const
+  const ids = [
+    'skytrain-nodes-glow',
+    'skytrain-nodes-core',
+    'strategic-nodes-glow',
+    'strategic-nodes-core',
+    'corridors-line',
+  ] as const
   for (const id of ids) {
     if (!map.getLayer(id)) continue
-    if (id.startsWith('strategic')) {
+    if (id.startsWith('skytrain')) {
+      map.setLayoutProperty(id, 'visibility', vis(layers.skytrainNodes))
+    } else if (id.startsWith('strategic')) {
       map.setLayoutProperty(id, 'visibility', vis(layers.strategicNodes))
     } else {
       map.setLayoutProperty(id, 'visibility', vis(layers.movementCorridors))
@@ -66,6 +77,31 @@ export default function VancouverMap({ layers }: Props) {
     window.addEventListener('resize', resize)
 
     map.on('load', () => {
+      map.addSource('skytrain-nodes', { type: 'geojson', data: enrichSkytrainNodes(SKYTRAIN_NODES) })
+      map.addLayer({
+        id: 'skytrain-nodes-glow',
+        type: 'circle',
+        source: 'skytrain-nodes',
+        paint: {
+          'circle-radius': 14,
+          'circle-color': skytrainCircleColorExpr(),
+          'circle-opacity': 0.2,
+          'circle-blur': 0.75,
+        },
+      })
+      map.addLayer({
+        id: 'skytrain-nodes-core',
+        type: 'circle',
+        source: 'skytrain-nodes',
+        paint: {
+          'circle-radius': 4,
+          'circle-color': skytrainCircleColorExpr(),
+          'circle-opacity': 0.94,
+          'circle-stroke-width': 1.5,
+          'circle-stroke-color': skytrainStrokeColorExpr(),
+        },
+      })
+
       map.addSource('strategic-nodes', { type: 'geojson', data: STRATEGIC_NODES })
       map.addLayer({
         id: 'strategic-nodes-glow',
@@ -104,32 +140,34 @@ export default function VancouverMap({ layers }: Props) {
         },
       })
 
-      map.on('mouseenter', 'strategic-nodes-core', () => {
-        map.getCanvas().style.cursor = 'pointer'
-      })
-      map.on('mouseleave', 'strategic-nodes-core', () => {
-        map.getCanvas().style.cursor = ''
-      })
+      const pointerLayers = ['strategic-nodes-core', 'skytrain-nodes-core'] as const
+      for (const layerId of pointerLayers) {
+        map.on('mouseenter', layerId, () => {
+          map.getCanvas().style.cursor = 'pointer'
+        })
+        map.on('mouseleave', layerId, () => {
+          map.getCanvas().style.cursor = ''
+        })
+        map.on('click', layerId, (e) => {
+          const f = e.features?.[0]
+          if (!f?.geometry || f.geometry.type !== 'Point') return
+          const coords = f.geometry.coordinates.slice() as [number, number]
+          const name = String(f.properties?.name ?? 'Node')
+          const lens = String(f.properties?.lens ?? '')
 
-      map.on('click', 'strategic-nodes-core', (e) => {
-        const f = e.features?.[0]
-        if (!f?.geometry || f.geometry.type !== 'Point') return
-        const coords = f.geometry.coordinates.slice() as [number, number]
-        const name = String(f.properties?.name ?? 'Node')
-        const lens = String(f.properties?.lens ?? '')
+          while (Math.abs(e.lngLat.lng - coords[0]) > 180) {
+            coords[0] += e.lngLat.lng > coords[0] ? 360 : -360
+          }
 
-        while (Math.abs(e.lngLat.lng - coords[0]) > 180) {
-          coords[0] += e.lngLat.lng > coords[0] ? 360 : -360
-        }
-
-        new maplibregl.Popup({ maxWidth: '280px', className: 'van-popup' })
-          .setLngLat(coords)
-          .setHTML(
-            `<div class="van-popup__title">${escapeHtml(name)}</div>` +
-              `<div class="van-popup__body">${escapeHtml(lens)}</div>`,
-          )
-          .addTo(map)
-      })
+          new maplibregl.Popup({ maxWidth: '280px', className: 'van-popup' })
+            .setLngLat(coords)
+            .setHTML(
+              `<div class="van-popup__title">${escapeHtml(name)}</div>` +
+                `<div class="van-popup__body">${escapeHtml(lens)}</div>`,
+            )
+            .addTo(map)
+        })
+      }
 
       styleReadyRef.current = true
       applyInsightLayers(map, layersRef.current)
