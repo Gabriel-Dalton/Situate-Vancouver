@@ -153,11 +153,14 @@
 }
 
 .layer-toggle {
-  display: flex;
-  align-items: flex-start;
-  gap: 0.65rem;
+  /* Grid stacks input + painted box so alignment stays predictable; no negative margin so
+     the block lines up with panel heading and hint (same inset as the rest of the rail). */
+  display: grid;
+  grid-template-columns: auto 1fr;
+  column-gap: 0.65rem;
+  align-items: start;
   padding: 0.65rem 0.55rem;
-  margin: 0 -0.55rem;
+  margin: 0;
   border-radius: 6px;
   cursor: pointer;
   border: 1px solid transparent;
@@ -166,27 +169,40 @@
     border-color 0.12s ease;
 }
 
+.layer-toggle + .layer-toggle {
+  margin-top: 0.35rem;
+}
+
 .layer-toggle:hover {
   background: rgba(0, 170, 239, 0.06);
   border-color: var(--border-subtle);
 }
 
 .layer-toggle__input {
-  position: absolute;
+  grid-column: 1;
+  grid-row: 1;
+  place-self: start;
+  width: 1rem;
+  height: 1rem;
+  margin: 0.12rem 0 0;
   opacity: 0;
-  width: 0;
-  height: 0;
+  z-index: 1;
+  cursor: pointer;
 }
 
 .layer-toggle__ui {
-  flex-shrink: 0;
+  grid-column: 1;
+  grid-row: 1;
+  place-self: start;
   width: 1rem;
   height: 1rem;
-  margin-top: 0.12rem;
+  margin: 0.12rem 0 0;
   border-radius: 3px;
   border: 1px solid var(--border-strong);
   background: rgba(0, 0, 0, 0.25);
   position: relative;
+  pointer-events: none;
+  box-sizing: border-box;
 }
 
 .layer-toggle__input:checked + .layer-toggle__ui {
@@ -197,14 +213,14 @@
 
 .layer-toggle__input:checked + .layer-toggle__ui::after {
   content: '';
+  display: block;
   position: absolute;
-  left: 3px;
-  top: 0px;
-  width: 4px;
-  height: 8px;
-  border: solid var(--harbor-navy-deep);
-  border-width: 0 2px 2px 0;
-  transform: rotate(45deg);
+  inset: 0;
+  width: 0.55rem;
+  height: 0.55rem;
+  margin: auto;
+  background: no-repeat center / contain
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath fill='none' stroke='%23001b3d' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' d='M2.5%206.5%20L5%209%20L9.5%203'/%3E%3C/svg%3E");
 }
 
 .layer-toggle__input:focus-visible + .layer-toggle__ui {
@@ -213,6 +229,8 @@
 }
 
 .layer-toggle__copy {
+  grid-column: 2;
+  grid-row: 1;
   display: flex;
   flex-direction: column;
   gap: 0.2rem;
