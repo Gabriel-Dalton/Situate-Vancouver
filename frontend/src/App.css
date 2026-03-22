@@ -25,6 +25,39 @@
   min-width: 0;
 }
 
+.insight-shell__brand-link {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  text-decoration: none;
+  border-radius: 5px;
+}
+
+.insight-shell__brand-link:focus-visible {
+  outline: 2px solid var(--data-cyan);
+  outline-offset: 2px;
+}
+
+.insight-shell__home-link {
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  text-decoration: none;
+  padding: 0.25rem 0.5rem;
+  border-radius: 3px;
+  border: 1px solid var(--border-subtle);
+  transition:
+    color 0.15s,
+    border-color 0.15s;
+}
+
+.insight-shell__home-link:hover {
+  color: var(--pacific-slate);
+  border-color: var(--border-strong);
+}
+
 .insight-shell__mark {
   width: 2.25rem;
   height: 2.25rem;
