@@ -65,6 +65,14 @@
   text-align: right;
 }
 
+.insight-shell__tz {
+  font-size: 0.6rem;
+  font-weight: 500;
+  color: var(--data-cyan);
+  opacity: 0.7;
+  letter-spacing: 0.06em;
+}
+
 .insight-shell__body {
   flex: 1;
   min-height: 0;
@@ -266,22 +274,22 @@
 .status-panel {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.35rem;
 }
 
 .status-panel__loading {
   margin: 0;
-  font-size: 0.78rem;
+  font-size: 0.68rem;
   color: var(--text-muted);
 }
 
 .status-panel__overall {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem 0.65rem;
-  border-radius: 5px;
-  margin-bottom: 0.25rem;
+  gap: 0.4rem;
+  padding: 0.35rem 0.5rem;
+  border-radius: 4px;
+  margin-bottom: 0.15rem;
 }
 
 .status-panel__overall--healthy {
@@ -297,8 +305,8 @@
 }
 
 .status-panel__overall-dot {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
   flex-shrink: 0;
   border-radius: 50%;
 }
@@ -319,27 +327,35 @@
 }
 
 .status-panel__overall-label {
-  font-size: 0.78rem;
+  font-size: 0.68rem;
   font-weight: 600;
   color: var(--pacific-slate);
+}
+
+.status-panel__timestamp {
+  font-family: var(--font-mono);
+  font-size: 0.55rem;
+  color: var(--text-dim);
+  text-align: right;
+  opacity: 0.7;
 }
 
 .status-check {
   display: flex;
   align-items: flex-start;
-  gap: 0.55rem;
-  padding: 0.55rem 0.65rem;
-  border-radius: 5px;
+  gap: 0.4rem;
+  padding: 0.4rem 0.5rem;
+  border-radius: 4px;
   border: 1px solid var(--border-subtle);
   background: var(--surface-raised);
 }
 
 .status-check__dot {
-  width: 7px;
-  height: 7px;
+  width: 6px;
+  height: 6px;
   flex-shrink: 0;
   border-radius: 50%;
-  margin-top: 0.25rem;
+  margin-top: 0.22rem;
 }
 
 .status-check--ok .status-check__dot {
@@ -376,18 +392,18 @@
 }
 
 .status-check__name {
-  font-size: 0.8rem;
+  font-size: 0.7rem;
   font-weight: 600;
   color: var(--pacific-slate);
 }
 
 .status-check__badge {
   font-family: var(--font-mono);
-  font-size: 0.55rem;
+  font-size: 0.5rem;
   font-weight: 500;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  padding: 0.15rem 0.4rem;
+  padding: 0.1rem 0.3rem;
   border-radius: 3px;
   white-space: nowrap;
 }
@@ -414,14 +430,14 @@
 
 .status-check__latency {
   font-family: var(--font-mono);
-  font-size: 0.65rem;
+  font-size: 0.58rem;
   color: var(--text-muted);
 }
 
 .status-check__msg {
-  font-size: 0.7rem;
+  font-size: 0.62rem;
   color: var(--text-dim);
-  line-height: 1.35;
+  line-height: 1.3;
   word-break: break-word;
 }
 
