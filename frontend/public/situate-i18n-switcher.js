@@ -106,7 +106,7 @@
     vi: 'vn', cy: 'gb-wls', xh: 'za', yi: 'il', yo: 'ng', zu: 'za',
   };
 
-  var SUGGESTED = ['es','fr','de','zh-CN','ja','ar','pt','hi','ru','ko'];
+  var SUGGESTED = ['en-CA','fr','es','de','zh-CN','ja','ar','pt','hi','ru'];
   var ORIGINAL  = 'en';
   var STORE_KEY = 'ls_selected_lang';
 
@@ -855,33 +855,217 @@
     else { applyTranslation(target); }
   }
 
-  /* ── Canadian English Easter-egg ── */
+  /* Canadian English Easter-egg */
   var canadianActive = false;
   var canadianOriginals = [];
+  var caStyleEl = null;
+  var caMapleInterval = null;
 
   var CA_REPLACEMENTS = [
     [/\bsorry\b/gi, 'sooorry'],
-    [/\byou\b/gi, 'ya'],
     [/\babout\b/gi, 'aboot'],
     [/\bhouse\b/gi, 'hoose'],
-    [/\btraffic\b/gi, 'traffic, eh'],
+    [/\bout\b/gi, 'oot'],
+    [/\bcolor\b/gi, 'colour'],
+    [/\bcenter\b/gi, 'centre'],
+    [/\bfavor\b/gi, 'favour'],
+    [/\bneighbor\b/gi, 'neighbour'],
+    [/\bdata\b/gi, 'data, bud'],
+    [/\bplatform\b/gi, 'platform, eh'],
+    [/\btraffic\b/gi, 'traffic, sorry'],
     [/\bdisruptions?\b/gi, function(m){ return m + ', sorry aboot that'; }],
-    [/\bweather\b/gi, 'weather (probably snow)'],
+    [/\bweather\b/gi, 'weather (probably snow, eh)'],
     [/\bunderstand\b/gi, 'understand, eh'],
+    [/\blightweight\b/gi, 'light as a Timbit'],
+    [/\bcity\b/gi, 'city, eh'],
+    [/\bmap\b/gi, 'map, buddy'],
+    [/\benergy\b/gi, 'hydro'],
+    [/\breal-time\b/gi, 'real-time (faster than a Zamboni)'],
+    [/\bopen\b/gi, 'open, eh'],
+    [/\beveryone\b/gi, 'everyone, coast to coast'],
     [/\.\s*$/gm, ', eh.'],
   ];
+
+  function spawnMapleLeaf() {
+    var leaf = document.createElement('div');
+    leaf.className = 'ca-maple-leaf';
+    leaf.textContent = '\uD83C\uDF41';
+    leaf.style.left = (Math.random() * 100) + 'vw';
+    leaf.style.animationDuration = (3 + Math.random() * 4) + 's';
+    leaf.style.fontSize = (14 + Math.random() * 20) + 'px';
+    leaf.style.opacity = String(0.4 + Math.random() * 0.6);
+    document.body.appendChild(leaf);
+    leaf.addEventListener('animationend', function() { leaf.remove(); });
+  }
+
+  function injectCanadianStyles() {
+    if (caStyleEl) return;
+    caStyleEl = document.createElement('style');
+    caStyleEl.id = 'ca-mode-styles';
+    caStyleEl.textContent =
+      /* Red and white Canadian theme */
+      '.landing.ca-mode {' +
+        '--color-accent: #d80621;' +
+        '--color-accent-soft: rgba(216, 6, 33, 0.08);' +
+        '--color-primary: #d80621;' +
+      '}' +
+      /* Red buttons */
+      '.ca-mode .btn--primary {' +
+        'background: #d80621 !important;' +
+        'border-color: #d80621 !important;' +
+      '}' +
+      '.ca-mode .btn--primary:hover {' +
+        'background: #b50019 !important;' +
+        'border-color: #b50019 !important;' +
+      '}' +
+      '.ca-mode .header__cta {' +
+        'background: #d80621 !important;' +
+      '}' +
+      '.ca-mode .header__cta:hover {' +
+        'background: #b50019 !important;' +
+      '}' +
+      /* Red badge */
+      '.ca-mode .hero__badge {' +
+        'color: #d80621 !important;' +
+        'background: rgba(216, 6, 33, 0.08) !important;' +
+      '}' +
+      '.ca-mode .hero__badge::before {' +
+        'background: #d80621 !important;' +
+      '}' +
+      /* Red feature icons */
+      '.ca-mode .feature__icon {' +
+        'color: #d80621 !important;' +
+        'background: rgba(216, 6, 33, 0.08) !important;' +
+      '}' +
+      '.ca-mode .feature__name {' +
+        'color: #d80621 !important;' +
+      '}' +
+      /* Red section labels */
+      '.ca-mode .section-label {' +
+        'color: #d80621 !important;' +
+      '}' +
+      '.ca-mode .section-title {' +
+        'color: #d80621 !important;' +
+      '}' +
+      /* Red audience card icons */
+      '.ca-mode .audience-card__icon {' +
+        'color: #d80621 !important;' +
+        'background: rgba(216, 6, 33, 0.08) !important;' +
+      '}' +
+      '.ca-mode .audience-card__name {' +
+        'color: #d80621 !important;' +
+      '}' +
+      /* Red lang count */
+      '.ca-mode .lang-count {' +
+        'color: #d80621 !important;' +
+      '}' +
+      /* Sustainability block red override */
+      '.ca-mode .sustain-block {' +
+        'background: #d80621 !important;' +
+      '}' +
+      /* Query card headings */
+      '.ca-mode .query-card__q {' +
+        'color: #d80621 !important;' +
+      '}' +
+      /* Brand wordmark */
+      '.ca-mode .brand-lockup__wordmark {' +
+        'color: #d80621 !important;' +
+      '}' +
+      /* Canadian welcome banner */
+      '.ca-welcome-banner {' +
+        'background: linear-gradient(135deg, #d80621 0%, #ff1a3d 100%);' +
+        'color: #fff;' +
+        'text-align: center;' +
+        'padding: 12px 20px;' +
+        'font-family: inherit;' +
+        'font-size: 0.9rem;' +
+        'font-weight: 600;' +
+        'letter-spacing: 0.01em;' +
+        'animation: ca-banner-in 0.5s ease;' +
+        'position: relative;' +
+        'overflow: hidden;' +
+      '}' +
+      '.ca-welcome-banner::before {' +
+        'content: "\\1F341";' +
+        'margin-right: 8px;' +
+      '}' +
+      '.ca-welcome-banner::after {' +
+        'content: "\\1F341";' +
+        'margin-left: 8px;' +
+      '}' +
+      '@keyframes ca-banner-in {' +
+        'from { transform: translateY(-100%); opacity: 0; }' +
+        'to { transform: translateY(0); opacity: 1; }' +
+      '}' +
+      /* Falling maple leaves */
+      '.ca-maple-leaf {' +
+        'position: fixed;' +
+        'top: -40px;' +
+        'z-index: 9999;' +
+        'pointer-events: none;' +
+        'animation: ca-fall linear forwards;' +
+      '}' +
+      '@keyframes ca-fall {' +
+        '0% { transform: translateY(0) rotate(0deg); }' +
+        '25% { transform: translateY(25vh) rotate(90deg) translateX(30px); }' +
+        '50% { transform: translateY(50vh) rotate(180deg) translateX(-20px); }' +
+        '75% { transform: translateY(75vh) rotate(270deg) translateX(25px); }' +
+        '100% { transform: translateY(105vh) rotate(360deg); opacity: 0; }' +
+      '}' +
+      /* Subtle red glow on feature cards */
+      '.ca-mode .feature:hover {' +
+        'background: rgba(216, 6, 33, 0.03) !important;' +
+      '}' +
+      /* Footer links turn red on hover */
+      '.ca-mode .footer__link:hover {' +
+        'color: #d80621 !important;' +
+      '}' +
+      '@media (prefers-reduced-motion: reduce) {' +
+        '.ca-maple-leaf { display: none; }' +
+        '.ca-welcome-banner { animation: none; }' +
+      '}';
+    document.head.appendChild(caStyleEl);
+  }
+
+  function removeCanadianStyles() {
+    if (caStyleEl) { caStyleEl.remove(); caStyleEl = null; }
+    var leaves = document.querySelectorAll('.ca-maple-leaf');
+    for (var i = 0; i < leaves.length; i++) leaves[i].remove();
+    var banner = document.querySelector('.ca-welcome-banner');
+    if (banner) banner.remove();
+  }
 
   function applyCanadianMode() {
     if (canadianActive) return;
     canadianActive = true;
     canadianOriginals = [];
+
+    injectCanadianStyles();
+
+    /* Add the ca-mode class for CSS theming */
+    var root = document.querySelector('.landing');
+    if (root) root.classList.add('ca-mode');
+
+    /* Add welcome banner */
+    if (root && !document.querySelector('.ca-welcome-banner')) {
+      var banner = document.createElement('div');
+      banner.className = 'ca-welcome-banner';
+      banner.textContent = 'Welcome to Situate Vancouver, eh! Built with pride for Build Canada';
+      root.insertBefore(banner, root.firstChild);
+    }
+
+    /* Start maple leaf shower (one burst + gentle ongoing) */
+    for (var b = 0; b < 8; b++) setTimeout(spawnMapleLeaf, b * 200);
+    caMapleInterval = setInterval(spawnMapleLeaf, 2500);
+
+    /* Text replacements */
     var walker = document.createTreeWalker(
-      document.querySelector('.landing') || document.body,
+      root || document.body,
       NodeFilter.SHOW_TEXT,
       { acceptNode: function(n) {
           var p = n.parentElement;
           if (!p) return NodeFilter.FILTER_REJECT;
-          if (p.closest('.notranslate,[translate="no"],#ls-root,#ls-panel,#ls-notice,.brand-lockup,.header__nav')) return NodeFilter.FILTER_REJECT;
+          if (p.closest('.notranslate,[translate="no"],#ls-root,#ls-panel,#ls-notice,.ca-welcome-banner,.brand-lockup,.header__nav')) return NodeFilter.FILTER_REJECT;
           if (p.tagName === 'SCRIPT' || p.tagName === 'STYLE') return NodeFilter.FILTER_REJECT;
           return n.textContent.trim() ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT;
         }
@@ -903,11 +1087,20 @@
 
   function removeCanadianMode() {
     if (!canadianActive) return;
+    /* Restore text */
     for (var i = 0; i < canadianOriginals.length; i++) {
       try { canadianOriginals[i].node.textContent = canadianOriginals[i].text; } catch(e) {}
     }
     canadianOriginals = [];
     canadianActive = false;
+
+    /* Remove ca-mode class */
+    var root = document.querySelector('.ca-mode');
+    if (root) root.classList.remove('ca-mode');
+
+    /* Stop maple leaves and remove styles */
+    if (caMapleInterval) { clearInterval(caMapleInterval); caMapleInterval = null; }
+    removeCanadianStyles();
   }
 
   function selectLang(code) {

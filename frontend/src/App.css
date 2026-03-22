@@ -287,7 +287,7 @@
   color: var(--text-muted);
 }
 
-/* ── Status panel ────────────────────────────────── */
+/* Status panel */
 
 .status-panel {
   display: flex;
