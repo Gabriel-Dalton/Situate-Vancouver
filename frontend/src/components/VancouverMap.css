@@ -146,7 +146,6 @@
   color: var(--text-muted);
 }
 
-<<<<<<< HEAD
 /* ── Focus-location marker (pulsing outline) ── */
 
 .van-focus-marker {
@@ -200,7 +199,8 @@
     transform: scale(1.35);
     opacity: 0;
   }
-=======
+}
+
 /* ── Coordinates footer strip ────────────────────── */
 
 .van-map-footer {
@@ -239,5 +239,4 @@
 .van-map-footer__zoom {
   color: var(--data-cyan);
   opacity: 0.7;
->>>>>>> a44dc157eb27a4219185001de67ba1b8343f0444
 }

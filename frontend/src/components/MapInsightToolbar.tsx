@@ -5,6 +5,7 @@ const ITEMS: { key: InsightLayerKey; label: string }[] = [
   { key: 'strategicNodes', label: 'Layer: strategic nodes' },
   { key: 'movementCorridors', label: 'Layer: movement corridors' },
   { key: 'skytrainNodes', label: 'Layer: SkyTrain stations' },
+  { key: 'incidentMarker', label: 'Layer: incident marker' },
 ]
 
 const P = 1.75
@@ -106,10 +107,27 @@ function IconSkytrain() {
   )
 }
 
+/** Pin + pulse — AI incident location overlay. */
+function IconIncidentMarker() {
+  return (
+    <svg className="map-icon-toolbar__glyph" viewBox="0 0 24 24" fill="none" aria-hidden>
+      <path
+        stroke="currentColor"
+        strokeWidth={P}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M12 21s7-4.35 7-10a7 7 0 10-14 0c0 5.65 7 10 7 10z"
+      />
+      <circle cx="12" cy="11" r="2.25" fill="currentColor" fillOpacity={0.85} />
+    </svg>
+  )
+}
+
 const ICONS: Record<InsightLayerKey, ReactNode> = {
   strategicNodes: <IconStrategicNodes />,
   movementCorridors: <IconCorridors />,
   skytrainNodes: <IconSkytrain />,
+  incidentMarker: <IconIncidentMarker />,
 }
 
 type Props = {

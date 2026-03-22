@@ -53,6 +53,7 @@
 /* ─── Language switcher dark-theme overrides ─── */
 
 #ls-root,
+#ls-panel,
 #ls-notice {
   --lsa: #00aaef !important;
   --lsah: #0999b5 !important;
@@ -97,123 +98,140 @@
   border-color: #0999b5 !important;
 }
 
-#ls-root #ls-panel {
+#ls-panel {
   background: #000f24 !important;
   border-color: rgba(241, 245, 249, 0.12) !important;
   box-shadow: 0 24px 64px rgba(0, 0, 0, 0.5), 0 8px 24px rgba(0, 0, 0, 0.35) !important;
 }
 
-#ls-root .ls-ph {
+/* Portaled to body: anchor to viewport (avoids backdrop-filter containing block on header). */
+@media (min-width: 521px) {
+  body > #ls-panel {
+    top: 50dvh !important;
+    left: 50% !important;
+    right: auto !important;
+    bottom: auto !important;
+    transform: translate(-50%, -50%) !important;
+    transform-origin: center center !important;
+    max-height: min(640px, calc(100dvh - 32px)) !important;
+  }
+
+  body > #ls-panel.ls-open {
+    transform: translate(-50%, -50%) !important;
+  }
+}
+
+#ls-panel .ls-ph {
   border-bottom-color: rgba(241, 245, 249, 0.08) !important;
   background: linear-gradient(180deg, rgba(0, 27, 61, 0.5) 0%, #000f24 100%) !important;
 }
 
-#ls-root .ls-ph h2 {
+#ls-panel .ls-ph h2 {
   color: #e8eef5 !important;
 }
 
-#ls-root .ls-ph p {
+#ls-panel .ls-ph p {
   color: #5c728a !important;
 }
 
-#ls-root .ls-x {
+#ls-panel .ls-x {
   color: #5c728a !important;
 }
 
-#ls-root .ls-x:hover {
+#ls-panel .ls-x:hover {
   background: rgba(0, 27, 61, 0.65) !important;
   color: #e8eef5 !important;
 }
 
-#ls-root #ls-search {
+#ls-panel #ls-search {
   background: rgba(0, 27, 61, 0.5) !important;
   border-color: rgba(241, 245, 249, 0.12) !important;
   color: #e8eef5 !important;
 }
 
-#ls-root #ls-search::placeholder {
+#ls-panel #ls-search::placeholder {
   color: #5c728a !important;
 }
 
-#ls-root #ls-search:focus {
+#ls-panel #ls-search:focus {
   background: rgba(0, 20, 48, 0.8) !important;
   border-color: #00aaef !important;
   box-shadow: 0 0 0 3px rgba(0, 170, 239, 0.18) !important;
 }
 
-#ls-root .ls-chip {
+#ls-panel .ls-chip {
   background: rgba(0, 27, 61, 0.4) !important;
   border-color: rgba(241, 245, 249, 0.1) !important;
 }
 
-#ls-root .ls-chip:hover {
+#ls-panel .ls-chip:hover {
   background: rgba(0, 27, 61, 0.7) !important;
   border-color: rgba(241, 245, 249, 0.18) !important;
 }
 
-#ls-root .ls-chip.ls-sel {
+#ls-panel .ls-chip.ls-sel {
   background: rgba(0, 170, 239, 0.14) !important;
   border-color: #00aaef !important;
 }
 
-#ls-root .ls-cn,
-#ls-root .ls-ln {
+#ls-panel .ls-cn,
+#ls-panel .ls-ln {
   color: #e8eef5 !important;
 }
 
-#ls-root .ls-cv,
-#ls-root .ls-lv {
+#ls-panel .ls-cv,
+#ls-panel .ls-lv {
   color: #5c728a !important;
 }
 
-#ls-root .ls-li {
+#ls-panel .ls-li {
   border-color: rgba(241, 245, 249, 0.06) !important;
 }
 
-#ls-root .ls-li:hover {
+#ls-panel .ls-li:hover {
   background: rgba(0, 27, 61, 0.6) !important;
   border-color: rgba(241, 245, 249, 0.12) !important;
 }
 
-#ls-root .ls-li.ls-sel {
+#ls-panel .ls-li.ls-sel {
   background: rgba(0, 170, 239, 0.12) !important;
   border-color: #00aaef !important;
 }
 
-#ls-root .ls-pf {
+#ls-panel .ls-pf {
   border-top-color: rgba(241, 245, 249, 0.08) !important;
 }
 
-#ls-root .ls-disc {
+#ls-panel .ls-disc {
   background: rgba(0, 20, 48, 0.6) !important;
   border-color: rgba(241, 245, 249, 0.06) !important;
 }
 
-#ls-root .ls-disc p {
+#ls-panel .ls-disc p {
   color: #5c728a !important;
 }
 
-#ls-root #ls-reset {
+#ls-panel #ls-reset {
   background: transparent !important;
   border-color: rgba(241, 245, 249, 0.12) !important;
   color: #8fa3b8 !important;
 }
 
-#ls-root #ls-reset:hover {
+#ls-panel #ls-reset:hover {
   background: rgba(0, 27, 61, 0.5) !important;
   border-color: #00aaef !important;
   color: #00aaef !important;
 }
 
-#ls-root #ls-scroll::-webkit-scrollbar-thumb {
+#ls-scroll::-webkit-scrollbar-thumb {
   background: rgba(241, 245, 249, 0.1);
 }
 
-#ls-root #ls-scroll::-webkit-scrollbar-thumb:hover {
+#ls-scroll::-webkit-scrollbar-thumb:hover {
   background: rgba(241, 245, 249, 0.2);
 }
 
-#ls-root #ls-nores {
+#ls-nores {
   color: #5c728a !important;
 }
 
