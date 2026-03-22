@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import maplibregl from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
-import { enrichSkytrainNodes, skytrainCircleColorExpr, skytrainStrokeColorExpr } from '../data/skytrainLineKeys'
+import { enrichSkytrainNodes, skytrainCircleColorExpr, skytrainStrokeColorExpr, SKYTRAIN_LINE_COLORS } from '../data/skytrainLineKeys'
+import { fetchStationThumb } from '../data/stationWikiTitles'
 import { SKYTRAIN_NODES } from '../data/skytrainStations'
 import { LENS_OVERLAYS } from '../data/lensOverlays'
 import { MOVEMENT_CORRIDORS, STRATEGIC_NODES } from '../data/vancouverGeo'
@@ -14,6 +15,7 @@ import type { InsightLayerKey, InsightLayerState } from '../types/insightLayers'
 import type { MobilityLens } from '../types/mobilityLens'
 import { MOBILITY_LENS_META } from '../types/mobilityLens'
 import type { AiQueryResponse } from './AiQuery'
+import type { Open511MapEvent } from '../hooks/useOpen511Events'
 import MapBasemapToolbar from './MapBasemapToolbar'
 import MapInsightToolbar from './MapInsightToolbar'
 import './VancouverMap.css'
@@ -27,7 +29,7 @@ const SEVERITY_COLORS: Record<AiQueryResponse['severity'], string> = {
 
 export type { InsightLayerState } from '../types/insightLayers'
 
-const NODE_LAYERS = ['strategic-nodes-core', 'skytrain-nodes-core'] as const
+const NODE_LAYERS = ['strategic-nodes-core', 'skytrain-nodes-core', 'open511-events-core'] as const
 const LENS_LAYER_IDS = ['lens-overlay-glow', 'lens-overlay-line'] as const
 
 const INITIAL_BASEMAP: BasemapId = 'dark'
@@ -43,6 +45,8 @@ function applyInsightLayers(map: maplibregl.Map, layers: InsightLayerState) {
     'corridors-line',
     'incident-glow',
     'incident-core',
+    'open511-events-glow',
+    'open511-events-core',
   ] as const
   for (const id of ids) {
     if (!map.getLayer(id)) continue
@@ -52,6 +56,8 @@ function applyInsightLayers(map: maplibregl.Map, layers: InsightLayerState) {
       map.setLayoutProperty(id, 'visibility', vis(layers.strategicNodes))
     } else if (id.startsWith('incident')) {
       map.setLayoutProperty(id, 'visibility', vis(layers.incidentMarker))
+    } else if (id.startsWith('open511')) {
+      map.setLayoutProperty(id, 'visibility', vis(layers.open511Events))
     } else {
       map.setLayoutProperty(id, 'visibility', vis(layers.movementCorridors))
     }
@@ -172,11 +178,74 @@ export type FocusLocation = {
   label?: string
 } | null
 
+const OPEN511_SEVERITY_COLOR: maplibregl.ExpressionSpecification = [
+  'match',
+  ['get', 'severity'],
+  'MAJOR', '#ef4444',
+  'MODERATE', '#f59e0b',
+  'MINOR', '#22c55e',
+  '#94a3b8',
+]
+
+function installOpen511Layer(map: maplibregl.Map, events: Open511MapEvent[]) {
+  const SRC_ID = 'open511-events'
+  const GLOW_ID = 'open511-events-glow'
+  const CORE_ID = 'open511-events-core'
+
+  const geojson: GeoJSON.FeatureCollection<GeoJSON.Point> = {
+    type: 'FeatureCollection',
+    features: events.map((ev) => ({
+      type: 'Feature',
+      geometry: { type: 'Point', coordinates: [ev.coordinates.lng, ev.coordinates.lat] },
+      properties: {
+        id: ev.id,
+        headline: ev.headline,
+        description: ev.description,
+        severity: ev.severity,
+        event_type: ev.event_type,
+        roads: ev.roads,
+        updated: ev.updated,
+      },
+    })),
+  }
+
+  if (map.getSource(SRC_ID)) {
+    ;(map.getSource(SRC_ID) as maplibregl.GeoJSONSource).setData(geojson)
+    return
+  }
+
+  map.addSource(SRC_ID, { type: 'geojson', data: geojson })
+  map.addLayer({
+    id: GLOW_ID,
+    type: 'circle',
+    source: SRC_ID,
+    paint: {
+      'circle-radius': 16,
+      'circle-color': OPEN511_SEVERITY_COLOR,
+      'circle-opacity': 0.18,
+      'circle-blur': 0.8,
+    },
+  })
+  map.addLayer({
+    id: CORE_ID,
+    type: 'circle',
+    source: SRC_ID,
+    paint: {
+      'circle-radius': 5,
+      'circle-color': OPEN511_SEVERITY_COLOR,
+      'circle-opacity': 0.92,
+      'circle-stroke-width': 1.5,
+      'circle-stroke-color': '#001b3d',
+    },
+  })
+}
+
 type Props = {
   layers: InsightLayerState
   onToggleLayer: (key: InsightLayerKey) => void
   lens: MobilityLens
   incident?: AiQueryResponse | null
+  open511Events?: Open511MapEvent[]
   focusLocation?: FocusLocation
 }
 
@@ -235,6 +304,7 @@ export default function VancouverMap({
   onToggleLayer,
   lens,
   incident,
+  open511Events = [],
   focusLocation,
 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null)
@@ -243,6 +313,7 @@ export default function VancouverMap({
   const layersRef = useRef(layers)
   const lensRef = useRef(lens)
   const incidentRef = useRef(incident ?? null)
+  const open511EventsRef = useRef<Open511MapEvent[]>(open511Events)
   const interactionsBoundRef = useRef(false)
   const focusMarkerRef = useRef<maplibregl.Marker | null>(null)
   const [basemap, setBasemap] = useState<BasemapId>(INITIAL_BASEMAP)
@@ -269,6 +340,10 @@ export default function VancouverMap({
   useLayoutEffect(() => {
     incidentRef.current = incident ?? null
   }, [incident])
+
+  useLayoutEffect(() => {
+    open511EventsRef.current = open511Events
+  }, [open511Events])
 
   useEffect(() => {
     const el = containerRef.current
@@ -302,8 +377,16 @@ export default function VancouverMap({
       const f = feats[0]
       if (!f?.geometry || f.geometry.type !== 'Point') return
       const coords = f.geometry.coordinates.slice() as [number, number]
-      const name = String(f.properties?.name ?? 'Node')
-      const lensText = String(f.properties?.lens ?? '')
+      const isOpen511 = f.layer?.id === 'open511-events-core'
+      const name = isOpen511
+        ? String(f.properties?.headline ?? 'Road Event')
+        : String(f.properties?.name ?? 'Node')
+      const lensText = isOpen511
+        ? String(f.properties?.description ?? '')
+        : String(f.properties?.lens ?? '')
+      const lineKey = String(f.properties?.lineKey ?? '')
+      const isSkytrainNode = f.layer?.id === 'skytrain-nodes-core'
+      const lineColor = (lineKey && SKYTRAIN_LINE_COLORS[lineKey as keyof typeof SKYTRAIN_LINE_COLORS]) || ''
 
       while (Math.abs(e.lngLat.lng - coords[0]) > 180) {
         coords[0] += e.lngLat.lng > coords[0] ? 360 : -360
@@ -318,13 +401,49 @@ export default function VancouverMap({
       })
 
       map.once('moveend', () => {
-        new maplibregl.Popup({ maxWidth: '280px', className: 'van-popup', offset: 12 })
+        const accentBar = lineColor
+          ? `<div class="van-popup__accent" style="background:${lineColor}"></div>`
+          : ''
+        const shimmer = isSkytrainNode
+          ? `<div class="van-popup__img-wrap"><div class="van-popup__shimmer" id="popup-img-slot"></div></div>`
+          : ''
+        const severityTag = isOpen511 && f.properties?.severity
+          ? `<div class="van-popup__body" style="margin-top:4px;opacity:0.7;font-size:0.78em">` +
+            `Severity: ${escapeHtml(String(f.properties.severity))} · ` +
+            `${escapeHtml(String(f.properties.roads ?? ''))}</div>`
+          : ''
+
+        const popup = new maplibregl.Popup({ maxWidth: '300px', className: 'van-popup', offset: 12 })
           .setLngLat(coords)
           .setHTML(
-            `<div class="van-popup__title">${escapeHtml(name)}</div>` +
-              `<div class="van-popup__body">${escapeHtml(lensText)}</div>`,
+            accentBar +
+              shimmer +
+              `<div class="van-popup__title">${escapeHtml(name)}</div>` +
+              `<div class="van-popup__body">${escapeHtml(lensText)}</div>` +
+              severityTag,
           )
           .addTo(map)
+
+        if (isSkytrainNode) {
+          fetchStationThumb(name).then((url) => {
+            const slot = popup.getElement()?.querySelector('#popup-img-slot')
+            if (!slot) return
+            if (url) {
+              const img = document.createElement('img')
+              img.src = url
+              img.alt = name
+              img.className = 'van-popup__img'
+              img.onload = () => {
+                slot.replaceWith(img)
+              }
+              img.onerror = () => {
+                slot.remove()
+              }
+            } else {
+              slot.remove()
+            }
+          })
+        }
       })
     }
 
@@ -340,6 +459,7 @@ export default function VancouverMap({
     const onStyleLoad = () => {
       installInsightOverlay(map)
       installLensOverlay(map, lensRef.current)
+      if (open511EventsRef.current.length) installOpen511Layer(map, open511EventsRef.current)
       applyInsightLayers(map, layersRef.current)
       if (incidentRef.current) installIncidentLayer(map, incidentRef.current)
       styleReadyRef.current = true
@@ -409,6 +529,13 @@ export default function VancouverMap({
         .addTo(map)
     })
   }, [incident])
+
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map || !styleReadyRef.current) return
+    installOpen511Layer(map, open511Events)
+    applyInsightLayers(map, layersRef.current)
+  }, [open511Events])
 
   useEffect(() => {
     const map = mapRef.current
