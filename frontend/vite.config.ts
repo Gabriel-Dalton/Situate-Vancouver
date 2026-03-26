@@ -3,6 +3,7 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { defineConfig, loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
+import { sentryVitePlugin } from '@sentry/vite-plugin'
 import { djangoHealthForwardPlugin } from './vite-plugin-django-health'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
@@ -58,6 +59,14 @@ export default defineConfig(({ mode }) => {
   ]
   const allowedHosts = [...new Set([...viteAllowedHostsDefaults, ...viteAllowedHostsExtra])]
 
+  const sentryAuthToken = fileEnv.SENTRY_AUTH_TOKEN || process.env.SENTRY_AUTH_TOKEN
+  const sentryOrg = fileEnv.SENTRY_ORG || process.env.SENTRY_ORG
+  const sentryProject = fileEnv.SENTRY_PROJECT || process.env.SENTRY_PROJECT
+  const sentryRelease =
+    fileEnv.VITE_SENTRY_RELEASE || process.env.VITE_SENTRY_RELEASE || process.env.GITHUB_SHA || undefined
+
+  const sentryEnabled = Boolean(sentryAuthToken && sentryOrg && sentryProject)
+
   return {
     // Windows: project folders under Documents/GitHub are often locked by OneDrive, Defender,
     // or a second Vite process — rmdir on frontend/.vite/deps then fails with EPERM. Cache in %TEMP%.
@@ -68,13 +77,30 @@ export default defineConfig(({ mode }) => {
       __SITUATE_PROD_HEALTH_URL__: JSON.stringify(prodHealthUrl),
       __SITUATE_PROD_QUERY_URL__: JSON.stringify(prodQueryUrl),
     },
-    plugins: [djangoHealthForwardPlugin(djangoTarget, apiProxyForwardHost), react()],
+    plugins: [
+      djangoHealthForwardPlugin(djangoTarget, apiProxyForwardHost),
+      react(),
+      ...(sentryEnabled
+        ? [
+            sentryVitePlugin({
+              org: sentryOrg,
+              project: sentryProject,
+              authToken: sentryAuthToken,
+              release: sentryRelease ? { name: sentryRelease } : undefined,
+              sourcemaps: {
+                assets: ['./dist/**'],
+              },
+            }),
+          ]
+        : []),
+    ],
     optimizeDeps: {
       include: ['maplibre-gl'],
     },
     build: {
       // MapLibre GL is ~1MB minified; lazy-loaded — warn threshold tuned for that.
       chunkSizeWarningLimit: 1200,
+      sourcemap: sentryEnabled ? true : 'hidden',
       rollupOptions: {
         input: {
           main: path.resolve(__dirname, 'index.html'),
