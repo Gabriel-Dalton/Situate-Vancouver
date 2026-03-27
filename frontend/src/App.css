@@ -301,6 +301,12 @@
   background: rgba(0, 0, 0, 0.25);
 }
 
+/* Sidebar / rail: keep the control compact instead of stretching the full column width */
+.insight-shell__rail .lens-selector {
+  width: fit-content;
+  max-width: 100%;
+}
+
 .lens-selector__btn {
   display: flex;
   align-items: center;
@@ -1164,7 +1170,7 @@
 }
 
 .sign-in-modal__form {
-  padding: 1rem 1.1rem 0.25rem;
+  padding: 1rem 1.1rem 1rem;
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
