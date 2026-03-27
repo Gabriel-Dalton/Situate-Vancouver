@@ -10,6 +10,7 @@ import type { MobilityLens } from './types/mobilityLens'
 import { LENS_SIGNALS, MOBILITY_LENS_META } from './types/mobilityLens'
 import BrandLockup from './components/BrandLockup'
 import SignInHeader from './components/SignInHeader'
+import { AUTH_UI_ENABLED } from './config/authUi'
 import StatusPanel from './components/StatusPanel'
 import { AiQueryBar, AiResponsePanel } from './components/AiQuery'
 import type { AiQueryResponse } from './components/AiQuery'
@@ -95,12 +96,12 @@ export default function App() {
         </div>
         <AiQueryBar onResponse={handleAiResponse} />
         <div className="insight-shell__header-meta">
-          <SignInHeader />
           <div id="situate-lang-mount" className="insight-shell__lang" aria-label="Language" />
           <span className="insight-shell__pill">Metro · Lower Mainland</span>
           <span className="insight-shell__clock" aria-live="polite">
             <LiveClock />
           </span>
+          {AUTH_UI_ENABLED ? <SignInHeader /> : null}
         </div>
       </header>
 

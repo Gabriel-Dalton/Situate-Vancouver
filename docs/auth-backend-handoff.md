@@ -1,32 +1,49 @@
-# Auth UI → backend handoff (sign-in modal)
+# Auth UI → backend handoff (sign-in / sign-up)
 
-This document is for whoever implements **server-side authentication** (e.g. Django) so the existing **frontend sign-in UI** can call real APIs instead of the current browser-only preview.
+This document is for whoever implements **server-side authentication** (e.g. Django) so the existing **frontend auth UI** can call real APIs instead of the current browser-only preview.
 
 ## Current frontend behavior (UI only)
 
+- **Visibility (until backend auth is wired)**
+  - The header auth chrome is **not rendered by default**. Set **`VITE_ENABLE_AUTH_UI=true`** in `frontend/.env.development.local` (or your deployment env) to show it while developing. Logic: [`frontend/src/config/authUi.ts`](../frontend/src/config/authUi.ts); mount: [`frontend/src/App.tsx`](../frontend/src/App.tsx).
+
 - **Where the UI lives**
   - Component: [`frontend/src/components/SignInHeader.tsx`](../frontend/src/components/SignInHeader.tsx)
-  - It is mounted from the insight shell header in [`frontend/src/App.tsx`](../frontend/src/App.tsx).
+  - It is mounted from the insight shell header in [`frontend/src/App.tsx`](../frontend/src/App.tsx) when `AUTH_UI_ENABLED` is true.
 
-- **What happens today when the user clicks “Sign in”**
-  - A **modal** opens with **email** and **password** fields.
-  - On submit, the client runs **basic validation** only (email must look like an email; password non-empty).
+- **What happens today (when enabled)**
+  - The header shows an **account** icon when the user is signed out; clicking it opens the modal, defaulting to the **Create account** tab (**email**, **password**, **confirm password**). The **Sign in** tab is **email** + **password** only. The client enforces password length (≥ 8) and matching passwords on sign-up.
   - **No HTTP request** is made to the backend.
-  - The email is stored in **`sessionStorage`** under the key **`situate_session_email`** as a **preview** of “signed in” for that browser tab.
+  - After client-side validation, the email is stored in **`sessionStorage`** under **`situate_session_email`** as a **preview** for that browser tab only.
   - **Sign out** removes that `sessionStorage` key.
 
 - **Where to wire the backend**
-  - In **`SignInHeader.tsx`**, inside **`SignInModal`**, the function **`handleSubmit`** (the `onSubmit` handler of the `<form>`) is the **single integration point** for:
-    - Calling your **login** API (or session endpoint).
-    - Handling success (tokens / cookies / redirect).
-    - Handling errors (show `sign-in-modal__error` with a server message).
-  - **Sign out**: replace the preview-only `signOut` in **`SignInHeader`** with a call to your **logout** endpoint if you use server sessions, then clear client state.
+  - In **`SignInHeader.tsx`**, inside **`AuthModal`**:
+    - **`handleSignIn`** — submit handler for **Sign in**: call **login**; handle tokens/cookies; surface errors in `sign-in-modal__error`.
+    - **`handleSignUp`** — submit handler for **Create account**: call **register**; optionally auto-login or prompt for sign-in; surface errors the same way.
+  - **Sign out**: replace the preview-only **`SignInHeader`** `signOut` with a **logout** API call when you use server sessions, then clear client state.
 
 ## What the backend should expose (recommended contract)
 
 Exact paths and names are up to you; the frontend can be adjusted to match. A typical setup:
 
-### 1. Login
+### 1. Register (sign up)
+
+- **Method:** `POST`
+- **Suggested path:** `/api/auth/register/` (or `/api/users/`).
+- **Request body (JSON)** — example:
+
+  ```json
+  { "email": "user@example.com", "password": "…", "password_confirm": "…" }
+  ```
+
+  Field names can match Django / DRF serializers; the frontend can send whatever contract you document.
+
+- **Success:** `201` with user payload or `{ "ok": true }`; optionally return tokens or rely on a follow-up login.
+
+- **Errors:** `400` with field errors (e.g. email already taken) mapped to the modal error text.
+
+### 2. Login
 
 - **Method:** `POST`
 - **Suggested path:** `/api/auth/login/` (or your existing API prefix + resource name).
@@ -54,13 +71,13 @@ Exact paths and names are up to you; the frontend can be adjusted to match. A ty
 
   - `4xx` with a JSON body the UI can show, e.g. `{ "detail": "Invalid credentials" }` or field errors. The modal can map `detail` or first field error into the existing error line.
 
-### 2. Logout (optional but useful)
+### 3. Logout (optional but useful)
 
 - **Method:** `POST`
 - **Suggested path:** `/api/auth/logout/`
 - Clears server session or invalidates refresh token, as appropriate.
 
-### 3. Current user (“who am I?”) — recommended
+### 4. Current user (“who am I?”) — recommended
 
 - **Method:** `GET`
 - **Suggested path:** `/api/auth/me/` (or `/api/users/me/`)
@@ -86,13 +103,14 @@ Document the **final base URL** and whether the browser should call **`/api/...`
 
 ## Frontend cleanup when real auth lands
 
+- Set **`VITE_ENABLE_AUTH_UI=true`** in environments where auth should appear (or remove the gate in `authUi.ts` / `App.tsx` once the feature is stable).
 - Replace or remove reliance on **`situate_session_email`** in `sessionStorage` once `/me` (or equivalent) drives the UI.
 - Update or remove the modal **footnote** that mentions “backend in progress” in `SignInHeader.tsx`.
 - Optionally add **loading** and **disabled** states on the submit button during the login request.
 
 ## Quick QA checklist for the backend owner
 
-- [ ] Document exact **login / logout / me** URLs and **request/response** shapes.
+- [ ] Document exact **register / login / logout / me** URLs and **request/response** shapes.
 - [ ] Confirm **cookie vs JWT** and how the frontend should attach auth on subsequent requests.
 - [ ] Confirm **dev** workflow with Vite proxy (`/api`) vs production URLs.
 - [ ] Provide a **test user** (or signup flow) for the team.

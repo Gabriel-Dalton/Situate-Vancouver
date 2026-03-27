@@ -1019,6 +1019,39 @@
   border-color: rgba(0, 170, 239, 0.25);
 }
 
+.sign-in-header__icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  padding: 0.28rem;
+  border-radius: 6px;
+  border: 1px solid var(--border-subtle);
+  background: rgba(0, 0, 0, 0.22);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition:
+    background 0.14s ease,
+    border-color 0.14s ease,
+    color 0.14s ease;
+}
+
+.sign-in-header__icon-btn:hover {
+  color: var(--pacific-slate);
+  border-color: rgba(0, 170, 239, 0.28);
+}
+
+.sign-in-header__icon-btn:focus-visible {
+  outline: 2px solid var(--data-cyan);
+  outline-offset: 2px;
+}
+
+.sign-in-header__icon-glyph {
+  width: 1.15rem;
+  height: 1.15rem;
+  display: block;
+}
+
 .sign-in-modal-backdrop {
   position: fixed;
   inset: 0;
@@ -1048,6 +1081,49 @@
   justify-content: space-between;
   gap: 0.75rem;
   padding: 1rem 1.1rem 0;
+}
+
+.sign-in-modal__tabs {
+  display: flex;
+  gap: 4px;
+  padding: 0.65rem 1.1rem 0;
+}
+
+.sign-in-modal__tab {
+  flex: 1;
+  margin: 0;
+  padding: 0.4rem 0.5rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.2);
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 0.58rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition:
+    background 0.14s ease,
+    color 0.14s ease,
+    border-color 0.14s ease;
+}
+
+.sign-in-modal__tab:hover {
+  color: var(--pacific-slate);
+  border-color: rgba(0, 170, 239, 0.2);
+}
+
+.sign-in-modal__tab--active {
+  color: var(--data-cyan);
+  background: color-mix(in srgb, var(--data-cyan) 12%, transparent);
+  border-color: color-mix(in srgb, var(--data-cyan) 35%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--data-cyan) 25%, transparent);
+}
+
+.sign-in-modal__tab:focus-visible {
+  outline: 2px solid var(--data-cyan);
+  outline-offset: 2px;
 }
 
 .sign-in-modal__title {
@@ -1081,7 +1157,7 @@
 }
 
 .sign-in-modal__lede {
-  margin: 0.55rem 1.1rem 0;
+  margin: 0.65rem 1.1rem 0;
   font-size: 0.82rem;
   line-height: 1.5;
   color: var(--text-muted);
