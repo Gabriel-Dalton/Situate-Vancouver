@@ -47,6 +47,14 @@ Ports and bind addresses are read from the repo-root `.env` (`DJANGO_DEV_*`, `AI
    cd frontend && npm install && npm run dev
    ```
 
+   **Unit tests (Jest):**
+
+   ```bash
+   cd frontend && npm test
+   ```
+
+   The frontend includes `frontend/.npmrc` with `legacy-peer-deps=true` so `npm install` stays consistent with the current ESLint peer dependency set.
+
 Then open **`http://localhost:5173`** for the marketing landing page. The React insight canvas (map + health checks) is at **`http://localhost:5173/app.html`**.
 
 ## Docker Compose
