@@ -82,6 +82,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'corsheaders',
+    'django_celery_beat',
     'apps.core.apps.CoreConfig',
     'apps.vancouver_opendata.apps.VancouverOpenDataConfig',
     'apps.open511_bc.apps.Open511BCConfig',
@@ -247,3 +248,13 @@ HEALTH_OPEN511_SNAPSHOT_STALE_AFTER_SECONDS = int(
         '86400',
     ),
 )
+
+# --- Celery ---
+_redis_url = os.environ.get('REDIS_URL', 'redis://localhost:6379/0')
+CELERY_BROKER_URL = _redis_url
+CELERY_RESULT_BACKEND = _redis_url
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TIMEZONE = 'America/Vancouver'
+CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'

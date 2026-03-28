@@ -17,6 +17,7 @@ import { MOBILITY_LENS_META } from '../types/mobilityLens'
 import type { AiQueryResponse } from './AiQuery'
 import MapBasemapToolbar from './MapBasemapToolbar'
 import MapInsightToolbar from './MapInsightToolbar'
+import { useIncidents } from '../hooks/useIncidents'
 import './VancouverMap.css'
 
 const SEVERITY_COLORS: Record<AiQueryResponse['severity'], string> = {
@@ -249,6 +250,9 @@ export default function VancouverMap({
   const [basemap, setBasemap] = useState<BasemapId>(INITIAL_BASEMAP)
   const [cursorInfo, setCursorInfo] = useState({ lat: VAN_CENTRE[1], lng: VAN_CENTRE[0], zoom: 11.35 })
 
+  // Fetch all active incidents from DB — refresh every 60s
+  const { incidents: dbIncidents } = useIncidents({ status: 'active' })
+
   const updateCursorInfo = useCallback((map: maplibregl.Map, e?: maplibregl.MapMouseEvent) => {
     const z = map.getZoom()
     if (e) {
@@ -286,8 +290,8 @@ export default function VancouverMap({
       minZoom: 9.2,
       maxZoom: 18,
       maxBounds: [
-        [-123.38, 49.12],
-        [-122.78, 49.42],
+        [-123.6, 49.0],
+        [-122.5, 49.6],
       ],
       attributionControl: {},
     })
@@ -445,6 +449,95 @@ export default function VancouverMap({
         .addTo(map)
     })
   }, [incident])
+
+  // Render DB incidents as a GeoJSON layer on the map
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map || !styleReadyRef.current) return
+
+    const features: GeoJSON.Feature<GeoJSON.Point>[] = dbIncidents
+      .filter(inc => inc.lat != null && inc.lng != null)
+      .map(inc => ({
+        type: 'Feature',
+        geometry: { type: 'Point', coordinates: [inc.lng!, inc.lat!] },
+        properties: {
+          id: inc.id,
+          title: inc.title,
+          location: inc.location,
+          severity: inc.severity,
+          incident_type: inc.incident_type,
+          description: inc.description,
+        },
+      }))
+
+    const geojson: GeoJSON.FeatureCollection<GeoJSON.Point> = {
+      type: 'FeatureCollection',
+      features,
+    }
+
+    const SRC = 'db-incidents'
+    const LAYER_GLOW = 'db-incidents-glow'
+    const LAYER_CORE = 'db-incidents-core'
+
+    if (map.getSource(SRC)) {
+      ;(map.getSource(SRC) as maplibregl.GeoJSONSource).setData(geojson)
+      return
+    }
+
+    map.addSource(SRC, { type: 'geojson', data: geojson })
+
+    map.addLayer({
+      id: LAYER_GLOW,
+      type: 'circle',
+      source: SRC,
+      paint: {
+        'circle-radius': 14,
+        'circle-color': ['match', ['get', 'severity'],
+          'critical', '#ff3b3b',
+          'high',     '#ef4444',
+          'medium',   '#f59e0b',
+          /* low */   '#22c55e',
+        ],
+        'circle-opacity': 0.25,
+        'circle-blur': 1,
+      },
+    })
+
+    map.addLayer({
+      id: LAYER_CORE,
+      type: 'circle',
+      source: SRC,
+      paint: {
+        'circle-radius': 6,
+        'circle-color': ['match', ['get', 'severity'],
+          'critical', '#ff3b3b',
+          'high',     '#ef4444',
+          'medium',   '#f59e0b',
+          /* low */   '#22c55e',
+        ],
+        'circle-stroke-width': 1.5,
+        'circle-stroke-color': '#fff',
+        'circle-opacity': 0.9,
+      },
+    })
+
+    map.on('click', LAYER_CORE, (e) => {
+      const props = e.features?.[0]?.properties
+      if (!props) return
+      new maplibregl.Popup({ maxWidth: '300px', className: 'van-popup', offset: 14 })
+        .setLngLat(e.lngLat)
+        .setHTML(
+          `<div class="van-popup__title">${escapeHtml(props.location)}</div>` +
+          `<div class="van-popup__body">${escapeHtml(props.description)}</div>` +
+          `<div class="van-popup__body" style="margin-top:4px;opacity:0.7;font-size:0.78em">` +
+          `${escapeHtml(props.incident_type)} · Severity: ${escapeHtml(props.severity)}</div>`
+        )
+        .addTo(map)
+    })
+
+    map.on('mouseenter', LAYER_CORE, () => { map.getCanvas().style.cursor = 'pointer' })
+    map.on('mouseleave', LAYER_CORE, () => { map.getCanvas().style.cursor = '' })
+  }, [dbIncidents])
 
   useEffect(() => {
     const map = mapRef.current

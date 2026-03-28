@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
-import { Incident, IncidentFilters, incidentService } from '../services/incidentService'
+import type { Incident, IncidentFilters } from '../services/incidentService'
+import { incidentService } from '../services/incidentService'
 
 export function useIncidents(filters: IncidentFilters = {}) {
   const [incidents, setIncidents] = useState<Incident[]>([])
@@ -15,6 +16,13 @@ export function useIncidents(filters: IncidentFilters = {}) {
       .then(setIncidents)
       .catch(e => setError(e.message))
       .finally(() => setLoading(false))
+
+    // Auto-refresh every 60s to pick up new polled incidents
+    const interval = setInterval(() => {
+      incidentService.list(filters).then(setIncidents).catch(e => setError(e.message))
+    }, 60_000)
+
+    return () => clearInterval(interval)
   }, [filtersKey])
 
   const refresh = () => {

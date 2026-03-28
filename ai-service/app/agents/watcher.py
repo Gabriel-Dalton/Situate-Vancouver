@@ -5,6 +5,7 @@ from app.openai_config import build_openai_client
 from app.services.vancouver_api import VancouverAPIGetter
 from app.services.drivebc import DriveBCGetter
 from app.services.translink import TransLinkGetter
+from app.services.surrey_api import SurreyAPIGetter
 from .schemas import Coordinates, DetectedIncident
 
 
@@ -25,6 +26,7 @@ class WatcherAgent:
         self.api_getter = VancouverAPIGetter()
         self.drivebc = DriveBCGetter()
         self.translink = TransLinkGetter()
+        self.surrey = SurreyAPIGetter()
         self.system_prompt = (
             "You are the Watcher agent for Situate Vancouver, a real-time city monitoring system. "
             "You receive live records from two sources: DriveBC (accidents, incidents, hazards) "
@@ -82,7 +84,16 @@ class WatcherAgent:
             limit=20,
         )
 
-        # Step 3 — fetch TransLink service alerts for transit queries
+        # Step 3 — fetch Surrey construction data if relevant
+        surrey_data: dict = {}
+        if incident_type in ("construction", "obstruction", "general"):
+            surrey_data = self.surrey.fetch(
+                incident_type=incident_type,
+                location=location,
+                limit=10,
+            )
+
+        # Step 4 — fetch TransLink service alerts for transit queries
         translink_alerts: list[dict] = []
         if incident_type in ("transit", "general", "emergency"):
             translink_alerts = self.translink.fetch(
@@ -93,6 +104,7 @@ class WatcherAgent:
 
         live_data = {
             "vancouver_open_data": van_data,
+            "surrey_open_data":    surrey_data,
             "drivebc_events":      drivebc_events,
             "translink_alerts":    translink_alerts,
         }
@@ -107,10 +119,14 @@ class WatcherAgent:
             records and not all("error" in r for r in records)
             for records in van_data.values()
         )
+        surrey_has_data = any(
+            records and not all("error" in r for r in records)
+            for records in surrey_data.values()
+        )
         translink_has_data = bool(translink_alerts) and not all(
             "error" in a for a in translink_alerts
         )
-        if not drivebc_has_data and not van_has_data and not translink_has_data:
+        if not drivebc_has_data and not van_has_data and not translink_has_data and not surrey_has_data:
             return DetectedIncident(
                 event_detected=False,
                 incident_type="traffic_incident",
@@ -133,7 +149,9 @@ class WatcherAgent:
             f"Live DriveBC events (accidents, incidents, hazards):\n"
             f"{json.dumps(drivebc_events, indent=2)}\n\n"
             f"Live Vancouver Open Data (closures, construction, 311):\n"
-            f"{json.dumps(van_data, indent=2)}"
+            f"{json.dumps(van_data, indent=2)}\n\n"
+            f"Live Surrey Open Data (capital construction projects):\n"
+            f"{json.dumps(surrey_data, indent=2)}"
         )
 
         response = self.client.beta.chat.completions.parse(

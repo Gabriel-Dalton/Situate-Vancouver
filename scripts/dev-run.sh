@@ -73,6 +73,10 @@ cleanup() {
     kill "$AI_PID" 2>/dev/null || true
     wait "$AI_PID" 2>/dev/null || true
   fi
+  if [[ -n "${CELERY_PID:-}" ]] && kill -0 "$CELERY_PID" 2>/dev/null; then
+    kill "$CELERY_PID" 2>/dev/null || true
+    wait "$CELERY_PID" 2>/dev/null || true
+  fi
 }
 trap cleanup EXIT INT TERM
 
@@ -112,4 +116,9 @@ elif command -v python3 >/dev/null 2>&1; then
 else
   DJ_PY="python"
 fi
+
+celery -A config worker --beat --loglevel=warning --pool=solo \
+  --scheduler django_celery_beat.schedulers:DatabaseScheduler &
+CELERY_PID=$!
+
 "$DJ_PY" manage.py runserver "$DJANGO_DEV_HOST:$DJANGO_DEV_PORT"
