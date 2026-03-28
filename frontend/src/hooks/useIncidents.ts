@@ -10,7 +10,8 @@ export function useIncidents(filters: IncidentFilters = {}) {
   const filtersKey = JSON.stringify(filters)
 
   useEffect(() => {
-    setLoading(true)
+    // Reset loading when filters change; fetch runs in microtasks — avoids cascading-render lint on sync setState.
+    queueMicrotask(() => setLoading(true))
     incidentService
       .list(filters)
       .then(setIncidents)

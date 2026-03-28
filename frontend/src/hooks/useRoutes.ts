@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { SavedRoute, routeService } from '../services/routeService'
+import { routeService, type SavedRoute } from '../services/routeService'
 
 export function useRoutes() {
   const [routes, setRoutes] = useState<SavedRoute[]>([])
