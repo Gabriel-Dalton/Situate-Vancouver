@@ -13,9 +13,12 @@ router.register(r'routes', SavedRouteViewSet, basename='route')
 router.register(r'alerts', RouteAlertViewSet, basename='alert')
 
 urlpatterns = [
-    path('', include(router.urls)),
+    # Explicit views must come before the router include so they aren't swallowed
+    # by the SavedRouteViewSet detail pattern (routes/{pk}/).
     path('health/', views.health, name='health'),
     path('query/', views.ai_incidents_query, name='ai-incidents-query'),
+    path('routes/find/', views.find_route, name='routes-find'),
+    path('', include(router.urls)),
     path(
         'datasets/',
         vancouver_opendata_views.opendata_all_datasets,

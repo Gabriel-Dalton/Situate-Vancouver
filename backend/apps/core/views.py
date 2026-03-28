@@ -80,3 +80,59 @@ def ai_incidents_query(request):
         payload = {'detail': upstream.text} if upstream.text else {}
 
     return Response(payload, status=upstream.status_code)
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def find_route(request):
+    """
+    Proxy route-finding requests to the FastAPI AI service (POST /routes/find).
+
+    Request JSON: { "origin": "...", "destination": "..." }
+    Response: routes, incidents_avoided, origin/dest coordinates.
+    """
+    origin = request.data.get('origin')
+    destination = request.data.get('destination')
+
+    if not origin or not isinstance(origin, str) or not origin.strip():
+        return Response(
+            {'detail': 'Field "origin" is required.'},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+    if not destination or not isinstance(destination, str) or not destination.strip():
+        return Response(
+            {'detail': 'Field "destination" is required.'},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    base = settings.AI_SERVICE_URL.rstrip('/')
+    url = f'{base}/routes/find'
+    timeout = float(getattr(settings, 'AI_QUERY_TIMEOUT_SECONDS', 30.0))
+
+    try:
+        upstream = httpx.post(
+            url,
+            json={'origin': origin.strip(), 'destination': destination.strip()},
+            timeout=timeout,
+        )
+    except httpx.TimeoutException:
+        return Response(
+            {'detail': 'Route service request timed out.'},
+            status=status.HTTP_503_SERVICE_UNAVAILABLE,
+        )
+    except httpx.RequestError as exc:
+        return Response(
+            {'detail': 'Could not reach route service.', 'error': str(exc)},
+            status=status.HTTP_502_BAD_GATEWAY,
+        )
+
+    ct = (upstream.headers.get('content-type') or '').lower()
+    if 'application/json' in ct:
+        try:
+            payload = upstream.json()
+        except ValueError:
+            payload = {'detail': upstream.text}
+    else:
+        payload = {'detail': upstream.text} if upstream.text else {}
+
+    return Response(payload, status=upstream.status_code)

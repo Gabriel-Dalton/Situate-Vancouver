@@ -7,7 +7,7 @@ from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 
-from app.routers import health, incidents
+from app.routers import health, incidents, routes
 from app.routers.incidents import limiter
 
 _origins = os.environ.get(
@@ -30,6 +30,7 @@ app.add_middleware(
 
 app.include_router(health.router, tags=['health'])
 app.include_router(incidents.router)
+app.include_router(routes.router)
 
 
 @app.get('/')

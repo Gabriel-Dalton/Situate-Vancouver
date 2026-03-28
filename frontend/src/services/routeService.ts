@@ -1,5 +1,31 @@
 import { api } from './api'
-import { Incident } from './incidentService'
+import type { Incident } from './incidentService'
+
+export interface RouteOption {
+  index: number
+  summary: string
+  distance_km: number
+  duration_min: number
+  geometry: string  // encoded polyline (Google format, precision 5)
+  is_recommended: boolean
+}
+
+export interface IncidentAvoided {
+  title: string
+  severity: string
+  incident_type: string
+  lat: number
+  lng: number
+}
+
+export interface RouteFindResult {
+  origin_lat: number
+  origin_lng: number
+  dest_lat: number
+  dest_lng: number
+  routes: RouteOption[]
+  incidents_avoided: IncidentAvoided[]
+}
 
 export interface SavedRoute {
   id: string
@@ -23,6 +49,10 @@ export interface RouteAlert {
   incident: Incident
   alert_type: 'warning' | 'update' | 'clear'
   sent_at: string
+}
+
+export function findRoute(origin: string, destination: string): Promise<RouteFindResult> {
+  return api.post<RouteFindResult>('/routes/find/', { origin, destination })
 }
 
 export const routeService = {

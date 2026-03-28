@@ -14,6 +14,8 @@ import { AUTH_UI_ENABLED } from './config/authUi'
 import StatusPanel from './components/StatusPanel'
 import { AiQueryBar, AiResponsePanel } from './components/AiQuery'
 import type { AiQueryResponse } from './components/AiQuery'
+import RouteFindingPanel from './components/RouteFindingPanel'
+import type { RouteFindResult } from './services/routeService'
 import './App.css'
 
 const VancouverMap = lazy(() => import('./components/VancouverMap'))
@@ -30,6 +32,8 @@ export default function App() {
   const [lens, setLens] = useState<MobilityLens>('cycle')
   const [aiResponse, setAiResponse] = useState<AiQueryResponse | null>(null)
   const [aiPanelOpen, setAiPanelOpen] = useState(false)
+  const [routeResult, setRouteResult] = useState<RouteFindResult | null>(null)
+  const [selectedRouteIndex, setSelectedRouteIndex] = useState(0)
 
   useEffect(() => {
     /**
@@ -79,6 +83,11 @@ export default function App() {
     setAiPanelOpen(false)
   }, [])
 
+  const handleRouteResult = useCallback((result: RouteFindResult, idx: number) => {
+    setRouteResult(result)
+    setSelectedRouteIndex(idx)
+  }, [])
+
   const focusLocation: FocusLocation = useMemo(() => {
     if (!aiResponse || !aiPanelOpen) return null
     const { lat, lng } = aiResponse.coordinates
@@ -122,6 +131,8 @@ export default function App() {
                 lens={lens}
                 incident={aiResponse}
                 focusLocation={focusLocation}
+                routeResult={routeResult}
+                selectedRouteIndex={selectedRouteIndex}
               />
             </Suspense>
           </div>
@@ -225,6 +236,12 @@ export default function App() {
         </main>
 
         <aside className="insight-shell__rail insight-shell__rail--right" aria-label="Signals">
+          <RouteFindingPanel
+            onResult={handleRouteResult}
+            onSelectRoute={setSelectedRouteIndex}
+            result={routeResult}
+            selectedRouteIndex={selectedRouteIndex}
+          />
           <section className="insight-panel" aria-label="Systems status">
             <StatusPanel />
           </section>

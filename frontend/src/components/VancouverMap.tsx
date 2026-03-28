@@ -15,6 +15,7 @@ import type { InsightLayerKey, InsightLayerState } from '../types/insightLayers'
 import type { MobilityLens } from '../types/mobilityLens'
 import { MOBILITY_LENS_META } from '../types/mobilityLens'
 import type { AiQueryResponse } from './AiQuery'
+import type { RouteFindResult } from '../services/routeService'
 import MapBasemapToolbar from './MapBasemapToolbar'
 import MapInsightToolbar from './MapInsightToolbar'
 import { useIncidents } from '../hooks/useIncidents'
@@ -181,6 +182,8 @@ type Props = {
   lens: MobilityLens
   incident?: AiQueryResponse | null
   focusLocation?: FocusLocation
+  routeResult?: RouteFindResult | null
+  selectedRouteIndex?: number
 }
 
 function installIncidentLayer(map: maplibregl.Map, inc: AiQueryResponse) {
@@ -233,12 +236,45 @@ function installIncidentLayer(map: maplibregl.Map, inc: AiQueryResponse) {
   }
 }
 
+/** Decode a Google-format encoded polyline (precision 5) to [lng, lat] pairs for GeoJSON. */
+function decodePolyline(encoded: string): [number, number][] {
+  const coords: [number, number][] = []
+  let index = 0
+  let lat = 0
+  let lng = 0
+  while (index < encoded.length) {
+    let b: number
+    let shift = 0
+    let result = 0
+    do {
+      b = encoded.charCodeAt(index++) - 63
+      result |= (b & 0x1f) << shift
+      shift += 5
+    } while (b >= 0x20)
+    lat += result & 1 ? ~(result >> 1) : result >> 1
+    shift = 0
+    result = 0
+    do {
+      b = encoded.charCodeAt(index++) - 63
+      result |= (b & 0x1f) << shift
+      shift += 5
+    } while (b >= 0x20)
+    lng += result & 1 ? ~(result >> 1) : result >> 1
+    coords.push([lng / 1e5, lat / 1e5])
+  }
+  return coords
+}
+
+const ROUTE_COLORS = ['#00d4ff', '#a78bfa', '#34d399']
+
 export default function VancouverMap({
   layers,
   onToggleLayer,
   lens,
   incident,
   focusLocation,
+  routeResult,
+  selectedRouteIndex = 0,
 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<maplibregl.Map | null>(null)
@@ -504,19 +540,25 @@ export default function VancouverMap({
 
     map.addSource(SRC, { type: 'geojson', data: geojson })
 
+    const typeColor: maplibregl.ExpressionSpecification = ['match', ['get', 'incident_type'],
+      'construction',    '#fb923c',  // amber-orange
+      'traffic',         '#60a5fa',  // blue
+      'accident',        '#f87171',  // red
+      'obstruction',     '#facc15',  // yellow
+      'weather',         '#a78bfa',  // violet
+      'emergency',       '#ff3b3b',  // bright red
+      'natural_disaster','#c084fc',  // purple
+      /* general */      '#94a3b8',  // slate
+    ]
+
     map.addLayer({
       id: LAYER_GLOW,
       type: 'circle',
       source: SRC,
       paint: {
-        'circle-radius': 14,
-        'circle-color': ['match', ['get', 'severity'],
-          'critical', '#ff3b3b',
-          'high',     '#ef4444',
-          'medium',   '#f59e0b',
-          /* low */   '#22c55e',
-        ],
-        'circle-opacity': 0.25,
+        'circle-radius': 8,
+        'circle-color': typeColor,
+        'circle-opacity': 0.18,
         'circle-blur': 1,
       },
     })
@@ -526,16 +568,11 @@ export default function VancouverMap({
       type: 'circle',
       source: SRC,
       paint: {
-        'circle-radius': 6,
-        'circle-color': ['match', ['get', 'severity'],
-          'critical', '#ff3b3b',
-          'high',     '#ef4444',
-          'medium',   '#f59e0b',
-          /* low */   '#22c55e',
-        ],
-        'circle-stroke-width': 1.5,
-        'circle-stroke-color': '#fff',
-        'circle-opacity': 0.9,
+        'circle-radius': 3.5,
+        'circle-color': typeColor,
+        'circle-stroke-width': 1,
+        'circle-stroke-color': 'rgba(0,0,0,0.5)',
+        'circle-opacity': 0.88,
       },
     })
 
@@ -556,6 +593,95 @@ export default function VancouverMap({
     map.on('mouseenter', LAYER_CORE, () => { map.getCanvas().style.cursor = 'pointer' })
     map.on('mouseleave', LAYER_CORE, () => { map.getCanvas().style.cursor = '' })
   }, [dbIncidents])
+
+  // Render route polylines from ORS result
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map || !styleReadyRef.current) return
+
+    // Remove previous route layers/sources
+    for (let i = 0; i < 3; i++) {
+      if (map.getLayer(`route-line-${i}`)) map.removeLayer(`route-line-${i}`)
+      if (map.getSource(`route-${i}`)) map.removeSource(`route-${i}`)
+    }
+    if (map.getLayer('route-endpoints')) map.removeLayer('route-endpoints')
+    if (map.getSource('route-endpoints-src')) map.removeSource('route-endpoints-src')
+
+    if (!routeResult || routeResult.routes.length === 0) return
+
+    // Add each route as a line, selected route on top and brighter
+    routeResult.routes.forEach((route, i) => {
+      const coords = decodePolyline(route.geometry)
+      const isSelected = i === selectedRouteIndex
+      const color = ROUTE_COLORS[i % ROUTE_COLORS.length]
+
+      map.addSource(`route-${i}`, {
+        type: 'geojson',
+        data: {
+          type: 'Feature',
+          geometry: { type: 'LineString', coordinates: coords },
+          properties: {},
+        },
+      })
+      map.addLayer({
+        id: `route-line-${i}`,
+        type: 'line',
+        source: `route-${i}`,
+        layout: { 'line-join': 'round', 'line-cap': 'round' },
+        paint: {
+          'line-color': color,
+          'line-width': isSelected ? 4.5 : 2.5,
+          'line-opacity': isSelected ? 0.92 : 0.4,
+        },
+      })
+    })
+
+    // Re-order so selected route is drawn last (on top)
+    const selectedId = `route-line-${selectedRouteIndex}`
+    if (map.getLayer(selectedId)) map.moveLayer(selectedId)
+
+    // Origin + destination endpoint markers
+    const { origin_lng, origin_lat, dest_lng, dest_lat } = routeResult
+    map.addSource('route-endpoints-src', {
+      type: 'geojson',
+      data: {
+        type: 'FeatureCollection',
+        features: [
+          {
+            type: 'Feature',
+            geometry: { type: 'Point', coordinates: [origin_lng, origin_lat] },
+            properties: { role: 'origin' },
+          },
+          {
+            type: 'Feature',
+            geometry: { type: 'Point', coordinates: [dest_lng, dest_lat] },
+            properties: { role: 'destination' },
+          },
+        ],
+      },
+    })
+    map.addLayer({
+      id: 'route-endpoints',
+      type: 'circle',
+      source: 'route-endpoints-src',
+      paint: {
+        'circle-radius': 7,
+        'circle-color': ['match', ['get', 'role'], 'origin', '#00d4ff', '#a78bfa'],
+        'circle-stroke-width': 2,
+        'circle-stroke-color': '#fff',
+        'circle-opacity': 0.95,
+      },
+    })
+
+    // Fit map to the selected route
+    const selectedCoords = decodePolyline(routeResult.routes[selectedRouteIndex]?.geometry ?? routeResult.routes[0].geometry)
+    const lngs = selectedCoords.map(([lng]) => lng)
+    const lats = selectedCoords.map(([, lat]) => lat)
+    map.fitBounds(
+      [[Math.min(...lngs), Math.min(...lats)], [Math.max(...lngs), Math.max(...lats)]],
+      { padding: 80, duration: 900 },
+    )
+  }, [routeResult, selectedRouteIndex])
 
   useEffect(() => {
     const map = mapRef.current

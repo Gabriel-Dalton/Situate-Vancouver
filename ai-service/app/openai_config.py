@@ -8,8 +8,11 @@ from pathlib import Path
 from dotenv import load_dotenv
 from openai import OpenAI
 
-# Monorepo: repo-root `.env` (same file Django loads). Does not override vars already set in the shell.
-_REPO_ROOT = Path(__file__).resolve().parent.parent.parent
+# Load ai-service/.env first (service-specific keys like OPENROUTER_API_KEY),
+# then repo-root .env for shared keys. Neither overrides vars already set in the shell.
+_AI_SERVICE_ROOT = Path(__file__).resolve().parent.parent
+_REPO_ROOT = _AI_SERVICE_ROOT.parent
+load_dotenv(_AI_SERVICE_ROOT / '.env', override=False)
 load_dotenv(_REPO_ROOT / '.env', override=False)
 
 
