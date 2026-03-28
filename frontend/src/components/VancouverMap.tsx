@@ -34,6 +34,7 @@ const LENS_LAYER_IDS = ['lens-overlay-glow', 'lens-overlay-line'] as const
 
 const INITIAL_BASEMAP: BasemapId = 'dark'
 const VAN_CENTRE: [number, number] = [-123.1207, 49.2827]
+const TOMTOM_KEY = import.meta.env.VITE_TOMTOM_API_KEY as string | undefined
 
 function applyInsightLayers(map: maplibregl.Map, layers: InsightLayerState) {
   const vis = (on: boolean) => (on ? 'visible' : 'none') as 'visible' | 'none'
@@ -383,6 +384,23 @@ export default function VancouverMap({
       applyInsightLayers(map, layersRef.current)
       if (incidentRef.current) installIncidentLayer(map, incidentRef.current)
       styleReadyRef.current = true
+
+      // TomTom traffic flow tile overlay
+      if (TOMTOM_KEY) {
+        map.addSource('tomtom-traffic', {
+          type: 'raster',
+          tiles: [
+            `https://api.tomtom.com/traffic/map/4/tile/flow/relative0/{z}/{x}/{y}.png?key=${TOMTOM_KEY}&tileSize=256`,
+          ],
+          tileSize: 256,
+        })
+        map.addLayer({
+          id: 'traffic-flow',
+          type: 'raster',
+          source: 'tomtom-traffic',
+          paint: { 'raster-opacity': 0.35 },
+        })
+      }
 
       if (!interactionsBoundRef.current) {
         interactionsBoundRef.current = true
