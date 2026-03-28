@@ -52,9 +52,8 @@ export default defineConfig(({ mode }) => {
     .map((h) => h.trim())
     .filter(Boolean)
   const viteAllowedHostsDefaults = [
-    'www.ageforty.com',
-    'ageforty.com',
-    'api.ageforty.com',
+    'localhost',
+    '127.0.0.1',
   ]
   const allowedHosts = [...new Set([...viteAllowedHostsDefaults, ...viteAllowedHostsExtra])]
 

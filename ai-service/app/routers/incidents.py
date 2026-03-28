@@ -1,10 +1,20 @@
-from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel
+import re
+
+from fastapi import APIRouter, Depends, HTTPException, Request
+from pydantic import BaseModel, field_validator
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 
 from app.agents import OrchestratorAgent, QueryResponse, DetectedIncident
 from app.openai_config import OpenAIConfigurationError
 
 router = APIRouter(prefix="/incidents", tags=["incidents"])
+limiter = Limiter(key_func=get_remote_address)
+
+# Characters that have no place in a natural language city query
+_BLOCKED = re.compile(r"[<>{}\[\]\\;`]")
+# Max length to prevent prompt stuffing
+_MAX_LEN = 300
 
 # ---------------------------------------------------------------------------
 # Singleton orchestrator — instantiated once when the module is first loaded,
@@ -31,10 +41,41 @@ def get_orchestrator() -> OrchestratorAgent:
 class QueryRequest(BaseModel):
     query: str
 
+    @field_validator("query")
+    @classmethod
+    def validate_query(cls, v: str) -> str:
+        v = v.strip()
+        if not v:
+            raise ValueError("query must not be empty")
+        if len(v) > _MAX_LEN:
+            raise ValueError(f"query must be {_MAX_LEN} characters or fewer")
+        if _BLOCKED.search(v):
+            raise ValueError("query contains invalid characters")
+        return v
+
 
 class ReportRequest(BaseModel):
     report: str
     reported_by: str = "citizen"
+
+    @field_validator("report")
+    @classmethod
+    def validate_report(cls, v: str) -> str:
+        v = v.strip()
+        if not v:
+            raise ValueError("report must not be empty")
+        if len(v) > _MAX_LEN:
+            raise ValueError(f"report must be {_MAX_LEN} characters or fewer")
+        if _BLOCKED.search(v):
+            raise ValueError("report contains invalid characters")
+        return v
+
+    @field_validator("reported_by")
+    @classmethod
+    def validate_reported_by(cls, v: str) -> str:
+        if len(v) > 100:
+            raise ValueError("reported_by must be 100 characters or fewer")
+        return v.strip()
 
 
 # ---------------------------------------------------------------------------
@@ -42,7 +83,9 @@ class ReportRequest(BaseModel):
 # ---------------------------------------------------------------------------
 
 @router.post("/query", response_model=QueryResponse)
+@limiter.limit("20/minute")
 def query(
+    request: Request,
     body: QueryRequest,
     orchestrator: OrchestratorAgent = Depends(get_orchestrator),
 ) -> QueryResponse:
@@ -63,7 +106,9 @@ def query(
 
 
 @router.post("/report", response_model=DetectedIncident)
+@limiter.limit("10/minute")
 def report_incident(
+    request: Request,
     body: ReportRequest,
     orchestrator: OrchestratorAgent = Depends(get_orchestrator),
 ) -> DetectedIncident:

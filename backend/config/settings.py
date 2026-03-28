@@ -40,7 +40,7 @@ DEBUG = os.environ.get('DJANGO_DEBUG', 'true').lower() in ('1', 'true', 'yes')
 # API_PROXY_TARGET uses a hostname that resolves to local Django (tunnel / /etc/hosts).
 _default_allowed_hosts = 'localhost,127.0.0.1,backend'
 if DEBUG:
-    _default_allowed_hosts += ',api.ageforty.com,www.ageforty.com,ageforty.com'
+    _default_allowed_hosts += ',localhost,127.0.0.1'
 ALLOWED_HOSTS = [
     h.strip()
     for h in os.environ.get('DJANGO_ALLOWED_HOSTS', _default_allowed_hosts).split(',')

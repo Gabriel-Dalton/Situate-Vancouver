@@ -8,7 +8,7 @@ PORT ?= 8000
 # Prefer backend venv when present (BSD make has no ifneq; use one shell test).
 PYTHON := $(shell if [ -x "$(BACKEND_DIR)/.venv/bin/python" ]; then echo "$(BACKEND_DIR)/.venv/bin/python"; else command -v python3 2>/dev/null || command -v python 2>/dev/null; fi)
 
-.PHONY: dev dev-bg down build logs ps run install help
+.PHONY: dev dev-bg down build logs ps run stop install help
 
 help:
 	@echo "Targets:"
@@ -20,6 +20,7 @@ help:
 	@echo "  make ps           Show running containers and ports"
 	@echo "  make install      pip/npm install for all three services (local)"
 	@echo "  make run          Start FastAPI + Vite + Django (repo-root .env via scripts/dev-run.sh)"
+	@echo "  make stop         Kill all local dev servers (Django :1111, FastAPI :8001, Vite :5173)"
 	@echo "Env: copy .env.example to .env at repo root (Django and dev-run.sh load it)."
 
 # ── Docker (full stack) ────────────────────────────────────────────────────
@@ -51,3 +52,10 @@ install:
 
 run:
 	bash scripts/dev-run.sh
+
+stop:
+	@echo "Stopping Django, FastAPI, and Vite..."
+	@lsof -tiTCP:1111 -sTCP:LISTEN | xargs kill -9 2>/dev/null || true
+	@lsof -tiTCP:8001 -sTCP:LISTEN | xargs kill -9 2>/dev/null || true
+	@lsof -tiTCP:5173 -sTCP:LISTEN | xargs kill -9 2>/dev/null || true
+	@echo "Done."

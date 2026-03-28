@@ -1,9 +1,14 @@
 import os
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from slowapi.middleware import SlowAPIMiddleware
 
 from app.routers import health, incidents
+from app.routers.incidents import limiter
 
 _origins = os.environ.get(
     'CORS_ALLOWED_ORIGINS',
@@ -12,6 +17,9 @@ _origins = os.environ.get(
 _allow_origins = [o.strip() for o in _origins.split(',') if o.strip()]
 
 app = FastAPI(title='AI Service', version='0.1.0')
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+app.add_middleware(SlowAPIMiddleware)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=_allow_origins,
