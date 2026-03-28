@@ -1,0 +1,11 @@
+---
+description: README screenshot assets — refresh after deployment
+globs: README.md, docs/screenshots/**/*
+alwaysApply: false
+---
+
+# README screenshots
+
+- PNGs live under `docs/screenshots/` (`insight-canvas.png`, `landing.png`; optional `ai-query-split.png` post-deploy).
+- Current README images may show **pre-deployment / dev** UI (e.g. offline API status). **After production or stable staging deploy**, replace those files in place with captures showing **healthy services** and optionally **AI split-view** results. Do not remove the README disclaimer until the team agrees the new shots are representative.
+- Full checklist: `docs/screenshots/README.md`.

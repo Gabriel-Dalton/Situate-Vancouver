@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="540" viewBox="0 0 960 540" role="img" aria-labelledby="title desc">
+  <title id="title">Situate Vancouver  insight canvas (illustration)</title>
+  <desc id="desc">Stylized dark map workspace with header, side rail, and map area. Replace with a PNG screenshot when available.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#00152e"/>
+      <stop offset="100%" style="stop-color:#000814"/>
+    </linearGradient>
+    <pattern id="grid" width="32" height="32" patternUnits="userSpaceOnUse">
+      <path d="M 32 0 L 0 0 0 32" fill="none" stroke="#00aaef" stroke-opacity="0.06" stroke-width="1"/>
+    </pattern>
+  </defs>
+  <rect width="100%" height="100%" fill="url(#bg)"/>
+  <rect x="24" y="24" width="912" height="56" rx="6" fill="rgba(0,27,61,0.85)" stroke="rgba(0,170,239,0.2)"/>
+  <text x="48" y="58" fill="#e8f4fc" font-family="system-ui,sans-serif" font-size="15" font-weight="700">SITUATE VANCOUVER</text>
+  <text x="240" y="56" fill="#5c728a" font-family="system-ui,sans-serif" font-size="11">City-scale insight canvas</text>
+  <rect x="400" y="36" width="420" height="32" rx="4" fill="rgba(0,0,0,0.35)" stroke="rgba(0,170,239,0.35)"/>
+  <text x="416" y="56" fill="#5c728a" font-family="system-ui,sans-serif" font-size="11">Natural-language query&</text>
+  <rect x="24" y="96" width="220" height="420" rx="6" fill="rgba(0,12,28,0.72)" stroke="rgba(0,170,239,0.12)"/>
+  <text x="40" y="128" fill="#8fa3b8" font-family="system-ui,sans-serif" font-size="10" font-weight="600" letter-spacing="0.12em">MOBILITY LENS</text>
+  <rect x="40" y="148" width="168" height="36" rx="4" fill="rgba(0,0,0,0.25)" stroke="rgba(0,170,239,0.25)"/>
+  <text x="52" y="170" fill="#5eead4" font-family="system-ui,sans-serif" font-size="10">CYCLE · WALK · DRIVE</text>
+  <text x="40" y="220" fill="#8fa3b8" font-family="system-ui,sans-serif" font-size="10" font-weight="600" letter-spacing="0.12em">INSIGHT LAYERS</text>
+  <text x="40" y="248" fill="#5c728a" font-family="system-ui,sans-serif" font-size="11">Strategic nodes, corridors,</text>
+  <text x="40" y="266" fill="#5c728a" font-family="system-ui,sans-serif" font-size="11">SkyTrain, incidents&</text>
+  <rect x="256" y="96" width="680" height="420" rx="6" fill="#0a1628" stroke="rgba(0,170,239,0.15)"/>
+  <rect x="256" y="96" width="680" height="420" fill="url(#grid)" opacity="0.9"/>
+  <circle cx="520" cy="280" r="120" fill="none" stroke="#00aaef" stroke-opacity="0.15" stroke-width="2"/>
+  <circle cx="480" cy="300" r="6" fill="#00aaef" opacity="0.9"/>
+  <circle cx="560" cy="260" r="5" fill="#22c55e" opacity="0.85"/>
+  <path d="M 380 320 Q 480 280 580 240" fill="none" stroke="#00aaef" stroke-opacity="0.35" stroke-width="2"/>
+  <text x="272" y="124" fill="#5c728a" font-family="IBM Plex Mono,monospace" font-size="10">MapLibre GL · Metro Vancouver</text>
+  <text x="48" y="518" fill="#5c728a" font-family="system-ui,sans-serif" font-size="11">Illustrative preview  replace with PNG in docs/screenshots/</text>
+</svg>
