@@ -76,10 +76,8 @@ def find_routes(
         }
 
     coords = [[origin_lng, origin_lat], [dest_lng, dest_lat]]
-    headers = {
-        "Authorization": f"Bearer {ORS_KEY}" if ORS_KEY and not ORS_KEY.startswith("Bearer ") else ORS_KEY,
-        "Content-Type": "application/json",
-    }
+    headers = {"Content-Type": "application/json"}
+    params = {"api_key": ORS_KEY} if ORS_KEY else {}
 
     # Try progressively simpler requests — some ORS tiers don't allow
     # avoid_polygons or alternative_routes.
@@ -110,22 +108,30 @@ def find_routes(
     ]
 
     data: dict = {}
+    last_resp = None
     for body in attempts:
-        resp = httpx.post(ORS_DIRECTIONS_URL, json=body, headers=headers, timeout=15)
+        resp = httpx.post(ORS_DIRECTIONS_URL, params=params, json=body, headers=headers, timeout=15)
+        last_resp = resp
         if resp.status_code == 403:
+            import logging
+            logging.getLogger(__name__).error(
+                "ORS 403 body: %s | key_set=%s | body_keys=%s",
+                resp.text[:500],
+                bool(ORS_KEY),
+                list(body.keys()),
+            )
             continue
         resp.raise_for_status()
         data = resp.json()
-        # If this attempt dropped avoid_polygons, clear avoidable so the
-        # response doesn't falsely claim incidents were avoided.
         if "options" not in body:
             avoidable = []
         break
     else:
+        body_text = last_resp.text if last_resp else "no response"
         raise httpx.HTTPStatusError(
-            "ORS returned 403 for all request variants",
-            request=resp.request,
-            response=resp,
+            f"ORS 403 for all variants. Response: {body_text[:300]}",
+            request=last_resp.request,
+            response=last_resp,
         )
 
     routes = []

@@ -7,7 +7,8 @@ import type { InsightLayerState, FocusLocation } from './components/VancouverMap
 import LensSelector from './components/LensSelector'
 import { SKYTRAIN_LEGEND, SKYTRAIN_LINE_COLORS } from './data/skytrainLineKeys'
 import type { MobilityLens } from './types/mobilityLens'
-import { LENS_SIGNALS, MOBILITY_LENS_META } from './types/mobilityLens'
+import { MOBILITY_LENS_META } from './types/mobilityLens'
+import { useLensOverlay } from './hooks/useLensOverlay'
 import BrandLockup from './components/BrandLockup'
 import SignInHeader from './components/SignInHeader'
 import { AUTH_UI_ENABLED } from './config/authUi'
@@ -21,8 +22,6 @@ import './App.css'
 const VancouverMap = lazy(() => import('./components/VancouverMap'))
 
 const DEFAULT_LAYERS: InsightLayerState = {
-  strategicNodes: true,
-  movementCorridors: true,
   skytrainNodes: true,
   incidentMarker: true,
 }
@@ -30,6 +29,7 @@ const DEFAULT_LAYERS: InsightLayerState = {
 export default function App() {
   const [layers, setLayers] = useState<InsightLayerState>(DEFAULT_LAYERS)
   const [lens, setLens] = useState<MobilityLens>('cycle')
+  const { data: lensData, loading: lensLoading } = useLensOverlay(lens)
   const [aiResponse, setAiResponse] = useState<AiQueryResponse | null>(null)
   const [aiPanelOpen, setAiPanelOpen] = useState(false)
   const [routeResult, setRouteResult] = useState<RouteFindResult | null>(null)
@@ -129,6 +129,7 @@ export default function App() {
                 layers={layers}
                 onToggleLayer={toggleLayer}
                 lens={lens}
+                lensData={lensData}
                 incident={aiResponse}
                 focusLocation={focusLocation}
                 routeResult={routeResult}
@@ -149,42 +150,32 @@ export default function App() {
           <section className="insight-panel">
             <h2 className="insight-panel__heading">Mobility lens</h2>
             <p className="insight-panel__hint">
-              Choose how you move — the map and signals adapt to your context.
+              Switch mode to filter the map context for your journey type.
             </p>
             <LensSelector active={lens} onSelect={setLens} />
+            <p className="insight-panel__hint" style={{ marginTop: '0.5rem', opacity: 0.6 }}>
+              {lensLoading
+                ? `Loading ${MOBILITY_LENS_META[lens].label.toLowerCase()} overlay…`
+                : lens === 'drive'
+                  ? 'Drive — traffic flow shown via TomTom layer'
+                  : `${MOBILITY_LENS_META[lens].label} overlay — ${lensData.features.length} features loaded`
+              }
+            </p>
           </section>
 
           <section className="insight-panel">
-            <h2 className="insight-panel__heading">Insight layers</h2>
-            <p className="insight-panel__hint">
-              Toggle geometry that will later bind to Django / AI outputs. Data is local seed GeoJSON
-              for now.
-            </p>
-            <LayerToggle
-              id="layer-nodes"
-              label="Strategic nodes"
-              description="Priority places and narrative lenses"
-              checked={layers.strategicNodes}
-              onChange={() => toggleLayer('strategicNodes')}
-            />
-            <LayerToggle
-              id="layer-corridors"
-              label="Movement corridors"
-              description="Spines for mobility / planning overlays"
-              checked={layers.movementCorridors}
-              onChange={() => toggleLayer('movementCorridors')}
-            />
+            <h2 className="insight-panel__heading">Map layers</h2>
             <LayerToggle
               id="layer-skytrain"
               label="SkyTrain stations"
-              description="Expo, Millennium, and Canada Line stops (public transit nodes)"
+              description="Expo, Millennium, and Canada Line stops"
               checked={layers.skytrainNodes}
               onChange={() => toggleLayer('skytrainNodes')}
             />
             <LayerToggle
               id="layer-incident"
-              label="Incident marker"
-              description="AI-detected incident location from the last query"
+              label="AI incident marker"
+              description="Location pin from the last AI query"
               checked={layers.incidentMarker}
               onChange={() => toggleLayer('incidentMarker')}
             />
@@ -199,20 +190,6 @@ export default function App() {
                 </span>
               ))}
             </div>
-          </section>
-
-          <section className="insight-panel">
-            <h2 className="insight-panel__heading">Scope</h2>
-            <ul className="insight-scope">
-              <li>
-                <span className="insight-scope__k">Bounding box</span>
-                <span className="insight-scope__v">City of Vancouver core + inner burbs</span>
-              </li>
-              <li>
-                <span className="insight-scope__k">Basemap</span>
-                <span className="insight-scope__v">CARTO Dark Matter (vector)</span>
-              </li>
-            </ul>
           </section>
         </aside>
 
@@ -246,22 +223,6 @@ export default function App() {
             <StatusPanel />
           </section>
 
-          <section className="insight-panel">
-            <h2 className="insight-panel__heading">
-              {MOBILITY_LENS_META[lens].label} signals
-            </h2>
-            <p className="insight-panel__hint">
-              City data scoped to the active mobility lens.
-            </p>
-            {LENS_SIGNALS[lens].map((sig) => (
-              <SignalTile
-                key={sig.label}
-                label={sig.label}
-                value={sig.value}
-                trend={sig.trend}
-              />
-            ))}
-          </section>
         </aside>
       </div>
     </div>
@@ -293,15 +254,6 @@ function LayerToggle({
   )
 }
 
-function SignalTile({ label, value, trend }: { label: string; value: string; trend: string }) {
-  return (
-    <div className="signal-tile">
-      <span className="signal-tile__label">{label}</span>
-      <span className="signal-tile__value">{value}</span>
-      <span className="signal-tile__trend">{trend}</span>
-    </div>
-  )
-}
 
 function LiveClock() {
   const [now, setNow] = useState(() => new Date())

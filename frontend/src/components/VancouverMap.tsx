@@ -4,8 +4,6 @@ import 'maplibre-gl/dist/maplibre-gl.css'
 import { enrichSkytrainNodes, skytrainCircleColorExpr, skytrainStrokeColorExpr, SKYTRAIN_LINE_COLORS } from '../data/skytrainLineKeys'
 import { fetchStationThumb } from '../data/stationWikiTitles'
 import { SKYTRAIN_NODES } from '../data/skytrainStations'
-import { LENS_OVERLAYS } from '../data/lensOverlays'
-import { MOVEMENT_CORRIDORS, STRATEGIC_NODES } from '../data/vancouverGeo'
 import {
   BASEMAP_STYLES,
   type BasemapId,
@@ -14,6 +12,7 @@ import {
 import type { InsightLayerKey, InsightLayerState } from '../types/insightLayers'
 import type { MobilityLens } from '../types/mobilityLens'
 import { MOBILITY_LENS_META } from '../types/mobilityLens'
+
 import type { AiQueryResponse } from './AiQuery'
 import type { RouteFindResult } from '../services/routeService'
 import MapBasemapToolbar from './MapBasemapToolbar'
@@ -30,8 +29,7 @@ const SEVERITY_COLORS: Record<AiQueryResponse['severity'], string> = {
 
 export type { InsightLayerState } from '../types/insightLayers'
 
-const NODE_LAYERS = ['strategic-nodes-core', 'skytrain-nodes-core'] as const
-const LENS_LAYER_IDS = ['lens-overlay-glow', 'lens-overlay-line'] as const
+const NODE_LAYERS = ['skytrain-nodes-core'] as const
 
 const INITIAL_BASEMAP: BasemapId = 'dark'
 const VAN_CENTRE: [number, number] = [-123.1207, 49.2827]
@@ -39,73 +37,35 @@ const TOMTOM_KEY = import.meta.env.VITE_TOMTOM_API_KEY as string | undefined
 
 function applyInsightLayers(map: maplibregl.Map, layers: InsightLayerState) {
   const vis = (on: boolean) => (on ? 'visible' : 'none') as 'visible' | 'none'
-  const ids = [
-    'skytrain-nodes-glow',
-    'skytrain-nodes-core',
-    'strategic-nodes-glow',
-    'strategic-nodes-core',
-    'corridors-line',
-    'incident-glow',
-    'incident-core',
-  ] as const
-  for (const id of ids) {
-    if (!map.getLayer(id)) continue
-    if (id.startsWith('skytrain')) {
-      map.setLayoutProperty(id, 'visibility', vis(layers.skytrainNodes))
-    } else if (id.startsWith('strategic')) {
-      map.setLayoutProperty(id, 'visibility', vis(layers.strategicNodes))
-    } else if (id.startsWith('incident')) {
-      map.setLayoutProperty(id, 'visibility', vis(layers.incidentMarker))
-    } else {
-      map.setLayoutProperty(id, 'visibility', vis(layers.movementCorridors))
-    }
+  const pairs: [string, boolean][] = [
+    ['skytrain-nodes-glow', layers.skytrainNodes],
+    ['skytrain-nodes-core', layers.skytrainNodes],
+    ['incident-glow', layers.incidentMarker],
+    ['incident-core', layers.incidentMarker],
+  ]
+  for (const [id, on] of pairs) {
+    if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', vis(on))
   }
 }
 
-function installLensOverlay(map: maplibregl.Map, lens: MobilityLens) {
+function installLensOverlay(map: maplibregl.Map, lens: MobilityLens, data: GeoJSON.FeatureCollection) {
   const color = MOBILITY_LENS_META[lens].color
-  const data = LENS_OVERLAYS[lens]
-
   if (map.getSource('lens-overlay')) {
     ;(map.getSource('lens-overlay') as maplibregl.GeoJSONSource).setData(data)
-    for (const id of LENS_LAYER_IDS) {
-      if (!map.getLayer(id)) continue
-      if (id.endsWith('-glow')) {
-        map.setPaintProperty(id, 'line-color', color)
-      } else {
-        map.setPaintProperty(id, 'line-color', color)
-      }
-    }
+    if (map.getLayer('lens-overlay-line')) map.setPaintProperty('lens-overlay-line', 'line-color', color)
     return
   }
-
   map.addSource('lens-overlay', { type: 'geojson', data })
-  map.addLayer({
-    id: 'lens-overlay-glow',
-    type: 'line',
-    source: 'lens-overlay',
-    paint: {
-      'line-color': color,
-      'line-width': 8,
-      'line-opacity': 0.12,
-      'line-blur': 5,
-    },
-  })
   map.addLayer({
     id: 'lens-overlay-line',
     type: 'line',
     source: 'lens-overlay',
-    paint: {
-      'line-color': color,
-      'line-width': 2.5,
-      'line-opacity': 0.72,
-      'line-blur': 0.25,
-      'line-dasharray': [4, 2.5],
-    },
+    layout: { 'line-join': 'round', 'line-cap': 'round' },
+    paint: { 'line-color': color, 'line-width': 2.5, 'line-opacity': 0.7, 'line-dasharray': [4, 2.5] },
   })
 }
 
-function installInsightOverlay(map: maplibregl.Map) {
+function installSkytrainLayer(map: maplibregl.Map) {
   map.addSource('skytrain-nodes', { type: 'geojson', data: enrichSkytrainNodes(SKYTRAIN_NODES) })
   map.addLayer({
     id: 'skytrain-nodes-glow',
@@ -130,44 +90,6 @@ function installInsightOverlay(map: maplibregl.Map) {
       'circle-stroke-color': skytrainStrokeColorExpr(),
     },
   })
-
-  map.addSource('strategic-nodes', { type: 'geojson', data: STRATEGIC_NODES })
-  map.addLayer({
-    id: 'strategic-nodes-glow',
-    type: 'circle',
-    source: 'strategic-nodes',
-    paint: {
-      'circle-radius': 20,
-      'circle-color': '#00aaef',
-      'circle-opacity': 0.22,
-      'circle-blur': 0.85,
-    },
-  })
-  map.addLayer({
-    id: 'strategic-nodes-core',
-    type: 'circle',
-    source: 'strategic-nodes',
-    paint: {
-      'circle-radius': 6,
-      'circle-color': '#00aaef',
-      'circle-opacity': 0.95,
-      'circle-stroke-width': 2,
-      'circle-stroke-color': '#001b3d',
-    },
-  })
-
-  map.addSource('corridors', { type: 'geojson', data: MOVEMENT_CORRIDORS })
-  map.addLayer({
-    id: 'corridors-line',
-    type: 'line',
-    source: 'corridors',
-    paint: {
-      'line-color': '#00aaef',
-      'line-width': 2.2,
-      'line-opacity': 0.5,
-      'line-blur': 0.35,
-    },
-  })
 }
 
 export type FocusLocation = {
@@ -180,6 +102,7 @@ type Props = {
   layers: InsightLayerState
   onToggleLayer: (key: InsightLayerKey) => void
   lens: MobilityLens
+  lensData: GeoJSON.FeatureCollection
   incident?: AiQueryResponse | null
   focusLocation?: FocusLocation
   routeResult?: RouteFindResult | null
@@ -271,6 +194,7 @@ export default function VancouverMap({
   layers,
   onToggleLayer,
   lens,
+  lensData,
   incident,
   focusLocation,
   routeResult,
@@ -281,6 +205,7 @@ export default function VancouverMap({
   const styleReadyRef = useRef(false)
   const layersRef = useRef(layers)
   const lensRef = useRef(lens)
+  const lensDataRef = useRef(lensData)
   const incidentRef = useRef(incident ?? null)
   const interactionsBoundRef = useRef(false)
   const focusMarkerRef = useRef<maplibregl.Marker | null>(null)
@@ -307,6 +232,10 @@ export default function VancouverMap({
   useLayoutEffect(() => {
     lensRef.current = lens
   }, [lens])
+
+  useLayoutEffect(() => {
+    lensDataRef.current = lensData
+  }, [lensData])
 
   useLayoutEffect(() => {
     incidentRef.current = incident ?? null
@@ -415,8 +344,8 @@ export default function VancouverMap({
     const onMoveEnd = () => updateCursorInfo(map)
 
     const onStyleLoad = () => {
-      installInsightOverlay(map)
-      installLensOverlay(map, lensRef.current)
+      installSkytrainLayer(map)
+      installLensOverlay(map, lensRef.current, lensDataRef.current)
       applyInsightLayers(map, layersRef.current)
       if (incidentRef.current) installIncidentLayer(map, incidentRef.current)
       styleReadyRef.current = true
@@ -472,8 +401,8 @@ export default function VancouverMap({
   useEffect(() => {
     const map = mapRef.current
     if (!map || !styleReadyRef.current) return
-    installLensOverlay(map, lens)
-  }, [lens])
+    installLensOverlay(map, lens, lensData)
+  }, [lens, lensData])
 
   useEffect(() => {
     const map = mapRef.current
