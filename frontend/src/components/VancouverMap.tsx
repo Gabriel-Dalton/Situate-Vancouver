@@ -42,10 +42,40 @@ function applyInsightLayers(map: maplibregl.Map, layers: InsightLayerState) {
     ['skytrain-nodes-core', layers.skytrainNodes],
     ['incident-glow', layers.incidentMarker],
     ['incident-core', layers.incidentMarker],
+    ['3d-buildings', layers.buildings],
   ]
   for (const [id, on] of pairs) {
     if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', vis(on))
   }
+}
+
+function install3dBuildings(map: maplibregl.Map, visible: boolean) {
+  if (map.getLayer('3d-buildings')) return
+  // CARTO vector tiles expose buildings in the 'building' source-layer.
+  // render_height is set for most OSM buildings with height data; fall back to 10 m.
+  map.addLayer(
+    {
+      id: '3d-buildings',
+      type: 'fill-extrusion',
+      source: 'carto',
+      'source-layer': 'building',
+      layout: { visibility: visible ? 'visible' : 'none' },
+      paint: {
+        'fill-extrusion-color': [
+          'interpolate', ['linear'], ['coalesce', ['get', 'render_height'], 10],
+          0,   '#0d1b2a',
+          20,  '#112240',
+          60,  '#1a3560',
+          150, '#1e4080',
+        ],
+        'fill-extrusion-height': ['coalesce', ['get', 'render_height'], 10],
+        'fill-extrusion-base': 0,
+        'fill-extrusion-opacity': 0.75,
+      },
+    },
+    // Insert below skytrain/incident layers so they render on top of buildings
+    'skytrain-nodes-glow',
+  )
 }
 
 function installLensOverlay(map: maplibregl.Map, lens: MobilityLens, data: GeoJSON.FeatureCollection) {
@@ -345,6 +375,7 @@ export default function VancouverMap({
 
     const onStyleLoad = () => {
       installSkytrainLayer(map)
+      install3dBuildings(map, layersRef.current.buildings)
       installLensOverlay(map, lensRef.current, lensDataRef.current)
       applyInsightLayers(map, layersRef.current)
       if (incidentRef.current) installIncidentLayer(map, incidentRef.current)

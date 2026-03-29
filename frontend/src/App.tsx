@@ -24,6 +24,7 @@ const VancouverMap = lazy(() => import('./components/VancouverMap'))
 const DEFAULT_LAYERS: InsightLayerState = {
   skytrainNodes: true,
   incidentMarker: true,
+  buildings: true,
 }
 
 export default function App() {
@@ -165,6 +166,13 @@ export default function App() {
 
           <section className="insight-panel">
             <h2 className="insight-panel__heading">Map layers</h2>
+            <LayerToggle
+              id="layer-buildings"
+              label="3D buildings"
+              description="Extruded building footprints from OpenStreetMap"
+              checked={layers.buildings}
+              onChange={() => toggleLayer('buildings')}
+            />
             <LayerToggle
               id="layer-skytrain"
               label="SkyTrain stations"
