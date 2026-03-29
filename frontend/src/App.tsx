@@ -9,6 +9,9 @@ import { SKYTRAIN_LEGEND, SKYTRAIN_LINE_COLORS } from './data/skytrainLineKeys'
 import type { MobilityLens } from './types/mobilityLens'
 import { MOBILITY_LENS_META } from './types/mobilityLens'
 import { useLensOverlay } from './hooks/useLensOverlay'
+import { useNavigation } from './hooks/useNavigation'
+import { useIsMobile } from './hooks/useIsMobile'
+import NavigationOverlay from './components/NavigationOverlay'
 import BrandLockup from './components/BrandLockup'
 import SignInHeader from './components/SignInHeader'
 import { AUTH_UI_ENABLED } from './config/authUi'
@@ -35,6 +38,13 @@ export default function App() {
   const [aiPanelOpen, setAiPanelOpen] = useState(false)
   const [routeResult, setRouteResult] = useState<RouteFindResult | null>(null)
   const [selectedRouteIndex, setSelectedRouteIndex] = useState(0)
+
+  const isMobile = useIsMobile()
+  const selectedRoute = useMemo(
+    () => routeResult?.routes.find((r) => r.index === selectedRouteIndex) ?? routeResult?.routes[0] ?? null,
+    [routeResult, selectedRouteIndex],
+  )
+  const { state: navState, start: navStart, stop: navStop } = useNavigation(selectedRoute)
 
   useEffect(() => {
     /**
@@ -99,6 +109,9 @@ export default function App() {
 
   return (
     <div className="insight-shell">
+      {navState.active && selectedRoute && (
+        <NavigationOverlay state={navState} route={selectedRoute} onStop={navStop} />
+      )}
       <header className="insight-shell__header">
         <div className="insight-shell__brand">
           <BrandLockup variant="onDark" href="/" />
@@ -135,6 +148,7 @@ export default function App() {
                 focusLocation={focusLocation}
                 routeResult={routeResult}
                 selectedRouteIndex={selectedRouteIndex}
+                navigationState={navState}
               />
             </Suspense>
           </div>
@@ -219,6 +233,7 @@ export default function App() {
               focusLocation={focusLocation}
               routeResult={routeResult}
               selectedRouteIndex={selectedRouteIndex}
+              navigationState={navState}
             />
           </Suspense>
         </main>
@@ -229,6 +244,10 @@ export default function App() {
             onSelectRoute={setSelectedRouteIndex}
             result={routeResult}
             selectedRouteIndex={selectedRouteIndex}
+            isMobile={isMobile}
+            onStartNavigation={navStart}
+            onStopNavigation={navStop}
+            navigationActive={navState.active}
           />
         </aside>
       </div>

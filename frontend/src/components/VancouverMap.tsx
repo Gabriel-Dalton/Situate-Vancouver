@@ -15,6 +15,7 @@ import { MOBILITY_LENS_META } from '../types/mobilityLens'
 
 import type { AiQueryResponse } from './AiQuery'
 import type { RouteFindResult } from '../services/routeService'
+import type { NavigationState } from '../hooks/useNavigation'
 import MapBasemapToolbar from './MapBasemapToolbar'
 import MapInsightToolbar from './MapInsightToolbar'
 import { useIncidents } from '../hooks/useIncidents'
@@ -137,6 +138,7 @@ type Props = {
   focusLocation?: FocusLocation
   routeResult?: RouteFindResult | null
   selectedRouteIndex?: number
+  navigationState?: NavigationState
 }
 
 function installIncidentLayer(map: maplibregl.Map, inc: AiQueryResponse) {
@@ -229,6 +231,7 @@ export default function VancouverMap({
   focusLocation,
   routeResult,
   selectedRouteIndex = 0,
+  navigationState,
 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<maplibregl.Map | null>(null)
@@ -239,6 +242,7 @@ export default function VancouverMap({
   const incidentRef = useRef(incident ?? null)
   const interactionsBoundRef = useRef(false)
   const focusMarkerRef = useRef<maplibregl.Marker | null>(null)
+  const gpsMarkerRef = useRef<maplibregl.Marker | null>(null)
   const [basemap, setBasemap] = useState<BasemapId>(INITIAL_BASEMAP)
   const [cursorInfo, setCursorInfo] = useState({ lat: VAN_CENTRE[1], lng: VAN_CENTRE[0], zoom: 11.35 })
 
@@ -696,6 +700,44 @@ export default function VancouverMap({
       focusMarkerRef.current = null
     }
   }, [focusLocation])
+
+  // GPS position marker + camera lock during navigation
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map || !styleReadyRef.current) return
+
+    const pos = navigationState?.position
+
+    if (!pos) {
+      gpsMarkerRef.current?.remove()
+      gpsMarkerRef.current = null
+      return
+    }
+
+    const { lat, lng, heading } = pos
+
+    if (!gpsMarkerRef.current) {
+      const el = document.createElement('div')
+      el.className = 'van-gps-marker'
+      el.innerHTML =
+        '<span class="van-gps-marker__pulse"></span>' +
+        '<span class="van-gps-marker__dot"></span>'
+      gpsMarkerRef.current = new maplibregl.Marker({ element: el, anchor: 'center' })
+        .setLngLat([lng, lat])
+        .addTo(map)
+    } else {
+      gpsMarkerRef.current.setLngLat([lng, lat])
+    }
+
+    map.easeTo({
+      center: [lng, lat],
+      bearing: heading ?? map.getBearing(),
+      pitch: 55,
+      zoom: 16,
+      duration: 800,
+      easing: (t) => t * (2 - t),
+    })
+  }, [navigationState])
 
   const handleBasemap = (id: BasemapId) => {
     setBasemap(id)

@@ -4,6 +4,8 @@ import type { Incident } from './incidentService'
 export interface RouteStep {
   instruction: string
   distance_m: number
+  lat: number
+  lng: number
 }
 
 export interface RouteOption {

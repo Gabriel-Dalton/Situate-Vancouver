@@ -88,9 +88,12 @@ def find_routes(
                 else:
                     instruction = f"{m_type.capitalize()} {modifier}".strip() + (f" onto {name}" if name else "")
 
+                location = maneuver.get("location", [0, 0])
                 steps.append({
                     "instruction": instruction.strip(),
                     "distance_m": dist_m,
+                    "lng": location[0],
+                    "lat": location[1],
                 })
 
         routes.append({

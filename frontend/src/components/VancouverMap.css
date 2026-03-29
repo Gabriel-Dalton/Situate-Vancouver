@@ -252,6 +252,41 @@
   }
 }
 
+/* ── GPS navigation marker ────────────────────────── */
+
+.van-gps-marker {
+  position: relative;
+  width: 22px;
+  height: 22px;
+}
+
+.van-gps-marker__pulse {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: rgba(0, 212, 255, 0.25);
+  animation: van-gps-pulse 1.6s ease-out infinite;
+}
+
+.van-gps-marker__dot {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  top: 50%;
+  left: 50%;
+  translate: -50% -50%;
+  border-radius: 50%;
+  background: #00d4ff;
+  border: 2px solid #fff;
+  box-shadow: 0 0 8px 2px rgba(0, 212, 255, 0.55);
+}
+
+@keyframes van-gps-pulse {
+  0%   { transform: scale(0.5); opacity: 0.8; }
+  70%  { transform: scale(2);   opacity: 0; }
+  100% { transform: scale(2);   opacity: 0; }
+}
+
 /* ── Coordinates footer strip ────────────────────── */
 
 .van-map-footer {

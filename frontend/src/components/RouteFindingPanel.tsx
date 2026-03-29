@@ -7,6 +7,10 @@ interface Props {
   onSelectRoute: (index: number) => void
   result: RouteFindResult | null
   selectedRouteIndex: number
+  isMobile?: boolean
+  onStartNavigation?: () => void
+  onStopNavigation?: () => void
+  navigationActive?: boolean
 }
 
 function formatDistance(m: number): string {
@@ -19,6 +23,10 @@ export default function RouteFindingPanel({
   onSelectRoute,
   result,
   selectedRouteIndex,
+  isMobile = false,
+  onStartNavigation,
+  onStopNavigation,
+  navigationActive = false,
 }: Props) {
   const [origin, setOrigin] = useState('')
   const [destination, setDestination] = useState('')
@@ -122,6 +130,15 @@ export default function RouteFindingPanel({
           {selectedRoute && selectedRoute.steps.length > 0 && (
             <div className="route-panel__directions">
               <h3 className="route-panel__directions-heading">Directions</h3>
+              {isMobile && (
+                <button
+                  type="button"
+                  className={`route-panel__nav-btn${navigationActive ? ' route-panel__nav-btn--active' : ''}`}
+                  onClick={navigationActive ? onStopNavigation : onStartNavigation}
+                >
+                  {navigationActive ? 'Stop navigation' : 'Start navigation'}
+                </button>
+              )}
               <ol className="route-panel__steps">
                 {selectedRoute.steps.map((step, i) => (
                   <li key={i} className="route-panel__step">
