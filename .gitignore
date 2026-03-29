@@ -1,5 +1,6 @@
 .env
 **/.env
+SESSION_NOTES.md
 *.sqlite3
 __pycache__/
 *.py[cod]

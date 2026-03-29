@@ -88,7 +88,7 @@ def find_route(body: RouteFindRequest) -> RouteResponse:
     except httpx.HTTPStatusError as e:
         raise HTTPException(
             status_code=502,
-            detail=f"Routing service error: {e.response.status_code} — {str(e)}",
+            detail=f"Routing service returned {e.response.status_code}.",
         )
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"Routing failed: {str(e)}")

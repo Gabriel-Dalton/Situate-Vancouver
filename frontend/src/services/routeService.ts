@@ -1,6 +1,11 @@
 import { api } from './api'
 import type { Incident } from './incidentService'
 
+export interface RouteStep {
+  instruction: string
+  distance_m: number
+}
+
 export interface RouteOption {
   index: number
   summary: string
@@ -8,6 +13,7 @@ export interface RouteOption {
   duration_min: number
   geometry: string  // encoded polyline (Google format, precision 5)
   is_recommended: boolean
+  steps: RouteStep[]
 }
 
 export interface IncidentAvoided {

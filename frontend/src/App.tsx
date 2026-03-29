@@ -12,7 +12,7 @@ import { useLensOverlay } from './hooks/useLensOverlay'
 import BrandLockup from './components/BrandLockup'
 import SignInHeader from './components/SignInHeader'
 import { AUTH_UI_ENABLED } from './config/authUi'
-import StatusPanel from './components/StatusPanel'
+
 import { AiQueryBar, AiResponsePanel } from './components/AiQuery'
 import type { AiQueryResponse } from './components/AiQuery'
 import RouteFindingPanel from './components/RouteFindingPanel'
@@ -29,7 +29,7 @@ const DEFAULT_LAYERS: InsightLayerState = {
 
 export default function App() {
   const [layers, setLayers] = useState<InsightLayerState>(DEFAULT_LAYERS)
-  const [lens, setLens] = useState<MobilityLens>('cycle')
+  const [lens, setLens] = useState<MobilityLens>('drive')
   const { data: lensData, loading: lensLoading } = useLensOverlay(lens)
   const [aiResponse, setAiResponse] = useState<AiQueryResponse | null>(null)
   const [aiPanelOpen, setAiPanelOpen] = useState(false)
@@ -214,8 +214,11 @@ export default function App() {
               layers={layers}
               onToggleLayer={toggleLayer}
               lens={lens}
+              lensData={lensData}
               incident={aiResponse}
               focusLocation={focusLocation}
+              routeResult={routeResult}
+              selectedRouteIndex={selectedRouteIndex}
             />
           </Suspense>
         </main>
@@ -227,10 +230,6 @@ export default function App() {
             result={routeResult}
             selectedRouteIndex={selectedRouteIndex}
           />
-          <section className="insight-panel" aria-label="Systems status">
-            <StatusPanel />
-          </section>
-
         </aside>
       </div>
     </div>
