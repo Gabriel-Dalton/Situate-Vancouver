@@ -197,9 +197,3 @@ The dev server proxies browser requests from `/api/*` to Django. The default tar
 ## Contributing
 
 Issues and pull requests are welcome. For larger changes, open an issue first so the team can align on scope.
-
----
-
-<p align="center">
-  <em>Situate Vancouver — from a hackathon build to a maintainable, map-centric platform.</em>
-</p>
