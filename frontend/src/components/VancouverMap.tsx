@@ -44,6 +44,8 @@ function applyInsightLayers(map: maplibregl.Map, layers: InsightLayerState) {
     ['incident-glow', layers.incidentMarker],
     ['incident-core', layers.incidentMarker],
     ['3d-buildings', layers.buildings],
+    ['outages-glow', layers.outages],
+    ['outages-core', layers.outages],
   ]
   for (const [id, on] of pairs) {
     if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', vis(on))
@@ -134,6 +136,7 @@ type Props = {
   onToggleLayer: (key: InsightLayerKey) => void
   lens: MobilityLens
   lensData: GeoJSON.FeatureCollection
+  outagesData?: GeoJSON.FeatureCollection
   incident?: AiQueryResponse | null
   focusLocation?: FocusLocation
   routeResult?: RouteFindResult | null
@@ -227,6 +230,7 @@ export default function VancouverMap({
   onToggleLayer,
   lens,
   lensData,
+  outagesData,
   incident,
   focusLocation,
   routeResult,
@@ -557,6 +561,76 @@ export default function VancouverMap({
     map.on('mouseenter', LAYER_CORE, () => { map.getCanvas().style.cursor = 'pointer' })
     map.on('mouseleave', LAYER_CORE, () => { map.getCanvas().style.cursor = '' })
   }, [dbIncidents])
+
+  // Render BC Hydro outage dots
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map || !styleReadyRef.current) return
+
+    const SRC = 'outages'
+    const LAYER_GLOW = 'outages-glow'
+    const LAYER_CORE = 'outages-core'
+
+    const data: GeoJSON.FeatureCollection = outagesData ?? { type: 'FeatureCollection', features: [] }
+
+    if (map.getSource(SRC)) {
+      ;(map.getSource(SRC) as maplibregl.GeoJSONSource).setData(data)
+      return
+    }
+
+    map.addSource(SRC, { type: 'geojson', data })
+
+    // Severity → colour for outage dots
+    const severityColor: maplibregl.ExpressionSpecification = ['match', ['get', 'severity'],
+      'high',     '#ff3b3b',
+      'medium',   '#f59e0b',
+      /* low */   '#facc15',
+    ]
+
+    map.addLayer({
+      id: LAYER_GLOW,
+      type: 'circle',
+      source: SRC,
+      layout: { visibility: layers.outages ? 'visible' : 'none' },
+      paint: {
+        'circle-radius': 14,
+        'circle-color': severityColor,
+        'circle-opacity': 0.2,
+        'circle-blur': 1,
+      },
+    })
+
+    map.addLayer({
+      id: LAYER_CORE,
+      type: 'circle',
+      source: SRC,
+      layout: { visibility: layers.outages ? 'visible' : 'none' },
+      paint: {
+        'circle-radius': 5,
+        'circle-color': severityColor,
+        'circle-stroke-width': 1.5,
+        'circle-stroke-color': '#fff',
+        'circle-opacity': 0.95,
+      },
+    })
+
+    map.on('click', LAYER_CORE, (e) => {
+      const props = e.features?.[0]?.properties
+      if (!props) return
+      new maplibregl.Popup({ maxWidth: '300px', className: 'van-popup', offset: 14 })
+        .setLngLat(e.lngLat)
+        .setHTML(
+          `<div class="van-popup__title">${escapeHtml(props.location)}</div>` +
+          `<div class="van-popup__body">${escapeHtml(props.description)}</div>` +
+          `<div class="van-popup__body" style="margin-top:4px;opacity:0.7;font-size:0.78em">` +
+          `⚡ Power outage · Severity: ${escapeHtml(props.severity)}</div>`,
+        )
+        .addTo(map)
+    })
+
+    map.on('mouseenter', LAYER_CORE, () => { map.getCanvas().style.cursor = 'pointer' })
+    map.on('mouseleave', LAYER_CORE, () => { map.getCanvas().style.cursor = '' })
+  }, [outagesData]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Render route polylines from ORS result
   useEffect(() => {

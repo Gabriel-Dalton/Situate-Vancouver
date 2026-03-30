@@ -11,6 +11,7 @@ import { MOBILITY_LENS_META } from './types/mobilityLens'
 import { useLensOverlay } from './hooks/useLensOverlay'
 import { useNavigation } from './hooks/useNavigation'
 import { useIsMobile } from './hooks/useIsMobile'
+import { useOutages } from './hooks/useOutages'
 import NavigationOverlay from './components/NavigationOverlay'
 import BrandLockup from './components/BrandLockup'
 import SignInHeader from './components/SignInHeader'
@@ -28,12 +29,14 @@ const DEFAULT_LAYERS: InsightLayerState = {
   skytrainNodes: true,
   incidentMarker: true,
   buildings: true,
+  outages: true,
 }
 
 export default function App() {
   const [layers, setLayers] = useState<InsightLayerState>(DEFAULT_LAYERS)
   const [lens, setLens] = useState<MobilityLens>('drive')
   const { data: lensData, loading: lensLoading } = useLensOverlay(lens)
+  const { data: outagesData } = useOutages()
   const [aiResponse, setAiResponse] = useState<AiQueryResponse | null>(null)
   const [aiPanelOpen, setAiPanelOpen] = useState(false)
   const [routeResult, setRouteResult] = useState<RouteFindResult | null>(null)
@@ -144,6 +147,7 @@ export default function App() {
                 onToggleLayer={toggleLayer}
                 lens={lens}
                 lensData={lensData}
+                outagesData={outagesData}
                 incident={aiResponse}
                 focusLocation={focusLocation}
                 routeResult={routeResult}
@@ -201,6 +205,13 @@ export default function App() {
               checked={layers.incidentMarker}
               onChange={() => toggleLayer('incidentMarker')}
             />
+            <LayerToggle
+              id="layer-outages"
+              label="Power outages"
+              description="Live BC Hydro outages · refreshes every 15 min"
+              checked={layers.outages}
+              onChange={() => toggleLayer('outages')}
+            />
             <div className="skytrain-legend" role="region" aria-label="SkyTrain line colors">
               {SKYTRAIN_LEGEND.map(({ key, shortLabel }) => (
                 <span key={key} className="skytrain-legend__item">
@@ -229,6 +240,7 @@ export default function App() {
               onToggleLayer={toggleLayer}
               lens={lens}
               lensData={lensData}
+              outagesData={outagesData}
               incident={aiResponse}
               focusLocation={focusLocation}
               routeResult={routeResult}

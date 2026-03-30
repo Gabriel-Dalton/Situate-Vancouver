@@ -10,6 +10,7 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
 from .health_checks import collect_health_checks
+from .models import Incident
 
 logger = logging.getLogger(__name__)
 
@@ -154,6 +155,55 @@ def lens_geojson(request, lens: str):
         return Response({'detail': 'Unexpected error.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     cache.set(cache_key, json.dumps(geojson), timeout=_LENS_CACHE_TTL)
+    return Response(geojson)
+
+
+_OUTAGES_CACHE_KEY = 'bchydro_outages_geojson'
+_OUTAGES_CACHE_TTL = 60 * 15  # 15 minutes — matches BC Hydro RSS update cadence
+
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def outages_geojson(request):
+    """
+    Return active BC Hydro power outage incidents as a GeoJSON FeatureCollection.
+
+    GET /api/outages/
+
+    Only incidents with coordinates are included (location strings that
+    Nominatim could not resolve are omitted). Results are Redis-cached for
+    15 minutes. The Celery task poll_bchydro refreshes the underlying data
+    on the same cadence.
+    """
+    cached = cache.get(_OUTAGES_CACHE_KEY)
+    if cached:
+        return Response(json.loads(cached))
+
+    qs = Incident.objects.filter(
+        source_api=Incident.SourceAPI.BCHYDRO,
+        status=Incident.Status.ACTIVE,
+        lat__isnull=False,
+        lng__isnull=False,
+    ).values('id', 'title', 'location', 'description', 'severity', 'lat', 'lng', 'updated_at')
+
+    features = [
+        {
+            'type': 'Feature',
+            'geometry': {'type': 'Point', 'coordinates': [row['lng'], row['lat']]},
+            'properties': {
+                'id': str(row['id']),
+                'title': row['title'],
+                'location': row['location'],
+                'description': row['description'],
+                'severity': row['severity'],
+                'updated_at': row['updated_at'].isoformat() if row['updated_at'] else None,
+            },
+        }
+        for row in qs
+    ]
+
+    geojson = {'type': 'FeatureCollection', 'features': features}
+    cache.set(_OUTAGES_CACHE_KEY, json.dumps(geojson, default=str), timeout=_OUTAGES_CACHE_TTL)
     return Response(geojson)
 
 

@@ -19,6 +19,7 @@ urlpatterns = [
     path('query/', views.ai_incidents_query, name='ai-incidents-query'),
     path('routes/find/', views.find_route, name='routes-find'),
     path('lens/<str:lens>/', views.lens_geojson, name='lens-geojson'),
+    path('outages/', views.outages_geojson, name='outages-geojson'),
     path('', include(router.urls)),
     path(
         'datasets/',

@@ -13,6 +13,7 @@ class Incident(models.Model):
         ACCIDENT = 'accident', 'Accident'
         EMERGENCY = 'emergency', 'Emergency'
         NATURAL_DISASTER = 'natural_disaster', 'Natural Disaster'
+        POWER_OUTAGE = 'power_outage', 'Power Outage'
         GENERAL = 'general', 'General'
 
     class Severity(models.TextChoices):
@@ -36,6 +37,7 @@ class Incident(models.Model):
         SERVICE_311 = '311', '311 Service Requests'
         TRANSLINK = 'translink', 'TransLink'
         WEATHERCAN = 'weathercan', 'WeatherCAN'
+        BCHYDRO = 'bchydro', 'BC Hydro'
 
     # Primary key
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -238,3 +240,37 @@ class RouteAlert(models.Model):
 
     def __str__(self):
         return f'{self.alert_type.upper()} → {self.route.name} re: {self.incident}'
+
+
+class OutageGeocode(models.Model):
+    """
+    Permanent geocode cache for BC Hydro outage location strings.
+
+    Each unique location string from the BC Hydro RSS feed is geocoded once
+    via Nominatim and stored here forever. We never pay the geocoding cost
+    twice for the same location.
+    """
+
+    # Normalised location string as it appears in the RSS (e.g. "Kitsilano, Vancouver")
+    location_key = models.CharField(max_length=500, unique=True, db_index=True)
+
+    # Resolved coordinates — null if geocoding returned no results
+    lat = models.FloatField(null=True, blank=True)
+    lng = models.FloatField(null=True, blank=True)
+
+    # If True, Nominatim returned no results; retry after GEOCODE_RETRY_DAYS
+    failed = models.BooleanField(default=False, db_index=True)
+    geocoded_at = models.DateTimeField(auto_now_add=True)
+    retried_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        verbose_name = 'Outage Geocode Cache'
+        verbose_name_plural = 'Outage Geocode Cache'
+        indexes = [
+            models.Index(fields=['failed', 'geocoded_at']),
+        ]
+
+    def __str__(self):
+        if self.lat and self.lng:
+            return f'{self.location_key} → ({self.lat:.4f}, {self.lng:.4f})'
+        return f'{self.location_key} → [no result]'
