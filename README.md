@@ -190,6 +190,7 @@ The dev server proxies browser requests from `/api/*` to Django. The default tar
 | Document | Purpose |
 |----------|---------|
 | [docs/auth-backend-handoff.md](docs/auth-backend-handoff.md) | Wiring sign-in / sign-up to the backend |
+| [docs/commute-beta-plan.md](docs/commute-beta-plan.md) | Friends-and-family commute beta (~10 testers), tailored to app flows |
 | [docs/screenshots/README.md](docs/screenshots/README.md) | Adding README screenshots |
 
 ---
