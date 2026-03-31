@@ -17,3 +17,7 @@ data/vancouver_opendata/
 
 .idea/
 .vscode/
+
+# Capacitor native platform projects (generated — do not commit unless you own the Xcode/Gradle setup)
+frontend/ios/
+frontend/android/

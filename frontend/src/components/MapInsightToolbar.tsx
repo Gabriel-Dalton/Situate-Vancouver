@@ -2,35 +2,28 @@ import type { ReactNode } from 'react'
 import type { InsightLayerKey, InsightLayerState } from '../types/insightLayers'
 
 const ITEMS: { key: InsightLayerKey; label: string }[] = [
-  { key: 'strategicNodes', label: 'Layer: strategic nodes' },
-  { key: 'movementCorridors', label: 'Layer: movement corridors' },
+  { key: 'buildings', label: 'Layer: 3D buildings' },
   { key: 'skytrainNodes', label: 'Layer: SkyTrain stations' },
   { key: 'incidentMarker', label: 'Layer: incident marker' },
+  { key: 'outages', label: 'Layer: power outages' },
 ]
 
 const P = 1.75
 const S = 1.35
 
-/** Weighted graph — nodes as stroked rings + uniform connectors (GIS network idiom). */
-function IconStrategicNodes() {
+/** Buildings — extruded block pair (3D buildings layer). */
+function IconBuildings() {
   return (
     <svg className="map-icon-toolbar__glyph" viewBox="0 0 24 24" fill="none" aria-hidden>
-      <circle cx="12" cy="6.5" r="2.65" stroke="currentColor" strokeWidth={P} />
-      <circle cx="6.25" cy="17" r="2.65" stroke="currentColor" strokeWidth={P} />
-      <circle cx="17.75" cy="17" r="2.65" stroke="currentColor" strokeWidth={P} />
-      <path
-        stroke="currentColor"
-        strokeWidth={S}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M10.1 8.5L7.4 14.8M13.9 8.5l2.7 6.3M8.9 17h6.2"
-      />
+      <rect x="3" y="9" width="8" height="12" rx="0.5" stroke="currentColor" strokeWidth={P} />
+      <rect x="13" y="5" width="8" height="16" rx="0.5" stroke="currentColor" strokeWidth={P} />
+      <path stroke="currentColor" strokeWidth={S} strokeLinecap="round" d="M5 12h4M5 15h4M15 8h4M15 11h4M15 14h4" opacity={0.5} />
     </svg>
   )
 }
 
-/** Corridor spine — smooth cubic route + origin/destination caps. */
-function IconCorridors() {
+/** Lightning bolt — power outage indicator. */
+function IconOutages() {
   return (
     <svg className="map-icon-toolbar__glyph" viewBox="0 0 24 24" fill="none" aria-hidden>
       <path
@@ -38,12 +31,8 @@ function IconCorridors() {
         strokeWidth={P}
         strokeLinecap="round"
         strokeLinejoin="round"
-        d="M5.5 18.5C8.75 18.5 10 12.5 12.75 9.75C15.25 7.25 17.75 6 20.5 5.5"
+        d="M13 3L5 14h7l-1 7 8-11h-7l1-7z"
       />
-      <circle cx="5.5" cy="18.5" r="2.5" stroke="currentColor" strokeWidth={S} />
-      <circle cx="20.5" cy="5.5" r="2.5" stroke="currentColor" strokeWidth={S} />
-      <circle cx="5.5" cy="18.5" r="0.9" fill="currentColor" />
-      <circle cx="20.5" cy="5.5" r="0.9" fill="currentColor" />
     </svg>
   )
 }
@@ -124,10 +113,10 @@ function IconIncidentMarker() {
 }
 
 const ICONS: Record<InsightLayerKey, ReactNode> = {
-  strategicNodes: <IconStrategicNodes />,
-  movementCorridors: <IconCorridors />,
+  buildings: <IconBuildings />,
   skytrainNodes: <IconSkytrain />,
   incidentMarker: <IconIncidentMarker />,
+  outages: <IconOutages />,
 }
 
 type Props = {

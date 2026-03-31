@@ -1,5 +1,6 @@
 import { useCallback, useRef, useState, useEffect } from 'react'
 import type { KeyboardEvent } from 'react'
+import { apiUrl } from '../lib/api'
 import './AiQuery.css'
 
 export interface AiQueryResponse {
@@ -70,7 +71,7 @@ export function AiQueryBar({ onResponse }: AiQueryBarProps) {
 
     setLoading(true)
     try {
-      const res = await fetch('/api/query/', {
+      const res = await fetch(apiUrl('/api/query/'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
         body: JSON.stringify({ query: trimmed }),

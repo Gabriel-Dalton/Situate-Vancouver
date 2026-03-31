@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { apiUrl } from '../lib/api'
 
 const REFRESH_MS = 15 * 60 * 1000  // 15 minutes — matches BC Hydro RSS cadence
 
@@ -18,7 +19,7 @@ export function useOutages(): { data: GeoJSON.FeatureCollection; loading: boolea
       abortRef.current = ctrl
       setLoading(true)
       try {
-        const resp = await fetch('/api/outages/', { signal: ctrl.signal })
+        const resp = await fetch(apiUrl('/api/outages/'), { signal: ctrl.signal })
         if (!resp.ok) throw new Error(`HTTP ${resp.status}`)
         const json = await resp.json() as GeoJSON.FeatureCollection
         setData(json)

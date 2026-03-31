@@ -1,5 +1,6 @@
 // Base fetch wrapper — all API calls go through here
-const BASE = '/api'
+import { API_BASE } from '../lib/api'
+const BASE = `${API_BASE}/api`
 
 async function request<T>(
   path: string,

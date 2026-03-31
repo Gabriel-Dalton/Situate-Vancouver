@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import type { FeatureCollection } from 'geojson'
 import type { MobilityLens } from '../types/mobilityLens'
+import { apiUrl } from '../lib/api'
 
 const EMPTY: FeatureCollection = { type: 'FeatureCollection', features: [] }
 const cache = new Map<MobilityLens, FeatureCollection>()
@@ -29,7 +30,7 @@ export function useLensOverlay(lens: MobilityLens): { data: FeatureCollection; l
     abortRef.current = controller
     setLoading(true)
 
-    fetch(`/api/lens/${lens}/`, { signal: controller.signal })
+    fetch(apiUrl(`/api/lens/${lens}/`), { signal: controller.signal })
       .then((res) => {
         if (!res.ok) throw new Error(`HTTP ${res.status}`)
         return res.json() as Promise<FeatureCollection>
