@@ -1,13 +1,6 @@
 import type { ReactNode } from 'react'
 import type { BasemapId } from '../map/basemapConfig'
-import { BASEMAP_ORDER } from '../map/basemapConfig'
-
-const LABELS: Record<BasemapId, string> = {
-  dark: 'Basemap: dark (CARTO Dark Matter)',
-  light: 'Basemap: light (CARTO Positron)',
-  streets: 'Basemap: streets (CARTO Voyager)',
-  satellite: 'Basemap: satellite (Esri World Imagery)',
-}
+import { BASEMAP_META, BASEMAP_ORDER } from '../map/basemapConfig'
 
 /** Primary stroke — tuned for 20px glyphs on retina UI. */
 const P = 1.75
@@ -114,8 +107,8 @@ export default function MapBasemapToolbar({ active, onSelect }: Props) {
             'map-icon-toolbar__btn' + (active === id ? ' map-icon-toolbar__btn--active' : '')
           }
           onClick={() => onSelect(id)}
-          title={LABELS[id]}
-          aria-label={LABELS[id]}
+          title={`${BASEMAP_META[id].name}: ${BASEMAP_META[id].purpose}`}
+          aria-label={`${BASEMAP_META[id].name} basemap`}
           aria-pressed={active === id}
         >
           {ICONS[id]}

@@ -5,6 +5,7 @@ import { enrichSkytrainNodes, skytrainCircleColorExpr, skytrainStrokeColorExpr, 
 import { fetchStationThumb } from '../data/stationWikiTitles'
 import { SKYTRAIN_NODES } from '../data/skytrainStations'
 import {
+  BASEMAP_META,
   BASEMAP_STYLES,
   type BasemapId,
   VECTOR_BASEMAP_PITCH,
@@ -79,6 +80,96 @@ function install3dBuildings(map: maplibregl.Map, visible: boolean) {
     // Insert below skytrain/incident layers so they render on top of buildings
     'skytrain-nodes-glow',
   )
+}
+
+function hoistLabelsAboveBuildings(map: maplibregl.Map) {
+  const layers = map.getStyle()?.layers ?? []
+  for (const layer of layers) {
+    if (layer.type !== 'symbol') continue
+    try {
+      map.moveLayer(layer.id)
+    } catch {
+      // Some layers can't be reordered — safe to skip.
+    }
+  }
+}
+
+function applyVectorBasemapLook(map: maplibregl.Map, basemap: BasemapId) {
+  if (!BASEMAP_META[basemap].vector) return
+  const palette =
+    basemap === 'light'
+      ? { water: '#e4edf4', waterOpacity: 0.68, background: '#f4f7fb' }
+      : basemap === 'streets'
+        ? { water: '#c5d9ea', waterOpacity: 0.92, background: '#dbe6f0' }
+        : { water: '#0c1728', waterOpacity: 0.78, background: '#050d18' }
+  const layers = map.getStyle()?.layers ?? []
+
+  for (const layer of layers) {
+    if (layer.type === 'fill' && layer.id.includes('water')) {
+      map.setPaintProperty(layer.id, 'fill-color', palette.water)
+      map.setPaintProperty(layer.id, 'fill-opacity', palette.waterOpacity)
+    }
+    if (layer.type === 'line' && layer.id.includes('road')) {
+      if (basemap === 'streets') {
+        map.setPaintProperty(layer.id, 'line-opacity', 0.94)
+        map.setPaintProperty(layer.id, 'line-width', [
+          'interpolate', ['linear'], ['zoom'],
+          10, 0.75,
+          13, 1.2,
+          16, 2.4,
+        ])
+      } else if (basemap === 'light') {
+        map.setPaintProperty(layer.id, 'line-opacity', 0.45)
+        map.setPaintProperty(layer.id, 'line-width', [
+          'interpolate', ['linear'], ['zoom'],
+          10, 0.55,
+          13, 0.9,
+          16, 1.8,
+        ])
+      }
+    }
+    if (layer.type === 'background' && layer.id.includes('background')) {
+      map.setPaintProperty(layer.id, 'background-color', palette.background)
+    }
+  }
+
+  hoistLabelsAboveBuildings(map)
+}
+
+function applyBuildingLook(map: maplibregl.Map, basemap: BasemapId) {
+  if (!map.getLayer('3d-buildings')) return
+  const extrusionColor: maplibregl.ExpressionSpecification =
+    basemap === 'light'
+      ? [
+          'interpolate', ['linear'], ['coalesce', ['get', 'render_height'], 10],
+          0,   '#e9eef5',
+          20,  '#dde6f0',
+          60,  '#d1dce9',
+          150, '#c2d1e3',
+        ]
+      : basemap === 'streets'
+        ? [
+            'interpolate', ['linear'], ['coalesce', ['get', 'render_height'], 10],
+            0,   '#afc0d4',
+            20,  '#9db3cb',
+            60,  '#89a4c1',
+            150, '#7593b4',
+          ]
+        : [
+            'interpolate', ['linear'], ['coalesce', ['get', 'render_height'], 10],
+            0,   '#0d1b2a',
+            20,  '#112240',
+            60,  '#1a3560',
+            150, '#1e4080',
+          ]
+  const extrusionOpacity: maplibregl.ExpressionSpecification =
+    basemap === 'light'
+      ? ['interpolate', ['linear'], ['zoom'], 10, 0.08, 12, 0.15, 14, 0.26, 16, 0.38]
+      : basemap === 'streets'
+        ? ['interpolate', ['linear'], ['zoom'], 10, 0.24, 12, 0.38, 14, 0.52, 16, 0.64]
+        : ['interpolate', ['linear'], ['zoom'], 10, 0.42, 12, 0.58, 14, 0.72, 16, 0.78]
+  map.setPaintProperty('3d-buildings', 'fill-extrusion-color', extrusionColor)
+  map.setPaintProperty('3d-buildings', 'fill-extrusion-opacity', extrusionOpacity)
 }
 
 function installLensOverlay(map: maplibregl.Map, lens: MobilityLens, data: GeoJSON.FeatureCollection) {
@@ -241,6 +332,7 @@ export default function VancouverMap({
   const mapRef = useRef<maplibregl.Map | null>(null)
   const styleReadyRef = useRef(false)
   const layersRef = useRef(layers)
+  const basemapRef = useRef<BasemapId>(INITIAL_BASEMAP)
   const lensRef = useRef(lens)
   const lensDataRef = useRef(lensData)
   const incidentRef = useRef(incident ?? null)
@@ -266,6 +358,10 @@ export default function VancouverMap({
   useLayoutEffect(() => {
     layersRef.current = layers
   }, [layers])
+
+  useLayoutEffect(() => {
+    basemapRef.current = basemap
+  }, [basemap])
 
   useLayoutEffect(() => {
     lensRef.current = lens
@@ -384,6 +480,8 @@ export default function VancouverMap({
     const onStyleLoad = () => {
       installSkytrainLayer(map)
       install3dBuildings(map, layersRef.current.buildings)
+      applyVectorBasemapLook(map, basemapRef.current)
+      applyBuildingLook(map, basemapRef.current)
       installLensOverlay(map, lensRef.current, lensDataRef.current)
       applyInsightLayers(map, layersRef.current)
       if (incidentRef.current) installIncidentLayer(map, incidentRef.current)
@@ -429,7 +527,7 @@ export default function VancouverMap({
       map.remove()
       mapRef.current = null
     }
-  }, [])
+  }, [updateCursorInfo])
 
   useEffect(() => {
     const map = mapRef.current
@@ -832,7 +930,12 @@ export default function VancouverMap({
   }
 
   return (
-    <div className="van-map-shell">
+    <div
+      className={
+        'van-map-shell' +
+        (basemap === 'light' || basemap === 'streets' ? ' van-map-shell--day' : '')
+      }
+    >
       <div ref={containerRef} className="van-map" role="application" aria-label="Vancouver map" />
       <div className="van-map-toolbars">
         <MapBasemapToolbar active={basemap} onSelect={handleBasemap} />

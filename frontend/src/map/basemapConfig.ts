@@ -1,6 +1,7 @@
 import type { StyleSpecification } from 'maplibre-gl'
 
 export type BasemapId = 'dark' | 'light' | 'streets' | 'satellite'
+export type BasemapRole = 'analysis' | 'quiet_day' | 'navigation' | 'imagery'
 
 /** Esri World Imagery — no API key; attribution shown by MapLibre. */
 const SATELLITE_STYLE: StyleSpecification = {
@@ -28,6 +29,36 @@ const SATELLITE_STYLE: StyleSpecification = {
 }
 
 export const BASEMAP_ORDER: BasemapId[] = ['dark', 'light', 'streets', 'satellite']
+
+export const BASEMAP_META: Record<
+  BasemapId,
+  { name: string; role: BasemapRole; purpose: string; vector: boolean }
+> = {
+  dark: {
+    name: 'Dark',
+    role: 'analysis',
+    purpose: 'Low-glare analysis mode for overlays and focused monitoring.',
+    vector: true,
+  },
+  light: {
+    name: 'Light',
+    role: 'quiet_day',
+    purpose: 'Quiet daytime scan mode with minimal map noise at far zoom.',
+    vector: true,
+  },
+  streets: {
+    name: 'Streets',
+    role: 'navigation',
+    purpose: 'Navigation context mode with stronger road and place readability.',
+    vector: true,
+  },
+  satellite: {
+    name: 'Satellite',
+    role: 'imagery',
+    purpose: 'Imagery-first context for terrain and real-world ground conditions.',
+    vector: false,
+  },
+}
 
 export const BASEMAP_STYLES: Record<BasemapId, string | StyleSpecification> = {
   dark: 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json',
