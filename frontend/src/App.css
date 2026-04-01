@@ -391,14 +391,17 @@
   min-height: 320px;
   background: var(--harbor-navy-deep);
   grid-column: 2;
+  grid-row: 1;
 }
 
 .insight-shell__rail--left {
   grid-column: 1;
+  grid-row: 1;
 }
 
 .insight-shell__rail--right {
   grid-column: 3;
+  grid-row: 1;
 }
 
 .insight-shell__rail {
@@ -892,6 +895,7 @@
 
   .insight-shell__rail--left {
     grid-column: auto;
+    grid-row: auto;
     border-right-width: 0;
     border-bottom: 1px solid var(--border-subtle);
     order: 1;
@@ -899,12 +903,14 @@
 
   .insight-shell__map-wrap {
     grid-column: auto;
+    grid-row: auto;
     order: 2;
     min-height: 52vh;
   }
 
   .insight-shell__rail--right {
     grid-column: auto;
+    grid-row: auto;
     border-left-width: 0;
     border-top: 1px solid var(--border-subtle);
     order: 3;
@@ -1695,12 +1701,14 @@
     min-height: 0;
     height: 100%;
     z-index: 1;
-    grid-column: auto; /* reset desktop explicit placement */
+    grid-column: auto;
+    grid-row: auto;
   }
 
   .insight-shell__rail--left,
   .insight-shell__rail--right {
     grid-column: auto;
+    grid-row: auto;
   }
 
   /* ── Sheet container wraps both rails ── */
