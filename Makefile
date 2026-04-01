@@ -8,7 +8,8 @@ PORT ?= 8000
 # Prefer backend venv when present (BSD make has no ifneq; use one shell test).
 PYTHON := $(shell if [ -x "$(BACKEND_DIR)/.venv/bin/python" ]; then echo "$(BACKEND_DIR)/.venv/bin/python"; else command -v python3 2>/dev/null || command -v python 2>/dev/null; fi)
 
-.PHONY: dev dev-bg down build logs ps run stop worker beat celery poll install help
+.PHONY: dev dev-bg down build logs ps run stop worker beat celery poll install help \
+        ios android cap-sync cap-build
 
 help:
 	@echo "Targets:"
@@ -25,7 +26,14 @@ help:
 	@echo "  make worker       Start Celery worker only"
 	@echo "  make beat         Start Celery Beat scheduler only"
 	@echo "  make poll         Run all polling tasks once right now (no Celery needed)"
+	@echo ""
+	@echo "  make ios          Build frontend and open in Xcode (requires macOS + Xcode)"
+	@echo "  make android      Build frontend and open in Android Studio"
+	@echo "  make cap-sync     Sync web assets to both native platforms (no IDE open)"
+	@echo "  make cap-build    Build frontend only (without syncing to native)"
+	@echo ""
 	@echo "Env: copy .env.example to .env at repo root (Django and dev-run.sh load it)."
+	@echo "     Set VITE_API_BASE_URL for native builds (e.g. https://api.situatevancouver.ca)."
 
 # ── Docker (full stack) ────────────────────────────────────────────────────
 
@@ -80,3 +88,17 @@ stop:
 	@lsof -tiTCP:5173 -sTCP:LISTEN | xargs kill -9 2>/dev/null || true
 	@pkill -f "celery -A config" 2>/dev/null || true
 	@echo "Done."
+
+# ── Capacitor (iOS / Android) ─────────────────────────────────────────────
+
+cap-build:
+	cd frontend && npm run build
+
+cap-sync: cap-build
+	cd frontend && npx cap sync
+
+ios: cap-build
+	cd frontend && npx cap sync ios && npx cap open ios
+
+android: cap-build
+	cd frontend && npx cap sync android && npx cap open android

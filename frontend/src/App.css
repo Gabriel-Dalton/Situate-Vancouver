@@ -380,10 +380,25 @@
   background: var(--harbor-navy-deep);
 }
 
+/* On desktop the mobile-sheet wrapper must be invisible to the 3-column grid.
+   Explicit grid-column places each child in the right column regardless of DOM order. */
+.mobile-sheet {
+  display: contents;
+}
+
 .insight-shell__map-wrap {
   position: relative;
   min-height: 320px;
   background: var(--harbor-navy-deep);
+  grid-column: 2;
+}
+
+.insight-shell__rail--left {
+  grid-column: 1;
+}
+
+.insight-shell__rail--right {
+  grid-column: 3;
 }
 
 .insight-shell__rail {
@@ -876,17 +891,20 @@
   }
 
   .insight-shell__rail--left {
+    grid-column: auto;
     border-right-width: 0;
     border-bottom: 1px solid var(--border-subtle);
     order: 1;
   }
 
   .insight-shell__map-wrap {
+    grid-column: auto;
     order: 2;
     min-height: 52vh;
   }
 
   .insight-shell__rail--right {
+    grid-column: auto;
     border-left-width: 0;
     border-top: 1px solid var(--border-subtle);
     order: 3;
@@ -1622,4 +1640,173 @@
 .nav-overlay__stop:hover {
   background: rgba(239, 68, 68, 0.22);
   border-color: rgba(239, 68, 68, 0.75);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   MOBILE LAYOUT  (≤ 768px  — iOS / Android native via Capacitor)
+   The map fills the entire screen. Rails live in a slide-up bottom sheet.
+   All desktop grid layout is untouched — these rules only apply on mobile.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@media (max-width: 768px) {
+
+  /* ── Shell: full-screen column, map takes all remaining space ── */
+
+  .insight-shell {
+    height: 100dvh;
+    height: 100svh;
+    overflow: hidden;
+  }
+
+  /* ── Header: compact single row, safe-area top padding for notch ── */
+
+  .insight-shell__header {
+    padding-top: max(env(safe-area-inset-top, 0px), 0.5rem);
+    padding-left: max(env(safe-area-inset-left, 0px), 0.75rem);
+    padding-right: max(env(safe-area-inset-right, 0px), 0.75rem);
+    grid-template-columns: auto 1fr auto;
+    gap: 0.5rem;
+    z-index: 50;
+  }
+
+  /* Hide decorative/secondary header elements that don't fit on small screens */
+  .insight-shell__subtitle,
+  .insight-shell__pill,
+  .insight-shell__clock,
+  .insight-shell__tz {
+    display: none;
+  }
+
+  /* ── Body: map fills everything below header ── */
+
+  .insight-shell__body {
+    position: relative;
+    display: block;      /* override desktop grid */
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  /* ── Map: always full-size behind the sheet ── */
+
+  .insight-shell__map-wrap {
+    position: absolute;
+    inset: 0;
+    min-height: 0;
+    height: 100%;
+    z-index: 1;
+    grid-column: auto; /* reset desktop explicit placement */
+  }
+
+  .insight-shell__rail--left,
+  .insight-shell__rail--right {
+    grid-column: auto;
+  }
+
+  /* ── Sheet container wraps both rails ── */
+
+  .mobile-sheet {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 20;
+    max-height: 72vh;
+    background: rgba(0, 10, 26, 0.97);
+    border-top: 1px solid var(--border-subtle);
+    border-radius: 16px 16px 0 0;
+    backdrop-filter: blur(18px);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    transform: translateY(100%);
+    transition: transform 0.32s cubic-bezier(0.32, 0.72, 0, 1);
+    /* safe area bottom so content clears home bar */
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  .mobile-sheet--open {
+    transform: translateY(0);
+  }
+
+  /* Handle drag indicator pill at the top of the sheet */
+  .mobile-sheet::before {
+    content: '';
+    display: block;
+    width: 36px;
+    height: 4px;
+    border-radius: 2px;
+    background: rgba(255, 255, 255, 0.18);
+    margin: 0.6rem auto 0;
+    flex-shrink: 0;
+  }
+
+  /* Both rails flow vertically inside the sheet, scrollable */
+  .insight-shell__rail {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    border: none;
+    background: transparent;
+    backdrop-filter: none;
+    padding: 0.75rem 1rem;
+  }
+
+  .insight-shell__rail--left {
+    border-right-width: 0;
+    border-bottom: 1px solid var(--border-subtle);
+    flex: 0 0 auto;   /* left rail does not grow — shows compact */
+  }
+
+  .insight-shell__rail--right {
+    border-left-width: 0;
+    flex: 1 1 auto;
+  }
+
+  /* ── Sheet open/close floating button ── */
+
+  .mobile-sheet-toggle {
+    position: absolute;
+    bottom: max(env(safe-area-inset-bottom, 0px), 1rem);
+    right: max(env(safe-area-inset-right, 0px), 1rem);
+    bottom: calc(max(env(safe-area-inset-bottom, 0px), 0.5rem) + 1rem);
+    z-index: 30;
+    width: 3rem;
+    height: 3rem;
+    border-radius: 50%;
+    border: 1px solid rgba(0, 212, 255, 0.3);
+    background: rgba(0, 15, 36, 0.92);
+    color: var(--data-cyan);
+    font-size: 1.1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    backdrop-filter: blur(12px);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+    transition: background 0.15s, border-color 0.15s, transform 0.15s;
+  }
+
+  .mobile-sheet-toggle--open {
+    border-color: rgba(0, 212, 255, 0.6);
+    background: rgba(0, 212, 255, 0.12);
+  }
+
+  .mobile-sheet-toggle:active {
+    transform: scale(0.92);
+  }
+
+  /* ── AI split-view stacks vertically on mobile ── */
+
+  .ai-split-view {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+  }
+
+  .ai-split-view__map {
+    flex: 1;
+    min-height: 0;
+  }
+
 }

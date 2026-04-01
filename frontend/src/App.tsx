@@ -43,6 +43,7 @@ export default function App() {
   const [selectedRouteIndex, setSelectedRouteIndex] = useState(0)
 
   const isMobile = useIsMobile()
+  const [sheetOpen, setSheetOpen] = useState(false)
   const selectedRoute = useMemo(
     () => routeResult?.routes.find((r) => r.index === selectedRouteIndex) ?? routeResult?.routes[0] ?? null,
     [routeResult, selectedRouteIndex],
@@ -165,66 +166,16 @@ export default function App() {
       )}
 
       <div className="insight-shell__body" style={aiPanelOpen ? { display: 'none' } : undefined}>
-        <aside className="insight-shell__rail insight-shell__rail--left" aria-label="Layers and scope">
-          <section className="insight-panel">
-            <h2 className="insight-panel__heading">Mobility lens</h2>
-            <p className="insight-panel__hint">
-              Switch mode to filter the map context for your journey type.
-            </p>
-            <LensSelector active={lens} onSelect={setLens} />
-            <p className="insight-panel__hint" style={{ marginTop: '0.5rem', opacity: 0.6 }}>
-              {lensLoading
-                ? `Loading ${MOBILITY_LENS_META[lens].label.toLowerCase()} overlay…`
-                : lens === 'drive'
-                  ? 'Drive — traffic flow shown via TomTom layer'
-                  : `${MOBILITY_LENS_META[lens].label} overlay — ${lensData.features.length} features loaded`
-              }
-            </p>
-          </section>
-
-          <section className="insight-panel">
-            <h2 className="insight-panel__heading">Map layers</h2>
-            <LayerToggle
-              id="layer-buildings"
-              label="3D buildings"
-              description="Extruded building footprints from OpenStreetMap"
-              checked={layers.buildings}
-              onChange={() => toggleLayer('buildings')}
-            />
-            <LayerToggle
-              id="layer-skytrain"
-              label="SkyTrain stations"
-              description="Expo, Millennium, and Canada Line stops"
-              checked={layers.skytrainNodes}
-              onChange={() => toggleLayer('skytrainNodes')}
-            />
-            <LayerToggle
-              id="layer-incident"
-              label="AI incident marker"
-              description="Location pin from the last AI query"
-              checked={layers.incidentMarker}
-              onChange={() => toggleLayer('incidentMarker')}
-            />
-            <LayerToggle
-              id="layer-outages"
-              label="Power outages"
-              description="Live BC Hydro outages · refreshes every 15 min"
-              checked={layers.outages}
-              onChange={() => toggleLayer('outages')}
-            />
-            <div className="skytrain-legend" role="region" aria-label="SkyTrain line colors">
-              {SKYTRAIN_LEGEND.map(({ key, shortLabel }) => (
-                <span key={key} className="skytrain-legend__item">
-                  <span
-                    className="skytrain-legend__swatch"
-                    style={{ background: SKYTRAIN_LINE_COLORS[key] }}
-                  />
-                  <span className="skytrain-legend__label">{shortLabel}</span>
-                </span>
-              ))}
-            </div>
-          </section>
-        </aside>
+        {isMobile && !navState.active && (
+          <button
+            type="button"
+            className={`mobile-sheet-toggle${sheetOpen ? ' mobile-sheet-toggle--open' : ''}`}
+            onClick={() => setSheetOpen((o) => !o)}
+            aria-label={sheetOpen ? 'Close panel' : 'Open panel'}
+          >
+            {sheetOpen ? '✕' : '☰'}
+          </button>
+        )}
 
         <main className="insight-shell__map-wrap">
           <Suspense
@@ -250,18 +201,83 @@ export default function App() {
           </Suspense>
         </main>
 
-        <aside className="insight-shell__rail insight-shell__rail--right" aria-label="Signals">
-          <RouteFindingPanel
-            onResult={handleRouteResult}
-            onSelectRoute={setSelectedRouteIndex}
-            result={routeResult}
-            selectedRouteIndex={selectedRouteIndex}
-            isMobile={isMobile}
-            onStartNavigation={navStart}
-            onStopNavigation={navStop}
-            navigationActive={navState.active}
-          />
-        </aside>
+        {/* mobile-sheet is display:contents on desktop (invisible to the grid),
+            and a slide-up bottom drawer on mobile */}
+        <div className={`mobile-sheet${sheetOpen ? ' mobile-sheet--open' : ''}`}>
+          <aside className="insight-shell__rail insight-shell__rail--left" aria-label="Layers and scope">
+            <section className="insight-panel">
+              <h2 className="insight-panel__heading">Mobility lens</h2>
+              <p className="insight-panel__hint">
+                Switch mode to filter the map context for your journey type.
+              </p>
+              <LensSelector active={lens} onSelect={setLens} />
+              <p className="insight-panel__hint" style={{ marginTop: '0.5rem', opacity: 0.6 }}>
+                {lensLoading
+                  ? `Loading ${MOBILITY_LENS_META[lens].label.toLowerCase()} overlay…`
+                  : lens === 'drive'
+                    ? 'Drive — traffic flow shown via TomTom layer'
+                    : `${MOBILITY_LENS_META[lens].label} overlay — ${lensData.features.length} features loaded`
+                }
+              </p>
+            </section>
+
+            <section className="insight-panel">
+              <h2 className="insight-panel__heading">Map layers</h2>
+              <LayerToggle
+                id="layer-buildings"
+                label="3D buildings"
+                description="Extruded building footprints from OpenStreetMap"
+                checked={layers.buildings}
+                onChange={() => toggleLayer('buildings')}
+              />
+              <LayerToggle
+                id="layer-skytrain"
+                label="SkyTrain stations"
+                description="Expo, Millennium, and Canada Line stops"
+                checked={layers.skytrainNodes}
+                onChange={() => toggleLayer('skytrainNodes')}
+              />
+              <LayerToggle
+                id="layer-incident"
+                label="AI incident marker"
+                description="Location pin from the last AI query"
+                checked={layers.incidentMarker}
+                onChange={() => toggleLayer('incidentMarker')}
+              />
+              <LayerToggle
+                id="layer-outages"
+                label="Power outages"
+                description="Live BC Hydro outages · refreshes every 15 min"
+                checked={layers.outages}
+                onChange={() => toggleLayer('outages')}
+              />
+              <div className="skytrain-legend" role="region" aria-label="SkyTrain line colors">
+                {SKYTRAIN_LEGEND.map(({ key, shortLabel }) => (
+                  <span key={key} className="skytrain-legend__item">
+                    <span
+                      className="skytrain-legend__swatch"
+                      style={{ background: SKYTRAIN_LINE_COLORS[key] }}
+                    />
+                    <span className="skytrain-legend__label">{shortLabel}</span>
+                  </span>
+                ))}
+              </div>
+            </section>
+          </aside>
+
+          <aside className="insight-shell__rail insight-shell__rail--right" aria-label="Signals">
+            <RouteFindingPanel
+              onResult={handleRouteResult}
+              onSelectRoute={setSelectedRouteIndex}
+              result={routeResult}
+              selectedRouteIndex={selectedRouteIndex}
+              isMobile={isMobile}
+              onStartNavigation={navStart}
+              onStopNavigation={navStop}
+              navigationActive={navState.active}
+            />
+          </aside>
+        </div>{/* end .mobile-sheet */}
       </div>
     </div>
   )

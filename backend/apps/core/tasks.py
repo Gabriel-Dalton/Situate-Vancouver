@@ -143,23 +143,25 @@ def poll_drivebc(self):
             "bbox": "-123.6,49.0,-122.5,49.6",
             "limit": 500,
         }
+        # If we were rate-limited recently, skip until the backoff expires
+        if cache.get('backoff:poll_drivebc'):
+            logger.info('poll_drivebc: skipping — rate-limit backoff active')
+            return {'skipped': True, 'reason': 'rate_limit_backoff'}
+
         try:
             response = httpx.get(url, params=params, timeout=15)
             if response.status_code == 429:
                 wait = _retry_after(response)
-                logger.warning('poll_drivebc: 429 rate limited — retrying in %ds', wait)
-                raise self.retry(exc=httpx.HTTPStatusError(
-                    '429', request=response.request, response=response,
-                ), countdown=wait)
+                logger.warning('poll_drivebc: 429 — backing off for %ds', wait)
+                cache.set('backoff:poll_drivebc', '1', timeout=wait)
+                return {'skipped': True, 'reason': '429', 'backoff_seconds': wait}
+            if 400 <= response.status_code < 500:
+                logger.error('poll_drivebc: %s — not retrying', response.status_code)
+                return {'error': f'http_{response.status_code}'}
             response.raise_for_status()
             events = response.json().get("events", [])
-        except self.MaxRetriesExceededError:
-            logger.error("poll_drivebc: max retries exceeded, giving up until next schedule")
-            return {'error': 'max_retries'}
-        except httpx.HTTPStatusError as exc:
-            if exc.response.status_code == 429:
-                raise  # already handled above, let Celery manage the retry
-            logger.error("poll_drivebc: HTTP error — %s", exc)
+        except httpx.TimeoutException as exc:
+            logger.warning("poll_drivebc: timeout — %s", exc)
             raise self.retry(exc=exc, countdown=120)
         except Exception as exc:
             logger.error("poll_drivebc: fetch failed — %s", exc)
@@ -229,6 +231,10 @@ def poll_vancouver_opendata(self):
             logger.info('poll_vancouver_opendata: skipping — another instance is running')
             return {'skipped': True}
 
+        if cache.get('backoff:poll_vancouver_opendata'):
+            logger.info('poll_vancouver_opendata: skipping — rate-limit backoff active')
+            return {'skipped': True, 'reason': 'rate_limit_backoff'}
+
         BASE = "https://opendata.vancouver.ca/api/explore/v2.1/catalog/datasets"
 
         datasets = [
@@ -261,8 +267,12 @@ def poll_vancouver_opendata(self):
                 )
                 if response.status_code == 429:
                     wait = _retry_after(response)
-                    logger.warning('poll_vancouver_opendata: 429 — retrying in %ds', wait)
-                    raise self.retry(countdown=wait)
+                    logger.warning('poll_vancouver_opendata: 429 — backing off %ds', wait)
+                    cache.set('backoff:poll_vancouver_opendata', '1', timeout=wait)
+                    break  # stop processing datasets for this run
+                if 400 <= response.status_code < 500:
+                    logger.error('poll_vancouver_opendata: %s on %s', response.status_code, ds["dataset_id"])
+                    continue
                 response.raise_for_status()
                 records = response.json().get("results", [])
             except Exception as exc:
@@ -328,14 +338,25 @@ def poll_surrey(self):
             "returnGeometry": "true",
         }
 
+        if cache.get('backoff:poll_surrey'):
+            logger.info('poll_surrey: skipping — rate-limit backoff active')
+            return {'skipped': True, 'reason': 'rate_limit_backoff'}
+
         try:
             response = httpx.get(url, params=params, timeout=15)
             if response.status_code == 429:
                 wait = _retry_after(response)
-                logger.warning('poll_surrey: 429 — retrying in %ds', wait)
-                raise self.retry(countdown=wait)
+                logger.warning('poll_surrey: 429 — backing off %ds', wait)
+                cache.set('backoff:poll_surrey', '1', timeout=wait)
+                return {'skipped': True, 'reason': '429', 'backoff_seconds': wait}
+            if 400 <= response.status_code < 500:
+                logger.error('poll_surrey: %s — not retrying', response.status_code)
+                return {'error': f'http_{response.status_code}'}
             response.raise_for_status()
             features = response.json().get("features", [])
+        except httpx.TimeoutException as exc:
+            logger.warning("poll_surrey: timeout — %s", exc)
+            raise self.retry(exc=exc, countdown=120)
         except Exception as exc:
             logger.error("poll_surrey: fetch failed — %s", exc)
             raise self.retry(exc=exc, countdown=120)
@@ -388,7 +409,9 @@ def poll_surrey(self):
 # BC Hydro power outage polling
 # ---------------------------------------------------------------------------
 
-_BCHYDRO_RSS_URL = 'https://www.bchydro.com/power-outages/app/outage-rss.xml'
+# Metro Vancouver / Lower Mainland + Sunshine Coast regional feed.
+# Full feed list: https://www.bchydro.com/safety-outages/power-outages/outages_rss.html
+_BCHYDRO_RSS_URL = 'https://www.bchydro.com/rss/outages/lower_mainland_sunshine_coast.xml'
 _NOMINATIM_URL = 'https://nominatim.openstreetmap.org/search'
 _NOMINATIM_USER_AGENT = 'SituateVancouver/1.0 (contact@situatevancouver.ca)'
 # Retry failed geocodes after 7 days (Nominatim data improves over time)
@@ -531,7 +554,16 @@ def poll_bchydro(self):
                 timeout=15,
                 follow_redirects=True,
             )
+            # 4xx = config/URL error — retrying won't help, bail out cleanly
+            if 400 <= resp.status_code < 500:
+                logger.error(
+                    'poll_bchydro: %s from RSS feed — check _BCHYDRO_RSS_URL in tasks.py',
+                    resp.status_code,
+                )
+                return {'error': f'http_{resp.status_code}', 'skipped': True}
             resp.raise_for_status()
+        except httpx.HTTPStatusError:
+            raise  # already handled above
         except Exception as exc:
             logger.error('poll_bchydro: RSS fetch failed — %s', exc)
             raise self.retry(exc=exc, countdown=120)
