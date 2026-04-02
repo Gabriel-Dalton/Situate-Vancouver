@@ -6,6 +6,20 @@ from .schemas import Coordinates, DetectedIncident, QueryResponse
 
 _NO_DATA_COORDINATES = Coordinates(lat=49.2827, lng=-123.1207)  # Vancouver city centre
 
+_INTENT_SOURCES: dict[str, list[str]] = {
+    "traffic":          ["DriveBC", "Vancouver Open Data"],
+    "accident":         ["DriveBC"],
+    "obstruction":      ["DriveBC", "Vancouver Open Data"],
+    "construction":     ["Vancouver Open Data"],
+    "transit":          ["TransLink"],
+    "weather":          ["Environment Canada"],
+    "emergency":        ["DriveBC", "Vancouver Open Data"],
+    "natural_disaster": ["DriveBC", "Vancouver Open Data"],
+}
+
+def _sources_for_intent(intent: str) -> list[str]:
+    return _INTENT_SOURCES.get(intent, ["DriveBC", "Vancouver Open Data"])
+
 
 class OrchestratorAgent:
     """
@@ -167,5 +181,5 @@ class OrchestratorAgent:
             related_alerts=analysis.related_alerts,
             cache_hit=context.cache_hit,
             confidence=analysis.confidence,
-            data_sources=context.data_sources_checked,
+            data_sources=_sources_for_intent(decomposed.intent),
         )

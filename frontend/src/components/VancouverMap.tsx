@@ -394,6 +394,8 @@ export default function VancouverMap({
         [-122.5, 49.6],
       ],
       attributionControl: {},
+      // Safari rejects WebGL context without this — cast needed as maplibre types omit it
+      ...({ failIfMajorPerformanceCaveat: false } as object),
     })
 
     mapRef.current = map

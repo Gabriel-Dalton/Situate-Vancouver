@@ -85,7 +85,7 @@ function lineLabel(key: SkytrainLineKey): string {
 /** Dark-theme palette: distinct on CARTO Dark Matter, readable vs cyan strategic nodes. */
 export const SKYTRAIN_LINE_COLORS: Record<SkytrainLineKey, string> = {
   expo: '#5c9dff',
-  millennium: '#d9b44a',
+  millennium: '#f5e642',
   canada: '#2cdbb8',
   'expo-millennium': '#a78bfa',
   'expo-canada': '#40d9e6',
