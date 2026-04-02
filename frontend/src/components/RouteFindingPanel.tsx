@@ -42,8 +42,8 @@ export default function RouteFindingPanel({
     try {
       const res = await findRoute(o, d)
       onResult(res, 0)
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Route request failed.')
+    } catch {
+      setError('Traffic data temporarily unavailable.')
     } finally {
       setLoading(false)
     }

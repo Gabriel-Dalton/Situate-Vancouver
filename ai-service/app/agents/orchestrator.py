@@ -139,6 +139,7 @@ class OrchestratorAgent:
                 related_alerts=[],
                 cache_hit=False,
                 confidence=0.0,
+                data_sources=["DriveBC", "Vancouver Open Data"],
             )
 
         # Step 3 — retrieve context grounded in the actual API records
@@ -166,4 +167,5 @@ class OrchestratorAgent:
             related_alerts=analysis.related_alerts,
             cache_hit=context.cache_hit,
             confidence=analysis.confidence,
+            data_sources=context.data_sources_checked,
         )

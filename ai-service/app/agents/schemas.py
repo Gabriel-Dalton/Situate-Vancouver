@@ -127,3 +127,4 @@ class QueryResponse(BaseModel):
     related_alerts: list[str]
     cache_hit: bool = Field(description="Whether this response was served from cache")
     confidence: float
+    data_sources: list[str] = Field(default=[], description="Live data feeds consulted for this response")

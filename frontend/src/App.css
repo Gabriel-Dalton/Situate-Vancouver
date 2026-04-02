@@ -1377,6 +1377,15 @@
   line-height: 1.4;
 }
 
+.ai-query-panel__sources {
+  margin: 1rem 0 0;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--border-subtle);
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  letter-spacing: 0.02em;
+}
+
 .route-panel__results {
   margin-top: 0.25rem;
 }

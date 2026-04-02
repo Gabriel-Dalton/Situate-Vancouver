@@ -20,6 +20,7 @@ interface AiQueryResponse {
   related_alerts: string[]
   cache_hit?: boolean
   confidence?: number
+  data_sources?: string[]
 }
 
 /**
@@ -51,16 +52,6 @@ function parseAiPayload(data: unknown): AiQueryResponse | null {
   return data as unknown as AiQueryResponse
 }
 
-function formatDetail(payload: unknown): string {
-  if (payload === null || payload === undefined) return 'Request failed.'
-  if (typeof payload === 'string') return payload
-  if (!isRecord(payload)) return 'Request failed.'
-  const d = payload.detail
-  if (typeof d === 'string') return d
-  if (Array.isArray(d) && d.every((x) => typeof x === 'string')) return d.join(' ')
-  if (typeof d === 'object' && d !== null) return JSON.stringify(d)
-  return 'Request failed.'
-}
 
 function severityClass(sev: string): string {
   const s = sev.toLowerCase()
@@ -95,22 +86,17 @@ export default function AiQueryPanel() {
         payload = { detail: res.statusText || `HTTP ${res.status}` }
       }
       if (!res.ok) {
-        setError(formatDetail(payload))
+        setError('Traffic data temporarily unavailable.')
         return
       }
       const parsed = parseAiPayload(payload)
       if (!parsed) {
-        setError('The server returned an unexpected response shape.')
+        setError('Traffic data temporarily unavailable.')
         return
       }
       setResult(parsed)
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : String(e)
-      setError(
-        msg.includes('Failed to fetch')
-          ? 'Could not reach the API. Check your connection or CORS / API URL settings.'
-          : msg,
-      )
+    } catch {
+      setError('Traffic data temporarily unavailable.')
     } finally {
       setLoading(false)
     }
@@ -206,6 +192,11 @@ export default function AiQueryPanel() {
                 ))}
               </ul>
             </>
+          )}
+          {(result.data_sources ?? []).length > 0 && (
+            <p className="ai-query-panel__sources">
+              Source: {result.data_sources!.join(', ')}
+            </p>
           )}
         </div>
       )}
