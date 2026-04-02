@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
+
+declare function gtag(...args: unknown[]): void
 import maplibregl from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import { enrichSkytrainNodes, skytrainCircleColorExpr, skytrainStrokeColorExpr, SKYTRAIN_LINE_COLORS } from '../data/skytrainLineKeys'
@@ -379,14 +381,15 @@ export default function VancouverMap({
     const el = containerRef.current
     if (!el) return
 
+    const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent)
     const map = new maplibregl.Map({
       container: el,
       style: BASEMAP_STYLES[INITIAL_BASEMAP],
       center: VAN_CENTRE,
       zoom: 11.35,
-      pitch: VECTOR_BASEMAP_PITCH,
-      bearing: -28,
-      maxPitch: 78,
+      pitch: isSafari ? 0 : VECTOR_BASEMAP_PITCH,
+      bearing: isSafari ? 0 : -28,
+      maxPitch: isSafari ? 0 : 78,
       minZoom: 9.2,
       maxZoom: 18,
       maxBounds: [
@@ -394,7 +397,7 @@ export default function VancouverMap({
         [-122.5, 49.6],
       ],
       attributionControl: {},
-      // Safari rejects WebGL context without this — cast needed as maplibre types omit it
+      // Prevent Safari from dropping the WebGL context under GPU performance pressure
       ...({ failIfMajorPerformanceCaveat: false } as object),
     })
 
@@ -405,6 +408,7 @@ export default function VancouverMap({
     window.addEventListener('resize', resize)
 
     const onMapClick = (e: maplibregl.MapMouseEvent) => {
+      gtag('event', 'map_tap', { lat: e.lngLat.lat.toFixed(4), lng: e.lngLat.lng.toFixed(4), zoom: Math.round(map.getZoom()) })
       const feats = map.queryRenderedFeatures(e.point, { layers: [...NODE_LAYERS] })
       const f = feats[0]
       if (!f?.geometry || f.geometry.type !== 'Point') return
@@ -481,7 +485,7 @@ export default function VancouverMap({
 
     const onStyleLoad = () => {
       installSkytrainLayer(map)
-      install3dBuildings(map, layersRef.current.buildings)
+      install3dBuildings(map, isSafari ? false : layersRef.current.buildings)
       applyVectorBasemapLook(map, basemapRef.current)
       applyBuildingLook(map, basemapRef.current)
       installLensOverlay(map, lensRef.current, lensDataRef.current)
@@ -516,6 +520,12 @@ export default function VancouverMap({
     }
 
     map.on('style.load', onStyleLoad)
+
+    // Detect WebGL context loss (common on Safari under memory pressure)
+    el.addEventListener('webglcontextlost', () => {
+      console.warn('WebGL context lost — reloading map')
+      window.location.reload()
+    })
 
     return () => {
       window.removeEventListener('resize', resize)

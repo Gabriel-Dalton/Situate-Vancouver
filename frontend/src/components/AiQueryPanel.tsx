@@ -1,5 +1,7 @@
 import { useCallback, useState } from 'react'
 
+declare function gtag(...args: unknown[]): void
+
 interface QueryCoordinates {
   lat: number
   lng: number
@@ -94,6 +96,7 @@ export default function AiQueryPanel() {
         setError('Traffic data temporarily unavailable.')
         return
       }
+      gtag('event', 'ai_query', { query: q, query_type: parsed.query_type, severity: parsed.severity, cache_hit: parsed.cache_hit })
       setResult(parsed)
     } catch {
       setError('Traffic data temporarily unavailable.')

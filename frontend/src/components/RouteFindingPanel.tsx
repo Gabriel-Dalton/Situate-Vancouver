@@ -2,6 +2,8 @@ import { useCallback, useState } from 'react'
 import { findRoute } from '../services/routeService'
 import type { RouteFindResult, RouteOption } from '../services/routeService'
 
+declare function gtag(...args: unknown[]): void
+
 interface Props {
   onResult: (result: RouteFindResult, selectedIndex: number) => void
   onSelectRoute: (index: number) => void
@@ -41,6 +43,7 @@ export default function RouteFindingPanel({
     setError(null)
     try {
       const res = await findRoute(o, d)
+      gtag('event', 'route_search', { origin: o, destination: d, routes_found: res.routes.length })
       onResult(res, 0)
     } catch {
       setError('Traffic data temporarily unavailable.')

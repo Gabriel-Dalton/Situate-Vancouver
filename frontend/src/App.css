@@ -5,6 +5,35 @@
   min-height: 100svh;
 }
 
+.safari-warning {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.55rem 1.15rem;
+  background: rgba(251, 146, 60, 0.15);
+  border-bottom: 1px solid rgba(251, 146, 60, 0.4);
+  color: #fed7aa;
+  font-size: 0.8rem;
+  flex-shrink: 0;
+  z-index: 100;
+}
+
+.safari-warning button {
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  color: #fed7aa;
+  cursor: pointer;
+  font-size: 0.9rem;
+  padding: 0.1rem 0.3rem;
+  opacity: 0.7;
+}
+
+.safari-warning button:hover {
+  opacity: 1;
+}
+
 .insight-shell__header {
   flex-shrink: 0;
   display: grid;
