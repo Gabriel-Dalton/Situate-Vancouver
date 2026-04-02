@@ -219,6 +219,30 @@ export default function App() {
                     : `${MOBILITY_LENS_META[lens].label} overlay — ${lensData.features.length} features loaded`
                 }
               </p>
+
+              {lens === 'drive' && (
+                <div className="traffic-legend">
+                  <h3 className="traffic-legend__heading">Traffic flow</h3>
+                  <ul className="traffic-legend__list">
+                    <li className="traffic-legend__item">
+                      <span className="traffic-legend__swatch" style={{ background: '#4ade80' }} />
+                      <span>Free flow</span>
+                    </li>
+                    <li className="traffic-legend__item">
+                      <span className="traffic-legend__swatch" style={{ background: '#facc15' }} />
+                      <span>Moderate</span>
+                    </li>
+                    <li className="traffic-legend__item">
+                      <span className="traffic-legend__swatch" style={{ background: '#fb923c' }} />
+                      <span>Heavy</span>
+                    </li>
+                    <li className="traffic-legend__item">
+                      <span className="traffic-legend__swatch" style={{ background: '#f87171' }} />
+                      <span>Standstill</span>
+                    </li>
+                  </ul>
+                </div>
+              )}
             </section>
 
             <section className="insight-panel">

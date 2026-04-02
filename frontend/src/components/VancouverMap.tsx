@@ -500,7 +500,7 @@ export default function VancouverMap({
           id: 'traffic-flow',
           type: 'raster',
           source: 'tomtom-traffic',
-          paint: { 'raster-opacity': 0.55, 'raster-hue-rotate': 60, 'raster-saturation': 0.4 },
+          paint: { 'raster-opacity': 0.6, 'raster-hue-rotate': 100, 'raster-saturation': 0.6 },
         })
       }
 
