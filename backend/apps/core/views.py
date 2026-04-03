@@ -72,6 +72,21 @@ def ai_incidents_query(request):
             {'detail': 'Field "query" must be a non-empty string.'},
             status=status.HTTP_400_BAD_REQUEST,
         )
+    if len(raw) > 500:
+        return Response(
+            {'detail': 'Query must be 500 characters or fewer.'},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    ip = request.META.get('HTTP_X_FORWARDED_FOR', request.META.get('REMOTE_ADDR', 'unknown')).split(',')[0].strip()
+    rate_key = f'ratelimit:ai_query:{ip}'
+    count = cache.get(rate_key, 0)
+    if count >= 10:
+        return Response(
+            {'detail': 'Too many requests. Please wait a moment.'},
+            status=status.HTTP_429_TOO_MANY_REQUESTS,
+        )
+    cache.set(rate_key, count + 1, timeout=60)
 
     base = settings.AI_SERVICE_URL.rstrip('/')
     url = f'{base}/incidents/query'
@@ -229,6 +244,22 @@ def find_route(request):
             {'detail': 'Field "destination" is required.'},
             status=status.HTTP_400_BAD_REQUEST,
         )
+    if len(origin) > 200 or len(destination) > 200:
+        return Response(
+            {'detail': 'Location names must be 200 characters or fewer.'},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    # Rate limit: 20 route requests per minute per IP
+    ip = request.META.get('HTTP_X_FORWARDED_FOR', request.META.get('REMOTE_ADDR', 'unknown')).split(',')[0].strip()
+    rate_key = f'ratelimit:find_route:{ip}'
+    count = cache.get(rate_key, 0)
+    if count >= 20:
+        return Response(
+            {'detail': 'Too many requests. Please wait a moment.'},
+            status=status.HTTP_429_TOO_MANY_REQUESTS,
+        )
+    cache.set(rate_key, count + 1, timeout=60)
 
     base = settings.AI_SERVICE_URL.rstrip('/')
     url = f'{base}/routes/find'
