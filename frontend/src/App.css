@@ -1850,6 +1850,32 @@
 
   /* ── Sheet open/close floating button ── */
 
+  .mobile-sheet-tabs {
+    display: flex;
+    flex-shrink: 0;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+
+  .mobile-sheet-tab {
+    flex: 1;
+    padding: 0.6rem 0;
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-size: 0.8rem;
+    font-weight: 500;
+    cursor: pointer;
+    letter-spacing: 0.04em;
+    transition: color 0.15s, border-color 0.15s;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+  }
+
+  .mobile-sheet-tab--active {
+    color: var(--data-cyan);
+    border-bottom-color: var(--data-cyan);
+  }
+
   .mobile-sheet-toggle {
     position: absolute;
     bottom: max(env(safe-area-inset-bottom, 0px), 1rem);

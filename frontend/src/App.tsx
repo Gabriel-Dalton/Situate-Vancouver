@@ -44,6 +44,7 @@ export default function App() {
 
   const isMobile = useIsMobile()
   const [sheetOpen, setSheetOpen] = useState(false)
+  const [sheetTab, setSheetTab] = useState<'layers' | 'route'>('route')
   const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent)
   const [safariWarningDismissed, setSafariWarningDismissed] = useState(false)
   const selectedRoute = useMemo(
@@ -212,7 +213,21 @@ export default function App() {
         {/* mobile-sheet is display:contents on desktop (invisible to the grid),
             and a slide-up bottom drawer on mobile */}
         <div className={`mobile-sheet${sheetOpen ? ' mobile-sheet--open' : ''}`}>
-          <aside className="insight-shell__rail insight-shell__rail--left" aria-label="Layers and scope">
+          {isMobile && (
+            <div className="mobile-sheet-tabs">
+              <button
+                type="button"
+                className={`mobile-sheet-tab${sheetTab === 'route' ? ' mobile-sheet-tab--active' : ''}`}
+                onClick={() => setSheetTab('route')}
+              >Route finder</button>
+              <button
+                type="button"
+                className={`mobile-sheet-tab${sheetTab === 'layers' ? ' mobile-sheet-tab--active' : ''}`}
+                onClick={() => setSheetTab('layers')}
+              >Layers</button>
+            </div>
+          )}
+          <aside className="insight-shell__rail insight-shell__rail--left" aria-label="Layers and scope" style={isMobile && sheetTab !== 'layers' ? { display: 'none' } : undefined}>
             <section className="insight-panel">
               <h2 className="insight-panel__heading">Mobility lens</h2>
               <p className="insight-panel__hint">
@@ -297,7 +312,7 @@ export default function App() {
             </section>
           </aside>
 
-          <aside className="insight-shell__rail insight-shell__rail--right" aria-label="Signals">
+          <aside className="insight-shell__rail insight-shell__rail--right" aria-label="Signals" style={isMobile && sheetTab !== 'route' ? { display: 'none' } : undefined}>
             <RouteFindingPanel
               onResult={handleRouteResult}
               onSelectRoute={setSelectedRouteIndex}
