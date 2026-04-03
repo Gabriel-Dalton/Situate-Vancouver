@@ -473,6 +473,62 @@
   border-top: 1px solid var(--border-subtle);
 }
 
+.collapsible {
+  margin-top: 0.75rem;
+}
+
+.collapsible + .collapsible {
+  margin-top: 0.25rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.collapsible__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  color: var(--text-dim);
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  margin-bottom: 0.5rem;
+}
+
+.collapsible__chevron {
+  font-size: 1rem;
+  line-height: 1;
+  transform: rotate(90deg);
+  transition: transform 0.2s;
+  opacity: 0.6;
+}
+
+.collapsible__chevron--open {
+  transform: rotate(270deg);
+}
+
+.collapsible__body {
+  display: flex;
+  flex-direction: column;
+}
+
+.layer-sub-toggles {
+  padding-left: 1rem;
+  border-left: 2px solid var(--border-subtle);
+  margin: 0.25rem 0 0.5rem;
+}
+
+.incident-legend {
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--border-subtle);
+}
+
 .traffic-legend {
   margin-top: 0.75rem;
   padding-top: 0.75rem;
@@ -1432,6 +1488,25 @@
 .route-panel__submit:disabled {
   opacity: 0.45;
   cursor: default;
+}
+
+.route-panel__clear {
+  margin-top: 0.75rem;
+  width: 100%;
+  padding: 0.4rem;
+  background: none;
+  border: 1px solid var(--border-subtle);
+  border-radius: 4px;
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.route-panel__clear:hover {
+  border-color: #f87171;
+  color: #f87171;
 }
 
 .route-panel__error {

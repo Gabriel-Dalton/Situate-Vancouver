@@ -5,7 +5,7 @@ import type { RouteFindResult, RouteOption } from '../services/routeService'
 declare function gtag(...args: unknown[]): void
 
 interface Props {
-  onResult: (result: RouteFindResult, selectedIndex: number) => void
+  onResult: (result: RouteFindResult | null, selectedIndex: number) => void
   onSelectRoute: (index: number) => void
   result: RouteFindResult | null
   selectedRouteIndex: number
@@ -102,6 +102,16 @@ export default function RouteFindingPanel({
 
       {error && (
         <div className="route-panel__error" role="alert">{error}</div>
+      )}
+
+      {result && (
+        <button
+          type="button"
+          className="route-panel__clear"
+          onClick={() => onResult(null, 0)}
+        >
+          Clear route
+        </button>
       )}
 
       {result && result.routes.length > 0 && (

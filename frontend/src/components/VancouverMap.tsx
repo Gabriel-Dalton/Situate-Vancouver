@@ -53,6 +53,22 @@ function applyInsightLayers(map: maplibregl.Map, layers: InsightLayerState) {
   for (const [id, on] of pairs) {
     if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', vis(on))
   }
+
+  // Per-line filters: build list of visible lineKeys and apply as a filter expression
+  const visibleLines: string[] = []
+  if (layers.expoLine) visibleLines.push('expo', 'expo-millennium', 'expo-canada')
+  if (layers.millenniumLine) visibleLines.push('millennium', 'expo-millennium')
+  // canada line has no separate toggle — always on if skytrainNodes is on
+  if (layers.skytrainNodes) visibleLines.push('canada', 'expo-canada')
+
+  const uniqueLines = [...new Set(visibleLines)]
+  const lineFilter: maplibregl.ExpressionSpecification = uniqueLines.length > 0
+    ? ['in', ['get', 'lineKey'], ['literal', uniqueLines]]
+    : ['==', '1', '2'] // show nothing
+
+  for (const id of ['skytrain-nodes-glow', 'skytrain-nodes-core']) {
+    if (map.getLayer(id)) map.setFilter(id, lineFilter)
+  }
 }
 
 function install3dBuildings(map: maplibregl.Map, visible: boolean) {
@@ -316,7 +332,7 @@ function decodePolyline(encoded: string): [number, number][] {
   return coords
 }
 
-const ROUTE_COLORS = ['#00d4ff', '#a78bfa', '#34d399']
+const ROUTE_COLORS = ['#00d4ff', '#fb923c', '#34d399']
 
 export default function VancouverMap({
   layers,
@@ -506,7 +522,7 @@ export default function VancouverMap({
           id: 'traffic-flow',
           type: 'raster',
           source: 'tomtom-traffic',
-          paint: { 'raster-opacity': 0.6, 'raster-hue-rotate': 100, 'raster-saturation': 0.6 },
+          paint: { 'raster-opacity': 0.6, 'raster-hue-rotate': 45, 'raster-saturation': 0.6 },
         })
       }
 
@@ -619,11 +635,11 @@ export default function VancouverMap({
     map.addSource(SRC, { type: 'geojson', data: geojson })
 
     const typeColor: maplibregl.ExpressionSpecification = ['match', ['get', 'incident_type'],
-      'construction',    '#fb923c',  // amber-orange
-      'traffic',         '#60a5fa',  // blue
-      'accident',        '#f87171',  // red
-      'obstruction',     '#facc15',  // yellow
-      'weather',         '#a78bfa',  // violet
+      'construction',    '#fb923c',  // amber-orange  (distinct from all SkyTrain)
+      'traffic',         '#f43f5e',  // rose-pink     (was blue — clashed with Expo)
+      'accident',        '#f87171',  // coral-red
+      'obstruction',     '#94a3b8',  // slate-grey    (was yellow — clashed with Millennium)
+      'weather',         '#a78bfa',  // violet        (safe: interchange stations now show as Expo blue)
       'emergency',       '#ff3b3b',  // bright red
       'natural_disaster','#c084fc',  // purple
       /* general */      '#94a3b8',  // slate
@@ -814,7 +830,7 @@ export default function VancouverMap({
       source: 'route-endpoints-src',
       paint: {
         'circle-radius': 7,
-        'circle-color': ['match', ['get', 'role'], 'origin', '#00d4ff', '#a78bfa'],
+        'circle-color': ['match', ['get', 'role'], 'origin', '#00d4ff', '#fb923c'],
         'circle-stroke-width': 2,
         'circle-stroke-color': '#fff',
         'circle-opacity': 0.95,

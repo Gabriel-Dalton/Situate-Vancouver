@@ -87,17 +87,15 @@ export const SKYTRAIN_LINE_COLORS: Record<SkytrainLineKey, string> = {
   expo: '#5c9dff',
   millennium: '#f5e642',
   canada: '#2cdbb8',
-  'expo-millennium': '#a78bfa',
-  'expo-canada': '#40d9e6',
+  'expo-millennium': '#5c9dff',  // interchange stations → show as Expo blue
+  'expo-canada': '#5c9dff',      // interchange stations → show as Expo blue
 }
 
-/** Order for UI legend (matches map styling). */
+/** Order for UI legend — interchange combos omitted, they show as Expo colour. */
 export const SKYTRAIN_LEGEND: { key: SkytrainLineKey; shortLabel: string }[] = [
   { key: 'expo', shortLabel: 'Expo' },
   { key: 'millennium', shortLabel: 'Millennium' },
   { key: 'canada', shortLabel: 'Canada' },
-  { key: 'expo-millennium', shortLabel: 'Expo + Millennium' },
-  { key: 'expo-canada', shortLabel: 'Expo + Canada' },
 ]
 
 export function skytrainCircleColorExpr(): ExpressionSpecification {

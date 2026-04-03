@@ -27,6 +27,8 @@ const VancouverMap = lazy(() => import('./components/VancouverMap'))
 
 const DEFAULT_LAYERS: InsightLayerState = {
   skytrainNodes: true,
+  expoLine: true,
+  millenniumLine: true,
   incidentMarker: true,
   buildings: true,
   outages: true,
@@ -101,7 +103,7 @@ export default function App() {
     setAiPanelOpen(false)
   }, [])
 
-  const handleRouteResult = useCallback((result: RouteFindResult, idx: number) => {
+  const handleRouteResult = useCallback((result: RouteFindResult | null, idx: number) => {
     setRouteResult(result)
     setSelectedRouteIndex(idx)
   }, [])
@@ -244,8 +246,7 @@ export default function App() {
               </p>
 
               {lens === 'drive' && (
-                <div className="traffic-legend">
-                  <h3 className="traffic-legend__heading">Traffic flow</h3>
+                <Collapsible title="Traffic flow" defaultOpen={false}>
                   <ul className="traffic-legend__list">
                     <li className="traffic-legend__item">
                       <span className="traffic-legend__swatch" style={{ background: '#4ade80' }} />
@@ -264,40 +265,84 @@ export default function App() {
                       <span>Standstill</span>
                     </li>
                   </ul>
-                </div>
+                </Collapsible>
               )}
             </section>
 
             <section className="insight-panel">
-              <h2 className="insight-panel__heading">Map layers</h2>
-              <LayerToggle
-                id="layer-buildings"
-                label="3D buildings"
-                description="Extruded building footprints from OpenStreetMap"
-                checked={layers.buildings}
-                onChange={() => toggleLayer('buildings')}
-              />
-              <LayerToggle
-                id="layer-skytrain"
-                label="SkyTrain stations"
-                description="Expo, Millennium, and Canada Line stops"
-                checked={layers.skytrainNodes}
-                onChange={() => toggleLayer('skytrainNodes')}
-              />
-              <LayerToggle
-                id="layer-incident"
-                label="AI incident marker"
-                description="Location pin from the last AI query"
-                checked={layers.incidentMarker}
-                onChange={() => toggleLayer('incidentMarker')}
-              />
-              <LayerToggle
-                id="layer-outages"
-                label="Power outages"
-                description="Live BC Hydro outages · refreshes every 15 min"
-                checked={layers.outages}
-                onChange={() => toggleLayer('outages')}
-              />
+              <Collapsible title="Map layers">
+                <LayerToggle
+                  id="layer-buildings"
+                  label="3D buildings"
+                  description="Extruded building footprints from OpenStreetMap"
+                  checked={layers.buildings}
+                  onChange={() => toggleLayer('buildings')}
+                />
+                <LayerToggle
+                  id="layer-skytrain"
+                  label="SkyTrain stations"
+                  description="Expo, Millennium, and Canada Line stops"
+                  checked={layers.skytrainNodes}
+                  onChange={() => toggleLayer('skytrainNodes')}
+                />
+                {layers.skytrainNodes && (
+                  <div className="layer-sub-toggles">
+                    <LayerToggle
+                      id="layer-expo"
+                      label="Expo Line"
+                      description=""
+                      checked={layers.expoLine}
+                      onChange={() => toggleLayer('expoLine')}
+                    />
+                    <LayerToggle
+                      id="layer-millennium"
+                      label="Millennium Line"
+                      description=""
+                      checked={layers.millenniumLine}
+                      onChange={() => toggleLayer('millenniumLine')}
+                    />
+                  </div>
+                )}
+                <LayerToggle
+                  id="layer-incident"
+                  label="AI incident marker"
+                  description="Location pin from the last AI query"
+                  checked={layers.incidentMarker}
+                  onChange={() => toggleLayer('incidentMarker')}
+                />
+                <LayerToggle
+                  id="layer-outages"
+                  label="Power outages"
+                  description="Live BC Hydro outages · refreshes every 15 min"
+                  checked={layers.outages}
+                  onChange={() => toggleLayer('outages')}
+                />
+              </Collapsible>
+
+              <Collapsible title="Live incidents" defaultOpen={false}>
+                <ul className="traffic-legend__list">
+                  <li className="traffic-legend__item">
+                    <span className="traffic-legend__swatch" style={{ background: '#fb923c', borderRadius: '50%' }} />
+                    <span>Construction</span>
+                  </li>
+                  <li className="traffic-legend__item">
+                    <span className="traffic-legend__swatch" style={{ background: '#f43f5e', borderRadius: '50%' }} />
+                    <span>Traffic</span>
+                  </li>
+                  <li className="traffic-legend__item">
+                    <span className="traffic-legend__swatch" style={{ background: '#f87171', borderRadius: '50%' }} />
+                    <span>Accident</span>
+                  </li>
+                  <li className="traffic-legend__item">
+                    <span className="traffic-legend__swatch" style={{ background: '#94a3b8', borderRadius: '50%' }} />
+                    <span>Obstruction</span>
+                  </li>
+                  <li className="traffic-legend__item">
+                    <span className="traffic-legend__swatch" style={{ background: '#a78bfa', borderRadius: '50%' }} />
+                    <span>Weather</span>
+                  </li>
+                </ul>
+              </Collapsible>
               <div className="skytrain-legend" role="region" aria-label="SkyTrain line colors">
                 {SKYTRAIN_LEGEND.map(({ key, shortLabel }) => (
                   <span key={key} className="skytrain-legend__item">
@@ -355,6 +400,19 @@ function LayerToggle({
   )
 }
 
+
+function Collapsible({ title, children, defaultOpen = true }: { title: string; children: React.ReactNode; defaultOpen?: boolean }) {
+  const [open, setOpen] = useState(defaultOpen)
+  return (
+    <div className="collapsible">
+      <button type="button" className="collapsible__header" onClick={() => setOpen(o => !o)}>
+        <span>{title}</span>
+        <span className={`collapsible__chevron${open ? ' collapsible__chevron--open' : ''}`}>›</span>
+      </button>
+      {open && <div className="collapsible__body">{children}</div>}
+    </div>
+  )
+}
 
 function LiveClock() {
   const [now, setNow] = useState(() => new Date())
