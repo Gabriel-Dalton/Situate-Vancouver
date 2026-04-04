@@ -251,6 +251,7 @@ type Props = {
   routeResult?: RouteFindResult | null
   selectedRouteIndex?: number
   navigationState?: NavigationState
+  hiddenIncidentTypes?: Set<string>
 }
 
 function installIncidentLayer(map: maplibregl.Map, inc: AiQueryResponse) {
@@ -334,6 +335,29 @@ function decodePolyline(encoded: string): [number, number][] {
 
 const ROUTE_COLORS = ['#00d4ff', '#fb923c', '#34d399']
 
+function buildIncidentsGeoJSON(
+  dbIncidents: { lat?: number | null; lng?: number | null; id: number; title: string; location: string; severity: string; incident_type: string; description: string }[],
+  hidden: Set<string> | undefined,
+): GeoJSON.FeatureCollection<GeoJSON.Point> {
+  return {
+    type: 'FeatureCollection',
+    features: dbIncidents
+      .filter(inc => inc.lat != null && inc.lng != null && !(hidden?.has(inc.incident_type)))
+      .map(inc => ({
+        type: 'Feature' as const,
+        geometry: { type: 'Point' as const, coordinates: [inc.lng!, inc.lat!] },
+        properties: {
+          id: inc.id,
+          title: inc.title,
+          location: inc.location,
+          severity: inc.severity,
+          incident_type: inc.incident_type,
+          description: inc.description,
+        },
+      })),
+  }
+}
+
 export default function VancouverMap({
   layers,
   onToggleLayer,
@@ -345,6 +369,7 @@ export default function VancouverMap({
   routeResult,
   selectedRouteIndex = 0,
   navigationState,
+  hiddenIncidentTypes,
 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<maplibregl.Map | null>(null)
@@ -603,26 +628,7 @@ export default function VancouverMap({
     const map = mapRef.current
     if (!map || !styleReadyRef.current) return
 
-    const features: GeoJSON.Feature<GeoJSON.Point>[] = dbIncidents
-      .filter(inc => inc.lat != null && inc.lng != null)
-      .map(inc => ({
-        type: 'Feature',
-        geometry: { type: 'Point', coordinates: [inc.lng!, inc.lat!] },
-        properties: {
-          id: inc.id,
-          title: inc.title,
-          location: inc.location,
-          severity: inc.severity,
-          incident_type: inc.incident_type,
-          description: inc.description,
-        },
-      }))
-
-    const geojson: GeoJSON.FeatureCollection<GeoJSON.Point> = {
-      type: 'FeatureCollection',
-      features,
-    }
-
+    const geojson = buildIncidentsGeoJSON(dbIncidents, hiddenIncidentTypes)
     const SRC = 'db-incidents'
     const LAYER_GLOW = 'db-incidents-glow'
     const LAYER_CORE = 'db-incidents-core'
@@ -635,26 +641,22 @@ export default function VancouverMap({
     map.addSource(SRC, { type: 'geojson', data: geojson })
 
     const typeColor: maplibregl.ExpressionSpecification = ['match', ['get', 'incident_type'],
-      'construction',    '#fb923c',  // amber-orange  (distinct from all SkyTrain)
-      'traffic',         '#f43f5e',  // rose-pink     (was blue — clashed with Expo)
-      'accident',        '#f87171',  // coral-red
-      'obstruction',     '#94a3b8',  // slate-grey    (was yellow — clashed with Millennium)
-      'weather',         '#a78bfa',  // violet        (safe: interchange stations now show as Expo blue)
-      'emergency',       '#ff3b3b',  // bright red
-      'natural_disaster','#c084fc',  // purple
-      /* general */      '#94a3b8',  // slate
+      'construction',    '#fb923c',
+      'traffic',         '#f43f5e',
+      'accident',        '#f87171',
+      'obstruction',     '#94a3b8',
+      'weather',         '#a78bfa',
+      'emergency',       '#ff3b3b',
+      'natural_disaster','#ff6b35',  // orange — wildfire (NASA FIRMS)
+      'earthquake',      '#e879f9',  // fuchsia — seismic (USGS)
+      '#94a3b8',
     ]
 
     map.addLayer({
       id: LAYER_GLOW,
       type: 'circle',
       source: SRC,
-      paint: {
-        'circle-radius': 8,
-        'circle-color': typeColor,
-        'circle-opacity': 0.18,
-        'circle-blur': 1,
-      },
+      paint: { 'circle-radius': 8, 'circle-color': typeColor, 'circle-opacity': 0.18, 'circle-blur': 1 },
     })
 
     map.addLayer({
@@ -686,7 +688,7 @@ export default function VancouverMap({
 
     map.on('mouseenter', LAYER_CORE, () => { map.getCanvas().style.cursor = 'pointer' })
     map.on('mouseleave', LAYER_CORE, () => { map.getCanvas().style.cursor = '' })
-  }, [dbIncidents])
+  }, [dbIncidents, hiddenIncidentTypes])
 
   // Render BC Hydro outage dots
   useEffect(() => {

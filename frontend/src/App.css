@@ -568,6 +568,21 @@
   border-radius: 3px;
 }
 
+.incident-legend-dot {
+  flex-shrink: 0;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  transition: opacity 0.2s, transform 0.15s;
+}
+
+.incident-legend-dot:hover {
+  transform: scale(1.35);
+}
+
 .insight-scope {
   list-style: none;
   margin: 0;

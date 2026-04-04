@@ -10,11 +10,14 @@ Schedules (configured in Django admin or via data migration):
   expire_incidents        — every hour
 """
 
+import csv
 import logging
+import os
 import time
 import xml.etree.ElementTree as ET
 from contextlib import contextmanager
 from datetime import timedelta
+from io import StringIO
 
 import httpx
 from celery import shared_task
@@ -610,6 +613,242 @@ def poll_bchydro(self):
             created_count, updated_count, skipped_count,
         )
         return {'created': created_count, 'updated': updated_count, 'skipped': skipped_count}
+
+
+# ---------------------------------------------------------------------------
+# NASA FIRMS wildfire polling
+# ---------------------------------------------------------------------------
+
+# Bounding box covering Metro Vancouver + surrounding BC region
+_FIRMS_BBOX = '-124.5,49.0,-121.5,50.5'
+_FIRMS_SOURCE = 'VIIRS_SNPP_NRT'  # Near real-time VIIRS satellite
+_FIRMS_DAY_RANGE = 1  # Last 24 hours
+
+
+@shared_task(bind=True, max_retries=3, default_retry_delay=300)
+def poll_nasafirms(self):
+    """
+    Fetch NASA FIRMS active fire detections for the Metro Vancouver / BC region
+    and upsert into the Incident table as NATURAL_DISASTER incidents.
+    Runs every 3 hours — FIRMS data refreshes every ~3 hours per orbit.
+    """
+    with _task_lock('lock:poll_nasafirms', timeout=600) as acquired:
+        if not acquired:
+            logger.info('poll_nasafirms: skipping — another instance is running')
+            return {'skipped': True}
+
+        if cache.get('backoff:poll_nasafirms'):
+            logger.info('poll_nasafirms: skipping — rate-limit backoff active')
+            return {'skipped': True, 'reason': 'rate_limit_backoff'}
+
+        map_key = os.environ.get('MAP_KEY', '').strip()
+        if not map_key:
+            logger.error('poll_nasafirms: MAP_KEY not set in environment')
+            return {'error': 'missing_map_key'}
+
+        from django.utils.timezone import now as tz_now
+        date_str = tz_now().strftime('%Y-%m-%d')
+        url = (
+            f'https://firms.modaps.eosdis.nasa.gov/api/area/csv'
+            f'/{map_key}/{_FIRMS_SOURCE}/{_FIRMS_BBOX}/{_FIRMS_DAY_RANGE}/{date_str}'
+        )
+
+        try:
+            response = httpx.get(url, timeout=20, follow_redirects=True)
+            if response.status_code == 429:
+                wait = _retry_after(response)
+                logger.warning('poll_nasafirms: 429 — backing off %ds', wait)
+                cache.set('backoff:poll_nasafirms', '1', timeout=wait)
+                return {'skipped': True, 'reason': '429', 'backoff_seconds': wait}
+            if 400 <= response.status_code < 500:
+                logger.error('poll_nasafirms: %s — not retrying', response.status_code)
+                return {'error': f'http_{response.status_code}'}
+            response.raise_for_status()
+        except httpx.TimeoutException as exc:
+            logger.warning('poll_nasafirms: timeout — %s', exc)
+            raise self.retry(exc=exc, countdown=300)
+        except Exception as exc:
+            logger.error('poll_nasafirms: fetch failed — %s', exc)
+            raise self.retry(exc=exc, countdown=300)
+
+        text = response.text.strip()
+        if not text or text.startswith('error') or text.startswith('Error'):
+            logger.warning('poll_nasafirms: API returned error — %s', text[:200])
+            return {'error': 'api_error', 'detail': text[:200]}
+
+        rows = list(csv.DictReader(StringIO(text)))
+        if not rows:
+            logger.info('poll_nasafirms: no fire detections in region')
+            return {'created': 0, 'updated': 0}
+
+        created_count = updated_count = 0
+
+        for row in rows:
+            try:
+                lat = float(row['latitude'])
+                lng = float(row['longitude'])
+            except (KeyError, ValueError):
+                continue
+
+            acq_date = row.get('acq_date', date_str)
+            acq_time = row.get('acq_time', '0000')
+            # Confidence: 'n'=nominal, 'l'=low, 'h'=high, or numeric 0-100
+            raw_conf = row.get('confidence', 'n')
+            if raw_conf in ('h', 'high'):
+                severity = 'high'
+            elif raw_conf in ('l', 'low'):
+                severity = 'low'
+            else:
+                try:
+                    conf_val = int(raw_conf)
+                    severity = 'high' if conf_val >= 80 else ('medium' if conf_val >= 50 else 'low')
+                except ValueError:
+                    severity = 'medium'
+
+            bright = row.get('bright_ti4') or row.get('brightness', '')
+            frp = row.get('frp', '')
+            external_id = f'firms_{acq_date}_{acq_time}_{lat:.3f}_{lng:.3f}'
+            location = f'{lat:.3f}°N, {abs(lng):.3f}°W'
+            description = f'NASA FIRMS active fire detection. Satellite: {_FIRMS_SOURCE}. Acquisition: {acq_date} {acq_time}Z.'
+            if frp:
+                description += f' Fire radiative power: {frp} MW.'
+            if bright:
+                description += f' Brightness: {bright} K.'
+
+            _, created = _upsert_incident(
+                source_api=Incident.SourceAPI.NASAFIRMS,
+                external_id=external_id,
+                incident_type=Incident.IncidentType.NATURAL_DISASTER,
+                severity=severity,
+                title=f'Active fire detected near {location}',
+                description=description,
+                location=location,
+                lat=lat,
+                lng=lng,
+                expires_in_seconds=10800,  # 3 hours — next orbit pass refreshes
+            )
+            if created:
+                created_count += 1
+            else:
+                updated_count += 1
+
+        logger.info('poll_nasafirms: %d created, %d updated', created_count, updated_count)
+        return {'created': created_count, 'updated': updated_count}
+
+
+# ---------------------------------------------------------------------------
+# USGS earthquake polling
+# ---------------------------------------------------------------------------
+
+# Centre on Metro Vancouver; 300 km radius covers the Cascadia subduction zone
+_USGS_LAT = 49.25
+_USGS_LNG = -123.1
+_USGS_RADIUS_KM = 300
+_USGS_MIN_MAG = 2.5  # M2.5+ are noticeable / newsworthy
+
+
+@shared_task(bind=True, max_retries=3, default_retry_delay=120)
+def poll_usgs_earthquakes(self):
+    """
+    Fetch recent earthquakes (M2.5+) within 300 km of Vancouver from USGS
+    and upsert into the Incident table. No API key required.
+    Runs every 30 minutes — USGS updates every minute but M2.5+ events are infrequent.
+    """
+    with _task_lock('lock:poll_usgs_earthquakes', timeout=600) as acquired:
+        if not acquired:
+            logger.info('poll_usgs_earthquakes: skipping — another instance is running')
+            return {'skipped': True}
+
+        if cache.get('backoff:poll_usgs_earthquakes'):
+            logger.info('poll_usgs_earthquakes: skipping — rate-limit backoff active')
+            return {'skipped': True, 'reason': 'rate_limit_backoff'}
+
+        url = 'https://earthquake.usgs.gov/fdsnws/event/1/query'
+        params = {
+            'format': 'geojson',
+            'latitude': _USGS_LAT,
+            'longitude': _USGS_LNG,
+            'maxradiuskm': _USGS_RADIUS_KM,
+            'minmagnitude': _USGS_MIN_MAG,
+            'orderby': 'time',
+            'limit': 100,
+        }
+
+        try:
+            response = httpx.get(url, params=params, timeout=15)
+            if response.status_code == 429:
+                wait = _retry_after(response)
+                logger.warning('poll_usgs_earthquakes: 429 — backing off %ds', wait)
+                cache.set('backoff:poll_usgs_earthquakes', '1', timeout=wait)
+                return {'skipped': True, 'reason': '429', 'backoff_seconds': wait}
+            if 400 <= response.status_code < 500:
+                logger.error('poll_usgs_earthquakes: %s — not retrying', response.status_code)
+                return {'error': f'http_{response.status_code}'}
+            response.raise_for_status()
+            features = response.json().get('features', [])
+        except httpx.TimeoutException as exc:
+            logger.warning('poll_usgs_earthquakes: timeout — %s', exc)
+            raise self.retry(exc=exc, countdown=120)
+        except Exception as exc:
+            logger.error('poll_usgs_earthquakes: fetch failed — %s', exc)
+            raise self.retry(exc=exc, countdown=120)
+
+        created_count = updated_count = 0
+
+        for feature in features:
+            props = feature.get('properties', {})
+            geo = feature.get('geometry', {})
+            coords = geo.get('coordinates', [])  # [lng, lat, depth_km]
+
+            if len(coords) < 2:
+                continue
+
+            lng, lat = float(coords[0]), float(coords[1])
+            depth_km = float(coords[2]) if len(coords) > 2 else None
+            mag = props.get('mag')
+            place = props.get('place') or f'{lat:.2f}°N, {abs(lng):.2f}°W'
+            usgs_id = feature.get('id', '')
+            if not usgs_id:
+                continue
+
+            if mag is None:
+                continue
+            mag = float(mag)
+
+            if mag >= 6.0:
+                severity = 'critical'
+            elif mag >= 5.0:
+                severity = 'high'
+            elif mag >= 4.0:
+                severity = 'medium'
+            else:
+                severity = 'low'
+
+            title = f'M{mag:.1f} earthquake — {place}'
+            description = f'Magnitude {mag:.1f} earthquake detected {place}.'
+            if depth_km is not None:
+                description += f' Depth: {depth_km:.1f} km.'
+            description += f' Source: USGS.'
+
+            _, created = _upsert_incident(
+                source_api=Incident.SourceAPI.USGS,
+                external_id=usgs_id,
+                incident_type=Incident.IncidentType.EARTHQUAKE,
+                severity=severity,
+                title=title[:255],
+                description=description,
+                location=place,
+                lat=lat,
+                lng=lng,
+                expires_in_seconds=86400,  # 24 hours — earthquakes are newsworthy for a day
+            )
+            if created:
+                created_count += 1
+            else:
+                updated_count += 1
+
+        logger.info('poll_usgs_earthquakes: %d created, %d updated', created_count, updated_count)
+        return {'created': created_count, 'updated': updated_count}
 
 
 # ---------------------------------------------------------------------------

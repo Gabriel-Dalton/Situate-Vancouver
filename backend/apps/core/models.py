@@ -13,6 +13,7 @@ class Incident(models.Model):
         ACCIDENT = 'accident', 'Accident'
         EMERGENCY = 'emergency', 'Emergency'
         NATURAL_DISASTER = 'natural_disaster', 'Natural Disaster'
+        EARTHQUAKE = 'earthquake', 'Earthquake'
         POWER_OUTAGE = 'power_outage', 'Power Outage'
         GENERAL = 'general', 'General'
 
@@ -38,6 +39,8 @@ class Incident(models.Model):
         TRANSLINK = 'translink', 'TransLink'
         WEATHERCAN = 'weathercan', 'WeatherCAN'
         BCHYDRO = 'bchydro', 'BC Hydro'
+        NASAFIRMS = 'nasafirms', 'NASA FIRMS'
+        USGS = 'usgs', 'USGS Earthquakes'
 
     # Primary key
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)

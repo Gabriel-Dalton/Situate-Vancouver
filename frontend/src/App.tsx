@@ -43,6 +43,7 @@ export default function App() {
   const [aiPanelOpen, setAiPanelOpen] = useState(false)
   const [routeResult, setRouteResult] = useState<RouteFindResult | null>(null)
   const [selectedRouteIndex, setSelectedRouteIndex] = useState(0)
+  const [hiddenIncidentTypes, setHiddenIncidentTypes] = useState<Set<string>>(new Set())
 
   const isMobile = useIsMobile()
   const [sheetOpen, setSheetOpen] = useState(false)
@@ -92,6 +93,15 @@ export default function App() {
 
   const toggleLayer = useCallback((key: keyof InsightLayerState) => {
     setLayers((prev) => ({ ...prev, [key]: !prev[key] }))
+  }, [])
+
+  const toggleIncidentType = useCallback((type: string) => {
+    setHiddenIncidentTypes((prev) => {
+      const next = new Set(prev)
+      if (next.has(type)) next.delete(type)
+      else next.add(type)
+      return next
+    })
   }, [])
 
   const handleAiResponse = useCallback((response: AiQueryResponse) => {
@@ -165,6 +175,7 @@ export default function App() {
                 routeResult={routeResult}
                 selectedRouteIndex={selectedRouteIndex}
                 navigationState={navState}
+                hiddenIncidentTypes={hiddenIncidentTypes}
               />
             </Suspense>
           </div>
@@ -245,31 +256,40 @@ export default function App() {
                 }
               </p>
 
-              {lens === 'drive' && (
-                <Collapsible title="Traffic flow" defaultOpen={false}>
-                  <ul className="traffic-legend__list">
-                    <li className="traffic-legend__item">
-                      <span className="traffic-legend__swatch" style={{ background: '#4ade80' }} />
-                      <span>Free flow</span>
-                    </li>
-                    <li className="traffic-legend__item">
-                      <span className="traffic-legend__swatch" style={{ background: '#facc15' }} />
-                      <span>Moderate</span>
-                    </li>
-                    <li className="traffic-legend__item">
-                      <span className="traffic-legend__swatch" style={{ background: '#fb923c' }} />
-                      <span>Heavy</span>
-                    </li>
-                    <li className="traffic-legend__item">
-                      <span className="traffic-legend__swatch" style={{ background: '#f87171' }} />
-                      <span>Standstill</span>
-                    </li>
-                  </ul>
-                </Collapsible>
-              )}
             </section>
 
             <section className="insight-panel">
+              <Collapsible title="Live incidents" defaultOpen={true}>
+                <ul className="traffic-legend__list">
+                  {([
+                    { type: 'construction',    color: '#fb923c', label: 'Construction' },
+                    { type: 'traffic',         color: '#f43f5e', label: 'Traffic' },
+                    { type: 'accident',        color: '#f87171', label: 'Accident' },
+                    { type: 'obstruction',     color: '#94a3b8', label: 'Obstruction' },
+                    { type: 'weather',         color: '#a78bfa', label: 'Weather' },
+                    { type: 'natural_disaster', color: '#ff6b35', label: 'Wildfire' },
+                    { type: 'earthquake',       color: '#e879f9', label: 'Earthquake' },
+                  ] as const).map(({ type, color, label }) => {
+                    const hidden = hiddenIncidentTypes.has(type)
+                    return (
+                      <li key={type} className="traffic-legend__item">
+                        <button
+                          type="button"
+                          className="incident-legend-dot"
+                          title={hidden ? `Show ${label}` : `Hide ${label}`}
+                          onClick={() => toggleIncidentType(type)}
+                          style={{
+                            background: color,
+                            opacity: hidden ? 0.25 : 1,
+                          }}
+                        />
+                        <span style={{ opacity: hidden ? 0.45 : 1 }}>{label}</span>
+                      </li>
+                    )
+                  })}
+                </ul>
+              </Collapsible>
+
               <Collapsible title="Map layers">
                 <LayerToggle
                   id="layer-buildings"
@@ -319,30 +339,28 @@ export default function App() {
                 />
               </Collapsible>
 
-              <Collapsible title="Live incidents" defaultOpen={false}>
-                <ul className="traffic-legend__list">
-                  <li className="traffic-legend__item">
-                    <span className="traffic-legend__swatch" style={{ background: '#fb923c', borderRadius: '50%' }} />
-                    <span>Construction</span>
-                  </li>
-                  <li className="traffic-legend__item">
-                    <span className="traffic-legend__swatch" style={{ background: '#f43f5e', borderRadius: '50%' }} />
-                    <span>Traffic</span>
-                  </li>
-                  <li className="traffic-legend__item">
-                    <span className="traffic-legend__swatch" style={{ background: '#f87171', borderRadius: '50%' }} />
-                    <span>Accident</span>
-                  </li>
-                  <li className="traffic-legend__item">
-                    <span className="traffic-legend__swatch" style={{ background: '#94a3b8', borderRadius: '50%' }} />
-                    <span>Obstruction</span>
-                  </li>
-                  <li className="traffic-legend__item">
-                    <span className="traffic-legend__swatch" style={{ background: '#a78bfa', borderRadius: '50%' }} />
-                    <span>Weather</span>
-                  </li>
-                </ul>
-              </Collapsible>
+              {lens === 'drive' && (
+                <Collapsible title="Traffic flow" defaultOpen={true}>
+                  <ul className="traffic-legend__list">
+                    <li className="traffic-legend__item">
+                      <span className="traffic-legend__swatch" style={{ background: '#4ade80' }} />
+                      <span>Free flow</span>
+                    </li>
+                    <li className="traffic-legend__item">
+                      <span className="traffic-legend__swatch" style={{ background: '#facc15' }} />
+                      <span>Moderate</span>
+                    </li>
+                    <li className="traffic-legend__item">
+                      <span className="traffic-legend__swatch" style={{ background: '#fb923c' }} />
+                      <span>Heavy</span>
+                    </li>
+                    <li className="traffic-legend__item">
+                      <span className="traffic-legend__swatch" style={{ background: '#f87171' }} />
+                      <span>Standstill</span>
+                    </li>
+                  </ul>
+                </Collapsible>
+              )}
               <div className="skytrain-legend" role="region" aria-label="SkyTrain line colors">
                 {SKYTRAIN_LEGEND.map(({ key, shortLabel }) => (
                   <span key={key} className="skytrain-legend__item">
