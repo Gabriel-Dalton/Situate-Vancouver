@@ -409,10 +409,18 @@
   background: var(--harbor-navy-deep);
 }
 
-/* On desktop the mobile-sheet wrapper must be invisible to the 3-column grid.
-   Explicit grid-column places each child in the right column regardless of DOM order. */
+/* On desktop, mobile-sheet spans all 3 columns as a subgrid so the rails
+   land in the correct columns. Avoids display:contents which Brave can suppress. */
 .mobile-sheet {
-  display: contents;
+  display: grid;
+  grid-column: 1 / -1;
+  grid-row: 1;
+  grid-template-columns: subgrid;
+  pointer-events: none; /* let map clicks pass through the empty middle column */
+}
+
+.mobile-sheet > * {
+  pointer-events: auto;
 }
 
 .insight-shell__map-wrap {
@@ -1027,9 +1035,26 @@
 }
 
 @media (max-width: 960px) {
+  /* Switch to a simple flex column — no grid overlap, works in all browsers */
   .insight-shell__body {
-    grid-template-columns: 1fr;
-    grid-template-rows: auto minmax(52vh, 360px) auto;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .insight-shell__map-wrap {
+    grid-column: auto;
+    grid-row: auto;
+    min-height: 52vh;
+    flex-shrink: 0;
+  }
+
+  /* mobile-sheet becomes a plain flex column containing both rails */
+  .mobile-sheet {
+    display: flex;
+    flex-direction: column;
+    grid-column: auto;
+    grid-row: auto;
+    pointer-events: auto;
   }
 
   .insight-shell__rail--left {
@@ -1037,14 +1062,6 @@
     grid-row: auto;
     border-right-width: 0;
     border-bottom: 1px solid var(--border-subtle);
-    order: 1;
-  }
-
-  .insight-shell__map-wrap {
-    grid-column: auto;
-    grid-row: auto;
-    order: 2;
-    min-height: 52vh;
   }
 
   .insight-shell__rail--right {
@@ -1052,7 +1069,6 @@
     grid-row: auto;
     border-left-width: 0;
     border-top: 1px solid var(--border-subtle);
-    order: 3;
   }
 
   .ai-split-view {
@@ -1846,7 +1862,8 @@
   .insight-shell__subtitle,
   .insight-shell__pill,
   .insight-shell__clock,
-  .insight-shell__tz {
+  .insight-shell__tz,
+  .insight-shell__lang {
     display: none;
   }
 
