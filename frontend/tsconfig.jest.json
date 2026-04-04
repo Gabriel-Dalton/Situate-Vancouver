@@ -1,7 +1,7 @@
 {
   "extends": "./tsconfig.app.json",
   "compilerOptions": {
-    "types": ["jest", "node"],
+    "types": ["vitest/globals", "node"],
     "verbatimModuleSyntax": false,
     "allowImportingTsExtensions": false,
     "esModuleInterop": true,
