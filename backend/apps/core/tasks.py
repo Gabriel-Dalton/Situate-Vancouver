@@ -24,6 +24,7 @@ from celery import shared_task
 from django.core.cache import cache
 from django.utils import timezone as django_tz
 
+from .crud_views import invalidate_incidents_list_cache
 from .models import Incident, OutageGeocode
 
 logger = logging.getLogger(__name__)
@@ -107,6 +108,7 @@ def _upsert_incident(
             expires_at=expires_at,
         ),
     )
+    invalidate_incidents_list_cache()
     return incident, created
 
 
@@ -865,5 +867,7 @@ def expire_incidents():
         expires_at__lt=now,
     )
     count = expired.update(status=Incident.Status.RESOLVED)
+    if count:
+        invalidate_incidents_list_cache()
     logger.info("expire_incidents: %d incidents marked resolved", count)
     return {"resolved": count}

@@ -1,3 +1,4 @@
+import hashlib
 import json
 import logging
 
@@ -88,6 +89,18 @@ def ai_incidents_query(request):
         )
     cache.set(rate_key, count + 1, timeout=60)
 
+    # Cache AI responses by normalised query — same question asked twice skips the LLM
+    query = raw.strip()
+    query_hash = hashlib.md5(query.lower().encode()).hexdigest()
+    cache_key = f'ai_query:{query_hash}'
+    cached = cache.get(cache_key)
+    if cached is not None:
+        logger.debug('ai_incidents_query: cache hit for query hash %s', query_hash)
+        payload = json.loads(cached)
+        if isinstance(payload, dict):
+            payload['cache_hit'] = True
+        return Response(payload, status=status.HTTP_200_OK)
+
     base = settings.AI_SERVICE_URL.rstrip('/')
     url = f'{base}/incidents/query'
     timeout = float(getattr(settings, 'AI_QUERY_TIMEOUT_SECONDS', 120.0))
@@ -95,7 +108,7 @@ def ai_incidents_query(request):
     try:
         upstream = httpx.post(
             url,
-            json={'query': raw.strip()},
+            json={'query': query},
             timeout=timeout,
         )
     except httpx.TimeoutException:
@@ -120,6 +133,10 @@ def ai_incidents_query(request):
             payload = {'detail': upstream.text}
     else:
         payload = {'detail': upstream.text} if upstream.text else {}
+
+    # Only cache successful, non-error responses — 10 minute TTL
+    if upstream.status_code == 200 and payload.get('query_type') != 'error':
+        cache.set(cache_key, json.dumps(payload), timeout=600)
 
     return Response(payload, status=upstream.status_code)
 

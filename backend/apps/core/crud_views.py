@@ -1,3 +1,7 @@
+import hashlib
+import json
+
+from django.core.cache import cache
 from rest_framework import filters, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -10,6 +14,26 @@ from .serializers import (
     SavedRouteSerializer,
     UserProfileSerializer,
 )
+
+INCIDENTS_LIST_CACHE_TTL = 30  # seconds
+
+
+def incidents_list_cache_key(query_params: dict) -> str:
+    """Stable cache key from sorted query params + generation counter."""
+    gen = cache.get('incidents_list_gen', 0)
+    params_str = json.dumps(sorted(query_params.items()), separators=(',', ':'))
+    digest = hashlib.md5(params_str.encode()).hexdigest()[:12]
+    return f'incidents_list:{gen}:{digest}'
+
+
+def invalidate_incidents_list_cache():
+    """
+    Called by _upsert_incident after any write so the next list request
+    hits the DB instead of returning stale data.
+    Uses a generation counter: bumping it makes all existing cached keys
+    unreachable without needing pattern-delete support.
+    """
+    cache.incr('incidents_list_gen', delta=1)  # atomic; auto-creates at 0 then +1
 
 
 class IncidentViewSet(viewsets.ModelViewSet):
@@ -51,6 +75,16 @@ class IncidentViewSet(viewsets.ModelViewSet):
             qs = qs.filter(verified=verified.lower() == 'true')
 
         return qs
+
+    def list(self, request, *args, **kwargs):
+        cache_key = incidents_list_cache_key(dict(request.query_params))
+        cached = cache.get(cache_key)
+        if cached is not None:
+            return Response(json.loads(cached))
+
+        response = super().list(request, *args, **kwargs)
+        cache.set(cache_key, json.dumps(response.data), timeout=INCIDENTS_LIST_CACHE_TTL)
+        return response
 
     @action(detail=True, methods=['post'])
     def verify(self, request, pk=None):
