@@ -422,15 +422,19 @@ export default function VancouverMap({
     const el = containerRef.current
     if (!el) return
 
-    const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent)
+    const isSafariUA = /^((?!chrome|android).)*safari/i.test(navigator.userAgent)
+    // Only restrict pitch/3D on desktop Safari where WebGL context loss under
+    // GPU pressure is a known issue. Mobile/tablet Safari (iOS/iPadOS) handles
+    // WebGL fine and should get the full pitched 3D experience.
+    const isDesktopSafari = isSafariUA && navigator.maxTouchPoints < 1
     const map = new maplibregl.Map({
       container: el,
       style: BASEMAP_STYLES[INITIAL_BASEMAP],
       center: VAN_CENTRE,
       zoom: 11.35,
-      pitch: isSafari ? 0 : VECTOR_BASEMAP_PITCH,
-      bearing: isSafari ? 0 : -28,
-      maxPitch: isSafari ? 0 : 78,
+      pitch: isDesktopSafari ? 0 : VECTOR_BASEMAP_PITCH,
+      bearing: isDesktopSafari ? 0 : -28,
+      maxPitch: isDesktopSafari ? 0 : 78,
       minZoom: 9.2,
       maxZoom: 18,
       maxBounds: [
@@ -526,7 +530,7 @@ export default function VancouverMap({
 
     const onStyleLoad = () => {
       installSkytrainLayer(map)
-      install3dBuildings(map, isSafari ? false : layersRef.current.buildings)
+      install3dBuildings(map, isDesktopSafari ? false : layersRef.current.buildings)
       applyVectorBasemapLook(map, basemapRef.current)
       applyBuildingLook(map, basemapRef.current)
       installLensOverlay(map, lensRef.current, lensDataRef.current)

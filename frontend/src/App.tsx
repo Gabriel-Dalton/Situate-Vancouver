@@ -48,7 +48,8 @@ export default function App() {
   const isMobile = useIsMobile()
   const [sheetOpen, setSheetOpen] = useState(false)
   const [sheetTab, setSheetTab] = useState<'layers' | 'route'>('route')
-  const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent)
+  const isSafariUA = /^((?!chrome|android).)*safari/i.test(navigator.userAgent)
+  const isDesktopSafari = isSafariUA && navigator.maxTouchPoints < 1
   const [safariWarningDismissed, setSafariWarningDismissed] = useState(false)
   const selectedRoute = useMemo(
     () => routeResult?.routes.find((r) => r.index === selectedRouteIndex) ?? routeResult?.routes[0] ?? null,
@@ -128,7 +129,7 @@ export default function App() {
 
   return (
     <div className="insight-shell">
-      {isSafari && !safariWarningDismissed && (
+      {isDesktopSafari && !safariWarningDismissed && (
         <div className="safari-warning" role="alert">
           <span>For the best experience, use Chrome or Firefox — Safari has limited WebGL support.</span>
           <button type="button" onClick={() => setSafariWarningDismissed(true)} aria-label="Dismiss">✕</button>
