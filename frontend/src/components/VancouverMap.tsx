@@ -18,10 +18,10 @@ import { MOBILITY_LENS_META } from '../types/mobilityLens'
 
 import type { AiQueryResponse } from './AiQuery'
 import type { RouteFindResult } from '../services/routeService'
+import type { Incident } from '../services/incidentService'
 import type { NavigationState } from '../hooks/useNavigation'
 import MapBasemapToolbar from './MapBasemapToolbar'
 import MapInsightToolbar from './MapInsightToolbar'
-import { useIncidents } from '../hooks/useIncidents'
 import './VancouverMap.css'
 
 const SEVERITY_COLORS: Record<AiQueryResponse['severity'], string> = {
@@ -252,6 +252,7 @@ type Props = {
   selectedRouteIndex?: number
   navigationState?: NavigationState
   hiddenIncidentTypes?: Set<string>
+  dbIncidents?: Incident[]
 }
 
 function installIncidentLayer(map: maplibregl.Map, inc: AiQueryResponse) {
@@ -336,7 +337,7 @@ function decodePolyline(encoded: string): [number, number][] {
 const ROUTE_COLORS = ['#00d4ff', '#fb923c', '#34d399']
 
 function buildIncidentsGeoJSON(
-  dbIncidents: { lat?: number | null; lng?: number | null; id: number; title: string; location: string; severity: string; incident_type: string; description: string }[],
+  dbIncidents: { lat?: number | null; lng?: number | null; id: string; title: string; location: string; severity: string; incident_type: string; description: string; verified?: boolean; is_user_reported?: boolean }[],
   hidden: Set<string> | undefined,
 ): GeoJSON.FeatureCollection<GeoJSON.Point> {
   return {
@@ -353,6 +354,8 @@ function buildIncidentsGeoJSON(
           severity: inc.severity,
           incident_type: inc.incident_type,
           description: inc.description,
+          verified: inc.verified ?? false,
+          is_user_reported: inc.is_user_reported ?? false,
         },
       })),
   }
@@ -370,6 +373,7 @@ export default function VancouverMap({
   selectedRouteIndex = 0,
   navigationState,
   hiddenIncidentTypes,
+  dbIncidents = [],
 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<maplibregl.Map | null>(null)
@@ -384,9 +388,6 @@ export default function VancouverMap({
   const gpsMarkerRef = useRef<maplibregl.Marker | null>(null)
   const [basemap, setBasemap] = useState<BasemapId>(INITIAL_BASEMAP)
   const [cursorInfo, setCursorInfo] = useState({ lat: VAN_CENTRE[1], lng: VAN_CENTRE[0], zoom: 11.35 })
-
-  // Fetch all active incidents from DB — refresh every 60s
-  const { incidents: dbIncidents } = useIncidents({ status: 'active' })
 
   const updateCursorInfo = useCallback((map: maplibregl.Map, e?: maplibregl.MapMouseEvent) => {
     const z = map.getZoom()
@@ -679,10 +680,15 @@ export default function VancouverMap({
     map.on('click', LAYER_CORE, (e) => {
       const props = e.features?.[0]?.properties
       if (!props) return
+      const verifiedBadge = props.is_user_reported
+        ? props.verified
+          ? `<span class="van-popup__badge van-popup__badge--verified">Verified</span>`
+          : `<span class="van-popup__badge van-popup__badge--unverified">Unverified</span>`
+        : ''
       new maplibregl.Popup({ maxWidth: '300px', className: 'van-popup', offset: 14 })
         .setLngLat(e.lngLat)
         .setHTML(
-          `<div class="van-popup__title">${escapeHtml(props.location)}</div>` +
+          `<div class="van-popup__title">${escapeHtml(props.location)}${verifiedBadge}</div>` +
           `<div class="van-popup__body">${escapeHtml(props.description)}</div>` +
           `<div class="van-popup__body" style="margin-top:4px;opacity:0.7;font-size:0.78em">` +
           `${escapeHtml(props.incident_type)} · Severity: ${escapeHtml(props.severity)}</div>`

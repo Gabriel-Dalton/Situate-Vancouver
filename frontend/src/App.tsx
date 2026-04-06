@@ -12,6 +12,7 @@ import { useLensOverlay } from './hooks/useLensOverlay'
 import { useNavigation } from './hooks/useNavigation'
 import { useIsMobile } from './hooks/useIsMobile'
 import { useOutages } from './hooks/useOutages'
+import { useIncidents } from './hooks/useIncidents'
 import NavigationOverlay from './components/NavigationOverlay'
 import BrandLockup from './components/BrandLockup'
 import SignInHeader from './components/SignInHeader'
@@ -20,6 +21,7 @@ import { AUTH_UI_ENABLED } from './config/authUi'
 import { AiQueryBar, AiResponsePanel } from './components/AiQuery'
 import type { AiQueryResponse } from './components/AiQuery'
 import RouteFindingPanel from './components/RouteFindingPanel'
+import ReportIncidentModal from './components/ReportIncidentModal'
 import type { RouteFindResult } from './services/routeService'
 import './App.css'
 
@@ -39,11 +41,13 @@ export default function App() {
   const [lens, setLens] = useState<MobilityLens>('drive')
   const { data: lensData, loading: lensLoading } = useLensOverlay(lens)
   const { data: outagesData } = useOutages()
+  const { incidents: dbIncidents, lastUpdated: incidentsLastUpdated } = useIncidents({ status: 'active' })
   const [aiResponse, setAiResponse] = useState<AiQueryResponse | null>(null)
   const [aiPanelOpen, setAiPanelOpen] = useState(false)
   const [routeResult, setRouteResult] = useState<RouteFindResult | null>(null)
   const [selectedRouteIndex, setSelectedRouteIndex] = useState(0)
   const [hiddenIncidentTypes, setHiddenIncidentTypes] = useState<Set<string>>(new Set())
+  const [reportModalOpen, setReportModalOpen] = useState(false)
 
   const isMobile = useIsMobile()
   const [sheetOpen, setSheetOpen] = useState(false)
@@ -129,6 +133,7 @@ export default function App() {
 
   return (
     <div className="insight-shell">
+      {reportModalOpen && <ReportIncidentModal onClose={() => setReportModalOpen(false)} />}
       {isDesktopSafari && !safariWarningDismissed && (
         <div className="safari-warning" role="alert">
           <span>For the best experience, use Chrome or Firefox — Safari has limited WebGL support.</span>
@@ -145,12 +150,21 @@ export default function App() {
         </div>
         <AiQueryBar onResponse={handleAiResponse} />
         <div className="insight-shell__header-meta">
-          <div id="situate-lang-mount" className="insight-shell__lang" aria-label="Language" />
-          <span className="insight-shell__pill">Metro · Lower Mainland</span>
-          <span className="insight-shell__clock" aria-live="polite">
-            <LiveClock />
-          </span>
-          {AUTH_UI_ENABLED ? <SignInHeader /> : null}
+          <div className="insight-shell__header-meta-row">
+            <div id="situate-lang-mount" className="insight-shell__lang" aria-label="Language" />
+            <span className="insight-shell__pill">Metro · Lower Mainland</span>
+            <span className="insight-shell__clock" aria-live="polite">
+              <LiveClock />
+            </span>
+            {AUTH_UI_ENABLED ? <SignInHeader /> : null}
+          </div>
+          <button
+            type="button"
+            className="report-incident-header-link"
+            onClick={() => setReportModalOpen(true)}
+          >
+            + Report an incident
+          </button>
         </div>
       </header>
 
@@ -177,6 +191,7 @@ export default function App() {
                 selectedRouteIndex={selectedRouteIndex}
                 navigationState={navState}
                 hiddenIncidentTypes={hiddenIncidentTypes}
+                dbIncidents={dbIncidents}
               />
             </Suspense>
           </div>
@@ -220,6 +235,7 @@ export default function App() {
               routeResult={routeResult}
               selectedRouteIndex={selectedRouteIndex}
               navigationState={navState}
+              dbIncidents={dbIncidents}
             />
           </Suspense>
         </main>
@@ -248,19 +264,25 @@ export default function App() {
                 Switch mode to filter the map context for your journey type.
               </p>
               <LensSelector active={lens} onSelect={setLens} />
-              <p className="insight-panel__hint" style={{ marginTop: '0.5rem', opacity: 0.6 }}>
-                {lensLoading
-                  ? `Loading ${MOBILITY_LENS_META[lens].label.toLowerCase()} overlay…`
-                  : lens === 'drive'
-                    ? 'Drive — traffic flow shown via TomTom layer'
-                    : `${MOBILITY_LENS_META[lens].label} overlay — ${lensData.features.length} features loaded`
-                }
-              </p>
+              {lensLoading && (
+                <p className="insight-panel__hint" style={{ marginTop: '0.5rem', opacity: 0.6 }}>
+                  {`Loading ${MOBILITY_LENS_META[lens].label.toLowerCase()} overlay…`}
+                </p>
+              )}
+              {!lensLoading && lens !== 'drive' && (
+                <p className="insight-panel__hint" style={{ marginTop: '0.5rem', opacity: 0.6 }}>
+                  {`${MOBILITY_LENS_META[lens].label} overlay — ${lensData.features.length} features loaded`}
+                </p>
+              )}
 
             </section>
 
             <section className="insight-panel">
-              <Collapsible title="Live incidents" defaultOpen={true}>
+              <Collapsible
+                title="Live incidents"
+                subtitle={incidentsLastUpdated ? `Updated ${incidentsLastUpdated.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : undefined}
+                defaultOpen={true}
+              >
                 <ul className="traffic-legend__list">
                   {([
                     { type: 'construction',    color: '#fb923c', label: 'Construction' },
@@ -289,6 +311,13 @@ export default function App() {
                     )
                   })}
                 </ul>
+                <button
+                  type="button"
+                  className="report-incident-link"
+                  onClick={() => setReportModalOpen(true)}
+                >
+                  + Report an incident
+                </button>
               </Collapsible>
 
               <Collapsible title="Map layers">
@@ -420,12 +449,15 @@ function LayerToggle({
 }
 
 
-function Collapsible({ title, children, defaultOpen = true }: { title: string; children: React.ReactNode; defaultOpen?: boolean }) {
+function Collapsible({ title, subtitle, children, defaultOpen = true }: { title: string; subtitle?: string; children: React.ReactNode; defaultOpen?: boolean }) {
   const [open, setOpen] = useState(defaultOpen)
   return (
     <div className="collapsible">
       <button type="button" className="collapsible__header" onClick={() => setOpen(o => !o)}>
-        <span>{title}</span>
+        <span className="collapsible__title-group">
+          <span>{title}</span>
+          {subtitle && <span className="collapsible__subtitle">{subtitle}</span>}
+        </span>
         <span className={`collapsible__chevron${open ? ' collapsible__chevron--open' : ''}`}>›</span>
       </button>
       {open && <div className="collapsible__body">{children}</div>}

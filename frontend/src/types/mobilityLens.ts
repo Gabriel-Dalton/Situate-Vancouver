@@ -8,6 +8,6 @@ export const MOBILITY_LENS_META: Record<
 > = {
   cycle: { label: 'Cycling', shortLabel: 'Cycle', color: '#3ddc97' },
   pedestrian: { label: 'Walking', shortLabel: 'Walk', color: '#f5b942' },
-  drive: { label: 'Driving', shortLabel: 'Drive', color: '#ff6b6b' },
+  drive: { label: 'Driving', shortLabel: 'Drive', color: '#00aaef' },
 }
 

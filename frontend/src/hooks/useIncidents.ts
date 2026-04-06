@@ -6,6 +6,7 @@ export function useIncidents(filters: IncidentFilters = {}) {
   const [incidents, setIncidents] = useState<Incident[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
 
   const filtersKey = JSON.stringify(filters)
 
@@ -14,20 +15,26 @@ export function useIncidents(filters: IncidentFilters = {}) {
     queueMicrotask(() => setLoading(true))
     incidentService
       .list(filters)
-      .then(setIncidents)
+      .then(data => { setIncidents(data); setLastUpdated(new Date()) })
       .catch(e => setError(e.message))
       .finally(() => setLoading(false))
 
     // Auto-refresh every 60s to pick up new polled incidents
     const interval = setInterval(() => {
-      incidentService.list(filters).then(setIncidents).catch(e => setError(e.message))
+      incidentService
+        .list(filters)
+        .then(data => { setIncidents(data); setLastUpdated(new Date()) })
+        .catch(e => setError(e.message))
     }, 60_000)
 
     return () => clearInterval(interval)
   }, [filtersKey])
 
   const refresh = () => {
-    incidentService.list(filters).then(setIncidents).catch(e => setError(e.message))
+    incidentService
+      .list(filters)
+      .then(data => { setIncidents(data); setLastUpdated(new Date()) })
+      .catch(e => setError(e.message))
   }
 
   const verify = async (id: string) => {
@@ -40,5 +47,5 @@ export function useIncidents(filters: IncidentFilters = {}) {
     setIncidents(prev => prev.filter(i => i.id !== id))
   }
 
-  return { incidents, loading, error, refresh, verify, remove }
+  return { incidents, loading, error, lastUpdated, refresh, verify, remove }
 }

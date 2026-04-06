@@ -67,10 +67,38 @@
 
 .insight-shell__header-meta {
   display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.35rem;
+  justify-self: end;
+}
+
+.insight-shell__header-meta-row {
+  display: flex;
   align-items: center;
   gap: 0.65rem;
   flex-wrap: wrap;
-  justify-self: end;
+  justify-content: flex-end;
+}
+
+.report-incident-header-link {
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--data-cyan);
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+  opacity: 0.75;
+  transition: opacity 0.15s;
+  white-space: nowrap;
+}
+
+.report-incident-header-link:hover {
+  opacity: 1;
 }
 
 .insight-shell__lang {
@@ -508,6 +536,21 @@
   margin-bottom: 0.5rem;
 }
 
+.collapsible__title-group {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.15rem;
+}
+
+.collapsible__subtitle {
+  font-size: 0.55rem;
+  font-weight: 400;
+  letter-spacing: 0.04em;
+  text-transform: none;
+  opacity: 0.5;
+}
+
 .collapsible__chevron {
   font-size: 1rem;
   line-height: 1;
@@ -589,6 +632,74 @@
 
 .incident-legend-dot:hover {
   transform: scale(1.35);
+}
+
+.report-incident-link {
+  display: inline-block;
+  margin-top: 0.6rem;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--data-cyan);
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  opacity: 0.75;
+  transition: opacity 0.15s;
+}
+
+.report-incident-link:hover {
+  opacity: 1;
+}
+
+.report-incident-modal {
+  max-width: 460px;
+}
+
+.report-incident-modal__row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+
+.report-incident-modal__textarea {
+  resize: vertical;
+  min-height: 4rem;
+  font-family: inherit;
+}
+
+.report-incident-modal__optional {
+  font-weight: 400;
+  opacity: 0.5;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.report-incident-modal__success {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1.75rem 1.1rem 1.5rem;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+.report-incident-modal__success-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 50%;
+  background: color-mix(in srgb, #4ade80 15%, transparent);
+  border: 1px solid color-mix(in srgb, #4ade80 40%, transparent);
+  color: #4ade80;
+  font-size: 1.2rem;
 }
 
 .insight-scope {
