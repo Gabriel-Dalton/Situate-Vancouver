@@ -96,6 +96,21 @@ export default function App() {
     return () => observer.disconnect()
   }, [])
 
+  useEffect(() => {
+    if (!isMobile || !sheetOpen) return
+
+    const onPointerDown = (event: PointerEvent) => {
+      const target = event.target as HTMLElement | null
+      if (!target) return
+      if (target.closest('.mobile-sheet')) return
+      if (target.closest('.mobile-sheet-toggle')) return
+      setSheetOpen(false)
+    }
+
+    document.addEventListener('pointerdown', onPointerDown, true)
+    return () => document.removeEventListener('pointerdown', onPointerDown, true)
+  }, [isMobile, sheetOpen])
+
   const toggleLayer = useCallback((key: keyof InsightLayerState) => {
     setLayers((prev) => ({ ...prev, [key]: !prev[key] }))
   }, [])
@@ -205,14 +220,26 @@ export default function App() {
 
       <div className="insight-shell__body" style={aiPanelOpen ? { display: 'none' } : undefined}>
         {isMobile && !navState.active && (
-          <button
-            type="button"
-            className={`mobile-sheet-toggle${sheetOpen ? ' mobile-sheet-toggle--open' : ''}`}
-            onClick={() => setSheetOpen((o) => !o)}
-            aria-label={sheetOpen ? 'Close panel' : 'Open panel'}
-          >
-            {sheetOpen ? '✕' : '☰'}
-          </button>
+          <>
+            {!sheetOpen && (
+              <button
+                type="button"
+                className="mobile-report-incident-btn"
+                onClick={() => setReportModalOpen(true)}
+                aria-label="Report an incident"
+              >
+                Report
+              </button>
+            )}
+            <button
+              type="button"
+              className={`mobile-sheet-toggle${sheetOpen ? ' mobile-sheet-toggle--open' : ''}`}
+              onClick={() => setSheetOpen((o) => (o ? false : true))}
+              aria-label={sheetOpen ? 'Close panel' : 'Open panel'}
+            >
+              {sheetOpen ? '✕' : '☰'}
+            </button>
+          </>
         )}
 
         <main className="insight-shell__map-wrap">
@@ -244,17 +271,32 @@ export default function App() {
             and a slide-up bottom drawer on mobile */}
         <div className={`mobile-sheet${sheetOpen ? ' mobile-sheet--open' : ''}`}>
           {isMobile && (
-            <div className="mobile-sheet-tabs">
+            <div className="mobile-sheet-tabs-wrap">
               <button
                 type="button"
-                className={`mobile-sheet-tab${sheetTab === 'route' ? ' mobile-sheet-tab--active' : ''}`}
-                onClick={() => setSheetTab('route')}
-              >Route finder</button>
-              <button
-                type="button"
-                className={`mobile-sheet-tab${sheetTab === 'layers' ? ' mobile-sheet-tab--active' : ''}`}
-                onClick={() => setSheetTab('layers')}
-              >Layers</button>
+                className="mobile-sheet-handle"
+                aria-label="Close panel"
+                onClick={() => setSheetOpen(false)}
+              />
+              <div className="mobile-sheet-tabs">
+                <button
+                  type="button"
+                  className="mobile-sheet-report-btn"
+                  onClick={() => setReportModalOpen(true)}
+                >
+                  Report
+                </button>
+                <button
+                  type="button"
+                  className={`mobile-sheet-tab${sheetTab === 'route' ? ' mobile-sheet-tab--active' : ''}`}
+                  onClick={() => setSheetTab('route')}
+                >Route finder</button>
+                <button
+                  type="button"
+                  className={`mobile-sheet-tab${sheetTab === 'layers' ? ' mobile-sheet-tab--active' : ''}`}
+                  onClick={() => setSheetTab('layers')}
+                >Layers</button>
+              </div>
             </div>
           )}
           <aside className="insight-shell__rail insight-shell__rail--left" aria-label="Layers and scope" style={isMobile && sheetTab !== 'layers' ? { display: 'none' } : undefined}>
@@ -311,13 +353,6 @@ export default function App() {
                     )
                   })}
                 </ul>
-                <button
-                  type="button"
-                  className="report-incident-link"
-                  onClick={() => setReportModalOpen(true)}
-                >
-                  + Report an incident
-                </button>
               </Collapsible>
 
               <Collapsible title="Map layers">

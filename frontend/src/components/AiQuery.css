@@ -426,13 +426,18 @@
 
 @media (max-width: 768px) {
   .ai-query-bar {
+    height: 40px;
     max-width: none;
+  }
+
+  .ai-query-bar__input {
+    font-size: 16px;
   }
 }
 
 @media (max-width: 480px) {
   .ai-query-bar {
-    height: 34px;
+    height: 40px;
     flex-basis: 100%;
     order: 10;
     max-width: none;
@@ -443,7 +448,7 @@
   }
 
   .ai-query-bar__input {
-    font-size: 0.78rem;
+    font-size: 16px;
   }
 
   .ai-query-bar__submit {

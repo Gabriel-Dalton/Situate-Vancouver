@@ -131,6 +131,22 @@
   background: rgba(0, 170, 239, 0.15);
 }
 
+@media (max-width: 768px) {
+  .van-map .maplibregl-ctrl-bottom-right {
+    margin-bottom: 5.6rem;
+    margin-right: 0.85rem;
+  }
+
+  .van-map .maplibregl-ctrl-group {
+    border-radius: 8px;
+  }
+
+  .van-map .maplibregl-ctrl button {
+    min-width: 44px;
+    min-height: 44px;
+  }
+}
+
 .van-map .maplibregl-ctrl-attrib {
   background: rgba(0, 15, 36, 0.75) !important;
   color: var(--text-dim) !important;
