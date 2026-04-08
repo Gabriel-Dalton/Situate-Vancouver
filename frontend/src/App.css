@@ -81,6 +81,35 @@
   justify-content: flex-end;
 }
 
+.service-status-lights {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.service-status-light {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  transition: background 0.4s, box-shadow 0.4s;
+}
+
+.service-status-light--ok {
+  background: #4ade80;
+  box-shadow: 0 0 5px rgba(74, 222, 128, 0.6);
+}
+
+.service-status-light--error {
+  background: #f87171;
+  box-shadow: 0 0 5px rgba(248, 113, 113, 0.6);
+}
+
+.service-status-light--checking {
+  background: rgba(148, 163, 184, 0.35);
+  box-shadow: none;
+}
+
 .report-incident-header-link {
   display: inline-flex;
   align-items: center;

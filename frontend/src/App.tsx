@@ -13,6 +13,7 @@ import { useNavigation } from './hooks/useNavigation'
 import { useIsMobile } from './hooks/useIsMobile'
 import { useOutages } from './hooks/useOutages'
 import { useIncidents } from './hooks/useIncidents'
+import { useServiceHealth } from './hooks/useServiceHealth'
 import NavigationOverlay from './components/NavigationOverlay'
 import BrandLockup from './components/BrandLockup'
 import SignInHeader from './components/SignInHeader'
@@ -48,6 +49,7 @@ export default function App() {
   const [selectedRouteIndex, setSelectedRouteIndex] = useState(0)
   const [hiddenIncidentTypes, setHiddenIncidentTypes] = useState<Set<string>>(new Set())
   const [reportModalOpen, setReportModalOpen] = useState(false)
+  const serviceHealth = useServiceHealth()
 
   const isMobile = useIsMobile()
   const [sheetOpen, setSheetOpen] = useState(false)
@@ -171,6 +173,7 @@ export default function App() {
             <span className="insight-shell__clock" aria-live="polite">
               <LiveClock />
             </span>
+            <ServiceStatusLights django={serviceHealth.django} ai={serviceHealth.ai} />
             {AUTH_UI_ENABLED ? <SignInHeader /> : null}
           </div>
           <button
@@ -455,6 +458,27 @@ export default function App() {
         </div>{/* end .mobile-sheet */}
       </div>
     </div>
+  )
+}
+
+function ServiceStatusLights({ django, ai }: { django: string; ai: string }) {
+  const lights = [
+    { key: 'django', label: 'API' },
+    { key: 'ai',     label: 'AI' },
+  ] as const
+  return (
+    <span className="service-status-lights" aria-label="Service status">
+      {lights.map(({ key, label }) => {
+        const status = key === 'django' ? django : ai
+        return (
+          <span
+            key={key}
+            className={`service-status-light service-status-light--${status}`}
+            title={`${label}: ${status === 'checking' ? 'checking…' : status}`}
+          />
+        )
+      })}
+    </span>
   )
 }
 

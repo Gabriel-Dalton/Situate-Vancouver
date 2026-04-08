@@ -9,7 +9,7 @@ PORT ?= 8000
 PYTHON := $(shell if [ -x "$(BACKEND_DIR)/.venv/bin/python" ]; then echo "$(BACKEND_DIR)/.venv/bin/python"; else command -v python3 2>/dev/null || command -v python 2>/dev/null; fi)
 
 .PHONY: dev dev-bg down build logs ps run stop worker beat celery poll install help \
-        ios android cap-sync cap-build
+        ios android cap-sync cap-build deploy
 
 help:
 	@echo "Targets:"
@@ -26,6 +26,8 @@ help:
 	@echo "  make worker       Start Celery worker only"
 	@echo "  make beat         Start Celery Beat scheduler only"
 	@echo "  make poll         Run all polling tasks once right now (no Celery needed)"
+	@echo ""
+	@echo "  make deploy       Deploy to AWS EC2 (set DEPLOY_HOST/DEPLOY_KEY in .env)"
 	@echo ""
 	@echo "  make ios          Build frontend and open in Xcode (requires macOS + Xcode)"
 	@echo "  make android      Build frontend and open in Android Studio"
@@ -88,6 +90,11 @@ stop:
 	@lsof -tiTCP:5173 -sTCP:LISTEN | xargs kill -9 2>/dev/null || true
 	@pkill -f "celery -A config" 2>/dev/null || true
 	@echo "Done."
+
+# ── AWS deploy ────────────────────────────────────────────────────────────
+
+deploy:
+	bash scripts/deploy.sh
 
 # ── Capacitor (iOS / Android) ─────────────────────────────────────────────
 
