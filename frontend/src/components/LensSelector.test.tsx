@@ -11,7 +11,7 @@ describe('LensSelector', () => {
 
   it('marks the active lens and calls onSelect when another lens is chosen', async () => {
     const user = userEvent.setup()
-    const onSelect = vi.fn()
+    const onSelect = jest.fn()
     render(<LensSelector active="cycle" onSelect={onSelect} />)
 
     const walk = screen.getByRole('radio', { name: /walking/i })

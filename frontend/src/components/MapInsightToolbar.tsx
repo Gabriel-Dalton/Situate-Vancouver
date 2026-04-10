@@ -1,12 +1,14 @@
 import type { ReactNode } from 'react'
 import type { InsightLayerKey, InsightLayerState } from '../types/insightLayers'
 
-const ITEMS: { key: InsightLayerKey; label: string }[] = [
+const ITEMS = [
   { key: 'buildings', label: 'Layer: 3D buildings' },
   { key: 'skytrainNodes', label: 'Layer: SkyTrain stations' },
   { key: 'incidentMarker', label: 'Layer: incident marker' },
   { key: 'outages', label: 'Layer: power outages' },
-]
+] as const satisfies readonly { key: InsightLayerKey; label: string }[]
+
+type ToolbarLayerKey = (typeof ITEMS)[number]['key']
 
 const P = 1.75
 const S = 1.35
@@ -112,7 +114,7 @@ function IconIncidentMarker() {
   )
 }
 
-const ICONS: Record<InsightLayerKey, ReactNode> = {
+const ICONS: Record<ToolbarLayerKey, ReactNode> = {
   buildings: <IconBuildings />,
   skytrainNodes: <IconSkytrain />,
   incidentMarker: <IconIncidentMarker />,

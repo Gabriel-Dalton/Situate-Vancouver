@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import type { Incident, IncidentFilters } from '../services/incidentService'
 import { incidentService } from '../services/incidentService'
 
@@ -9,12 +9,13 @@ export function useIncidents(filters: IncidentFilters = {}) {
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
 
   const filtersKey = JSON.stringify(filters)
+  const stableFilters = useMemo(() => JSON.parse(filtersKey) as IncidentFilters, [filtersKey])
 
   useEffect(() => {
     // Reset loading when filters change; fetch runs in microtasks — avoids cascading-render lint on sync setState.
     queueMicrotask(() => setLoading(true))
     incidentService
-      .list(filters)
+      .list(stableFilters)
       .then(data => { setIncidents(data); setLastUpdated(new Date()) })
       .catch(e => setError(e.message))
       .finally(() => setLoading(false))
@@ -22,17 +23,17 @@ export function useIncidents(filters: IncidentFilters = {}) {
     // Auto-refresh every 60s to pick up new polled incidents
     const interval = setInterval(() => {
       incidentService
-        .list(filters)
+        .list(stableFilters)
         .then(data => { setIncidents(data); setLastUpdated(new Date()) })
         .catch(e => setError(e.message))
     }, 60_000)
 
     return () => clearInterval(interval)
-  }, [filtersKey])
+  }, [stableFilters])
 
   const refresh = () => {
     incidentService
-      .list(filters)
+      .list(stableFilters)
       .then(data => { setIncidents(data); setLastUpdated(new Date()) })
       .catch(e => setError(e.message))
   }

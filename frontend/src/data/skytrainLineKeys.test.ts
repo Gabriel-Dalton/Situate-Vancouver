@@ -44,10 +44,11 @@ describe('enrichSkytrainNodes', () => {
 })
 
 describe('SKYTRAIN_LEGEND', () => {
-  it('exposes one entry per distinct line key color', () => {
-    expect(SKYTRAIN_LEGEND).toHaveLength(5)
+  it('exposes one entry per displayed line color', () => {
+    expect(SKYTRAIN_LEGEND).toHaveLength(3)
     const keys = SKYTRAIN_LEGEND.map((e) => e.key)
-    expect(new Set(keys).size).toBe(5)
+    expect(new Set(keys).size).toBe(3)
+    expect(keys).toEqual(['expo', 'millennium', 'canada'])
     for (const { key } of SKYTRAIN_LEGEND) {
       expect(SKYTRAIN_LINE_COLORS[key]).toMatch(/^#[0-9a-f]{6}$/i)
     }

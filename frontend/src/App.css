@@ -409,15 +409,18 @@
 
 /* Sidebar / rail: keep the control compact instead of stretching the full column width */
 .insight-shell__rail .lens-selector {
-  width: fit-content;
+  width: 100%;
   max-width: 100%;
 }
 
 .lens-selector__btn {
   display: flex;
   align-items: center;
+  justify-content: center;
+  flex: 1 1 0;
+  min-width: 0;
   gap: 0.35rem;
-  padding: 0.35rem 0.65rem;
+  padding: 0.35rem 0.45rem;
   margin: 0;
   border: none;
   border-radius: 3px;
@@ -457,9 +460,12 @@
   font-family: var(--font-mono);
   font-size: 0.6rem;
   font-weight: 600;
-  letter-spacing: 0.08em;
+  letter-spacing: 0;
   text-transform: uppercase;
-  line-height: 1;
+  line-height: 1.1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  text-align: center;
 }
 
 .insight-shell__body {
@@ -520,6 +526,8 @@
 
 .insight-shell__rail {
   overflow: auto;
+  overflow-x: hidden;
+  min-width: 0;
   padding: 1rem 1rem 1.25rem;
   border-color: var(--border-subtle);
   border-style: solid;

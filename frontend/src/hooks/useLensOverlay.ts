@@ -13,22 +13,26 @@ export function useLensOverlay(lens: MobilityLens): { data: FeatureCollection; l
 
   useEffect(() => {
     if (lens === 'drive') {
-      setData(EMPTY)
-      setLoading(false)
+      queueMicrotask(() => {
+        setData(EMPTY)
+        setLoading(false)
+      })
       return
     }
 
     const cached = cache.get(lens)
     if (cached) {
-      setData(cached)
-      setLoading(false)
+      queueMicrotask(() => {
+        setData(cached)
+        setLoading(false)
+      })
       return
     }
 
     abortRef.current?.abort()
     const controller = new AbortController()
     abortRef.current = controller
-    setLoading(true)
+    queueMicrotask(() => setLoading(true))
 
     fetch(apiUrl(`/api/lens/${lens}/`), { signal: controller.signal })
       .then((res) => {
