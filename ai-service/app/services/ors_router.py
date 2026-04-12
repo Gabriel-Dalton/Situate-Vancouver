@@ -1,14 +1,16 @@
 """
-Route finding via OSRM (Open Source Routing Machine) public demo server.
-No API key required. Falls back gracefully if the server is unavailable.
+Route finding via OSRM (Open Source Routing Machine).
+OSRM_BASE_URL defaults to the public demo server for local dev.
+Set OSRM_BASE_URL in production to a self-hosted or managed OSRM instance.
 """
 
+import os
 from typing import Any
 
 import httpx
 
-# OSRM public demo server — driving profile
-OSRM_URL = "http://router.project-osrm.org/route/v1/driving/{coords}"
+_osrm_base = os.environ.get("OSRM_BASE_URL", "http://router.project-osrm.org").rstrip("/")
+OSRM_URL = f"{_osrm_base}/route/v1/driving/{{coords}}"
 
 
 def find_routes(
@@ -96,12 +98,15 @@ def find_routes(
                     "lat": location[1],
                 })
 
+        geometry = route.get("geometry")
+        if not geometry:
+            continue  # skip routes OSRM returned without geometry
         routes.append({
             "index": i,
             "summary": _route_label(i, distance_km, duration_min, avoidable),
             "distance_km": distance_km,
             "duration_min": duration_min,
-            "geometry": route.get("geometry"),  # encoded polyline (precision 5)
+            "geometry": geometry,
             "is_recommended": i == 0,
             "steps": steps,
         })

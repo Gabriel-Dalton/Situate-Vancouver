@@ -854,6 +854,192 @@ def poll_usgs_earthquakes(self):
 
 
 # ---------------------------------------------------------------------------
+# CBP Border Wait Times polling
+# ---------------------------------------------------------------------------
+
+# US/Canada crossings relevant to Metro Vancouver commuters.
+# Coordinates are the US-side inspection booth (where waits are measured).
+# port_number comes from the CBP BWT API.
+_CBP_BWT_URL = 'https://bwt.cbp.gov/api/bwtnew'
+
+_CBP_CROSSINGS = {
+    '300402': {
+        'name': 'Peace Arch (Douglas)',
+        'location': 'Peace Arch Border Crossing, Surrey/Blaine',
+        'lat': 49.0019, 'lng': -122.7558,
+    },
+    '300401': {
+        'name': 'Pacific Highway (Truck Crossing)',
+        'location': 'Pacific Highway Border Crossing, Surrey/Blaine',
+        'lat': 49.0027, 'lng': -122.7388,
+    },
+    '300403': {
+        'name': 'Point Roberts',
+        'location': 'Point Roberts Border Crossing, Tsawwassen area',
+        'lat': 48.9993, 'lng': -123.0802,
+    },
+    '300901': {
+        'name': 'Sumas (Abbotsford)',
+        'location': 'Sumas Border Crossing, Abbotsford',
+        'lat': 49.0010, 'lng': -122.2676,
+    },
+}
+
+
+def _cbp_delay_minutes(lanes: dict) -> int | None:
+    """Return passenger vehicle standard lane delay in minutes, or None if N/A."""
+    pv = lanes.get('passenger_vehicle_lanes', {})
+    std = pv.get('standard_lanes', {})
+    raw = std.get('delay_minutes', '')
+    try:
+        return int(raw)
+    except (ValueError, TypeError):
+        return None
+
+
+def _cbp_severity(delay_minutes: int) -> str:
+    if delay_minutes >= 60:
+        return 'high'
+    if delay_minutes >= 20:
+        return 'medium'
+    if delay_minutes >= 5:
+        return 'low'
+    return 'low'
+
+
+@shared_task(bind=True, max_retries=3, default_retry_delay=120)
+def poll_border_wait(self):
+    """
+    Fetch US/Canada border wait times from CBP and upsert into Incident table
+    for Metro Vancouver-area crossings. Runs every 15 minutes.
+    """
+    with _task_lock('lock:poll_border_wait', timeout=840) as acquired:
+        if not acquired:
+            logger.info('poll_border_wait: skipping — another instance is running')
+            return {'skipped': True}
+
+        if cache.get('backoff:poll_border_wait'):
+            logger.info('poll_border_wait: skipping — rate-limit backoff active')
+            return {'skipped': True, 'reason': 'rate_limit_backoff'}
+
+        try:
+            response = httpx.get(_CBP_BWT_URL, timeout=15)
+            if response.status_code == 429:
+                wait = _retry_after(response)
+                logger.warning('poll_border_wait: 429 — backing off %ds', wait)
+                cache.set('backoff:poll_border_wait', '1', timeout=wait)
+                return {'skipped': True, 'reason': '429', 'backoff_seconds': wait}
+            if 400 <= response.status_code < 500:
+                logger.error('poll_border_wait: %s — not retrying', response.status_code)
+                return {'error': f'http_{response.status_code}'}
+            response.raise_for_status()
+            # CBP occasionally returns a UTF-8 BOM; decode defensively
+            raw = response.content.decode('utf-8-sig')
+        except httpx.TimeoutException as exc:
+            logger.warning('poll_border_wait: timeout — %s', exc)
+            raise self.retry(exc=exc, countdown=120)
+        except Exception as exc:
+            logger.error('poll_border_wait: fetch failed — %s', exc)
+            raise self.retry(exc=exc, countdown=120)
+
+        import json as _json
+        try:
+            crossings = _json.loads(raw)
+        except _json.JSONDecodeError as exc:
+            logger.error('poll_border_wait: JSON parse failed — %s', exc)
+            return {'error': 'json_parse_failed'}
+
+        # Index by port_number for O(1) lookup
+        crossing_map = {c.get('port_number', ''): c for c in crossings}
+
+        created_count = updated_count = skipped_count = 0
+
+        for port_number, meta in _CBP_CROSSINGS.items():
+            entry = crossing_map.get(port_number)
+            if not entry:
+                logger.warning('poll_border_wait: port %s not in response', port_number)
+                skipped_count += 1
+                continue
+
+            port_status = entry.get('port_status', 'Open')
+            if port_status.lower() == 'closed':
+                # Mark as resolved if previously active
+                Incident.objects.filter(
+                    source_api=Incident.SourceAPI.CBP,
+                    external_id=f'cbp_{port_number}',
+                    status=Incident.Status.ACTIVE,
+                ).update(status=Incident.Status.RESOLVED)
+                skipped_count += 1
+                continue
+
+            delay = _cbp_delay_minutes(entry)
+            if delay is None:
+                # No data available (Update Pending or N/A)
+                skipped_count += 1
+                continue
+
+            severity = _cbp_severity(delay)
+            nexus_lanes = (
+                entry.get('passenger_vehicle_lanes', {})
+                     .get('NEXUS_SENTRI_lanes', {})
+                     .get('operational_status', '')
+            )
+            nexus_note = ''
+            if nexus_lanes.lower() == 'no delay':
+                nexus_note = ' NEXUS/SENTRI: no delay.'
+
+            if delay == 0:
+                title = f'{meta["name"]} — No border delay'
+                description = (
+                    f'No wait time at {meta["name"]}. Lanes open: '
+                    f'{entry.get("passenger_vehicle_lanes", {}).get("standard_lanes", {}).get("lanes_open", "?")}.'
+                    f'{nexus_note}'
+                )
+            else:
+                title = f'{meta["name"]} — ~{delay} min border wait'
+                lanes_open = (
+                    entry.get('passenger_vehicle_lanes', {})
+                         .get('standard_lanes', {})
+                         .get('lanes_open', '?')
+                )
+                description = (
+                    f'{delay}-minute passenger vehicle wait at {meta["name"]}. '
+                    f'{lanes_open} lane(s) open.{nexus_note}'
+                )
+
+            _, created = _upsert_incident(
+                source_api=Incident.SourceAPI.CBP,
+                external_id=f'cbp_{port_number}',
+                incident_type=Incident.IncidentType.BORDER_WAIT,
+                severity=severity,
+                title=title[:255],
+                description=description,
+                location=meta['location'],
+                lat=meta['lat'],
+                lng=meta['lng'],
+                cause='US Customs and Border Protection processing',
+                impact=f'~{delay} min delay for passenger vehicles crossing into the US',
+                recommended_actions=(
+                    ['Try NEXUS/SENTRI lane if you have a card', 'Check cbp.gov for real-time wait times']
+                    if delay >= 20 else
+                    ['Check cbp.gov for real-time wait times']
+                ),
+                estimated_duration='Updates every ~15 minutes',
+                expires_in_seconds=900,  # 15 min — re-poll refreshes active waits
+            )
+            if created:
+                created_count += 1
+            else:
+                updated_count += 1
+
+        logger.info(
+            'poll_border_wait: %d created, %d updated, %d skipped',
+            created_count, updated_count, skipped_count,
+        )
+        return {'created': created_count, 'updated': updated_count, 'skipped': skipped_count}
+
+
+# ---------------------------------------------------------------------------
 # Expiry / cleanup
 # ---------------------------------------------------------------------------
 

@@ -29,9 +29,9 @@ import './App.css'
 const VancouverMap = lazy(() => import('./components/VancouverMap'))
 
 const DEFAULT_LAYERS: InsightLayerState = {
-  skytrainNodes: true,
-  expoLine: true,
-  millenniumLine: true,
+  skytrainNodes: false,
+  expoLine: false,
+  millenniumLine: false,
   incidentMarker: true,
   buildings: true,
   outages: true,
@@ -163,7 +163,7 @@ export default function App() {
       <header className="insight-shell__header">
         <div className="insight-shell__brand">
           <BrandLockup variant="onDark" href="/" />
-          <p className="insight-shell__subtitle">City-scale insight canvas</p>
+          <p className="insight-shell__subtitle">City-scale insight canvas <span className="beta-badge">Beta</span></p>
         </div>
         <AiQueryBar onResponse={handleAiResponse} />
         <div className="insight-shell__header-meta">
@@ -173,7 +173,7 @@ export default function App() {
             <span className="insight-shell__clock" aria-live="polite">
               <LiveClock />
             </span>
-            <ServiceStatusLights django={serviceHealth.django} ai={serviceHealth.ai} />
+            <ServiceStatusLights django={serviceHealth.django} ai={serviceHealth.ai} data={serviceHealth.data} />
             {AUTH_UI_ENABLED ? <SignInHeader /> : null}
           </div>
           <button
@@ -266,6 +266,7 @@ export default function App() {
               selectedRouteIndex={selectedRouteIndex}
               navigationState={navState}
               dbIncidents={dbIncidents}
+              hiddenIncidentTypes={hiddenIncidentTypes}
             />
           </Suspense>
         </main>
@@ -337,6 +338,7 @@ export default function App() {
                     { type: 'weather',         color: '#a78bfa', label: 'Weather' },
                     { type: 'natural_disaster', color: '#ff6b35', label: 'Wildfire' },
                     { type: 'earthquake',       color: '#e879f9', label: 'Earthquake' },
+                    { type: 'border_wait',      color: '#06b6d4', label: 'Border Wait' },
                   ] as const).map(({ type, color, label }) => {
                     const hidden = hiddenIncidentTypes.has(type)
                     return (
@@ -461,23 +463,21 @@ export default function App() {
   )
 }
 
-function ServiceStatusLights({ django, ai }: { django: string; ai: string }) {
+function ServiceStatusLights({ django, ai, data }: { django: string; ai: string; data: string }) {
   const lights = [
-    { key: 'django', label: 'API' },
-    { key: 'ai',     label: 'AI' },
+    { key: 'django', label: 'API',      status: django },
+    { key: 'ai',     label: 'AI',       status: ai     },
+    { key: 'data',   label: 'Live data', status: data   },
   ] as const
   return (
     <span className="service-status-lights" aria-label="Service status">
-      {lights.map(({ key, label }) => {
-        const status = key === 'django' ? django : ai
-        return (
-          <span
-            key={key}
-            className={`service-status-light service-status-light--${status}`}
-            title={`${label}: ${status === 'checking' ? 'checking…' : status}`}
-          />
-        )
-      })}
+      {lights.map(({ key, label, status }) => (
+        <span
+          key={key}
+          className={`service-status-light service-status-light--${status}`}
+          title={`${label}: ${status === 'checking' ? 'checking…' : status}`}
+        />
+      ))}
     </span>
   )
 }

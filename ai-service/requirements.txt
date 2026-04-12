@@ -7,3 +7,4 @@ httpx>=0.28.0
 gtfs-realtime-bindings
 slowapi
 shapely
+deepeval>=0.21.0

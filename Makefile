@@ -9,7 +9,7 @@ PORT ?= 8000
 PYTHON := $(shell if [ -x "$(BACKEND_DIR)/.venv/bin/python" ]; then echo "$(BACKEND_DIR)/.venv/bin/python"; else command -v python3 2>/dev/null || command -v python 2>/dev/null; fi)
 
 .PHONY: dev dev-bg down build logs ps run stop worker beat celery poll install help \
-        ios android cap-sync cap-build deploy
+        ios android cap-sync cap-build deploy eval eval-mock
 
 help:
 	@echo "Targets:"
@@ -28,6 +28,8 @@ help:
 	@echo "  make poll         Run all polling tasks once right now (no Celery needed)"
 	@echo ""
 	@echo "  make deploy       Deploy to AWS EC2 (set DEPLOY_HOST/DEPLOY_KEY in .env)"
+	@echo "  make eval         Run DeepEval harness against live AI service (needs OPENAI_API_KEY)"
+	@echo "  make eval-mock    Run eval harness with mocked orchestrator (no API keys needed)"
 	@echo ""
 	@echo "  make ios          Build frontend and open in Xcode (requires macOS + Xcode)"
 	@echo "  make android      Build frontend and open in Android Studio"
@@ -78,10 +80,11 @@ beat:
 
 poll:
 	cd backend && python3 manage.py shell -c "\
-from apps.core.tasks import poll_drivebc, poll_vancouver_opendata, poll_surrey; \
+from apps.core.tasks import poll_drivebc, poll_vancouver_opendata, poll_surrey, poll_border_wait; \
 print('Polling DriveBC...'); r1 = poll_drivebc(); print(r1); \
 print('Polling Vancouver Open Data...'); r2 = poll_vancouver_opendata(); print(r2); \
-print('Polling Surrey...'); r3 = poll_surrey(); print(r3)"
+print('Polling Surrey...'); r3 = poll_surrey(); print(r3); \
+print('Polling CBP border waits...'); r4 = poll_border_wait(); print(r4)"
 
 stop:
 	@echo "Stopping all services..."
@@ -90,6 +93,14 @@ stop:
 	@lsof -tiTCP:5173 -sTCP:LISTEN | xargs kill -9 2>/dev/null || true
 	@pkill -f "celery -A config" 2>/dev/null || true
 	@echo "Done."
+
+# ── Evals (DeepEval) ──────────────────────────────────────────────────────
+
+eval:
+	cd ai-service && pip3 install -q deepeval && PYTHONPATH=. deepeval test run tests/evals/test_query_evals.py -v
+
+eval-mock:
+	cd ai-service && pip3 install -q deepeval && PYTHONPATH=. pytest tests/evals/test_query_evals.py --mock-orchestrator -v
 
 # ── AWS deploy ────────────────────────────────────────────────────────────
 

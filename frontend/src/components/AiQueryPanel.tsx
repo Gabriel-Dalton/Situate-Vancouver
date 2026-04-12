@@ -96,8 +96,8 @@ export default function AiQueryPanel() {
         setError('Traffic data temporarily unavailable.')
         return
       }
-      gtag('event', 'ai_query', { query: q, query_type: parsed.query_type, severity: parsed.severity, cache_hit: parsed.cache_hit })
       setResult(parsed)
+      if (typeof gtag !== 'undefined') gtag('event', 'ai_query', { query: q, query_type: parsed.query_type, severity: parsed.severity, cache_hit: parsed.cache_hit })
     } catch {
       setError('Traffic data temporarily unavailable.')
     } finally {

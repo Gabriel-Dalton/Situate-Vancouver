@@ -65,6 +65,21 @@
   color: var(--data-cyan);
 }
 
+.beta-badge {
+  display: inline-block;
+  margin-left: 0.45rem;
+  padding: 0.1rem 0.35rem;
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--data-cyan) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--data-cyan) 30%, transparent);
+  font-size: 0.55rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: var(--data-cyan);
+  opacity: 0.75;
+  vertical-align: middle;
+}
+
 .insight-shell__header-meta {
   display: flex;
   flex-direction: column;

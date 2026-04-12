@@ -15,6 +15,7 @@ class Incident(models.Model):
         NATURAL_DISASTER = 'natural_disaster', 'Natural Disaster'
         EARTHQUAKE = 'earthquake', 'Earthquake'
         POWER_OUTAGE = 'power_outage', 'Power Outage'
+        BORDER_WAIT = 'border_wait', 'Border Wait'
         GENERAL = 'general', 'General'
 
     class Severity(models.TextChoices):
@@ -41,6 +42,7 @@ class Incident(models.Model):
         BCHYDRO = 'bchydro', 'BC Hydro'
         NASAFIRMS = 'nasafirms', 'NASA FIRMS'
         USGS = 'usgs', 'USGS Earthquakes'
+        CBP = 'cbp', 'CBP Border Wait Times'
 
     # Primary key
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)

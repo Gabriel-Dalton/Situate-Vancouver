@@ -43,10 +43,19 @@ export default function RouteFindingPanel({
     setError(null)
     try {
       const res = await findRoute(o, d)
-      gtag('event', 'route_search', { origin: o, destination: d, routes_found: res.routes.length })
       onResult(res, 0)
-    } catch {
-      setError('Traffic data temporarily unavailable.')
+      if (typeof gtag !== 'undefined') gtag('event', 'route_search', { origin: o, destination: d, routes_found: res.routes.length })
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : ''
+      if (msg.includes('geocode') || msg.includes('Could not geocode')) {
+        setError(`Address not found — try a more specific location (e.g. "Rogers Arena, Vancouver").`)
+      } else if (msg.includes('reach route service') || msg.includes('502') || msg.includes('503')) {
+        setError('Routing service is temporarily unavailable. Please try again shortly.')
+      } else if (msg.includes('timed out') || msg.includes('timeout')) {
+        setError('Request timed out — please try again.')
+      } else {
+        setError(msg || 'Routing is temporarily unavailable. Please try again.')
+      }
     } finally {
       setLoading(false)
     }

@@ -306,7 +306,8 @@ function installIncidentLayer(map: maplibregl.Map, inc: AiQueryResponse) {
 }
 
 /** Decode a Google-format encoded polyline (precision 5) to [lng, lat] pairs for GeoJSON. */
-function decodePolyline(encoded: string): [number, number][] {
+function decodePolyline(encoded: string | null | undefined): [number, number][] {
+  if (!encoded) return []
   const coords: [number, number][] = []
   let index = 0
   let lat = 0
@@ -454,7 +455,7 @@ export default function VancouverMap({
     window.addEventListener('resize', resize)
 
     const onMapClick = (e: maplibregl.MapMouseEvent) => {
-      gtag('event', 'map_tap', { lat: e.lngLat.lat.toFixed(4), lng: e.lngLat.lng.toFixed(4), zoom: Math.round(map.getZoom()) })
+      if (typeof gtag !== 'undefined') gtag('event', 'map_tap', { lat: e.lngLat.lat.toFixed(4), lng: e.lngLat.lng.toFixed(4), zoom: Math.round(map.getZoom()) })
       const feats = map.queryRenderedFeatures(e.point, { layers: [...NODE_LAYERS] })
       const f = feats[0]
       if (!f?.geometry || f.geometry.type !== 'Point') return
@@ -553,6 +554,11 @@ export default function VancouverMap({
           type: 'raster',
           source: 'tomtom-traffic',
           paint: { 'raster-opacity': 0.6, 'raster-hue-rotate': 45, 'raster-saturation': 0.6 },
+        })
+        // Suppress tile load errors from console (e.g. key domain restrictions)
+        map.on('error', (e) => {
+          if ((e.error as { url?: string })?.url?.includes('api.tomtom.com')) return
+          console.error(e.error)
         })
       }
 
@@ -654,6 +660,7 @@ export default function VancouverMap({
       'emergency',       '#ff3b3b',
       'natural_disaster','#ff6b35',  // orange — wildfire (NASA FIRMS)
       'earthquake',      '#e879f9',  // fuchsia — seismic (USGS)
+      'border_wait',     '#06b6d4',  // cyan — US/Canada border crossings
       '#94a3b8',
     ]
 
@@ -775,8 +782,8 @@ export default function VancouverMap({
     const map = mapRef.current
     if (!map || !styleReadyRef.current) return
 
-    // Remove previous route layers/sources
-    for (let i = 0; i < 3; i++) {
+    // Remove previous route layers/sources (up to 5 in case count varies between searches)
+    for (let i = 0; i < 5; i++) {
       if (map.getLayer(`route-line-${i}`)) map.removeLayer(`route-line-${i}`)
       if (map.getSource(`route-${i}`)) map.removeSource(`route-${i}`)
     }
@@ -786,12 +793,13 @@ export default function VancouverMap({
     if (!routeResult || routeResult.routes.length === 0) return
 
     // Add each route as a line, selected route on top and brighter
-    routeResult.routes.forEach((route, i) => {
+    routeResult.routes.forEach((route) => {
       const coords = decodePolyline(route.geometry)
-      const isSelected = i === selectedRouteIndex
-      const color = ROUTE_COLORS[i % ROUTE_COLORS.length]
+      if (coords.length === 0) return  // skip routes with missing geometry
+      const isSelected = route.index === selectedRouteIndex
+      const color = ROUTE_COLORS[route.index % ROUTE_COLORS.length]
 
-      map.addSource(`route-${i}`, {
+      map.addSource(`route-${route.index}`, {
         type: 'geojson',
         data: {
           type: 'Feature',
@@ -800,9 +808,9 @@ export default function VancouverMap({
         },
       })
       map.addLayer({
-        id: `route-line-${i}`,
+        id: `route-line-${route.index}`,
         type: 'line',
-        source: `route-${i}`,
+        source: `route-${route.index}`,
         layout: { 'line-join': 'round', 'line-cap': 'round' },
         paint: {
           'line-color': color,
@@ -849,14 +857,17 @@ export default function VancouverMap({
       },
     })
 
-    // Fit map to the selected route
-    const selectedCoords = decodePolyline(routeResult.routes[selectedRouteIndex]?.geometry ?? routeResult.routes[0].geometry)
-    const lngs = selectedCoords.map(([lng]) => lng)
-    const lats = selectedCoords.map(([, lat]) => lat)
-    map.fitBounds(
-      [[Math.min(...lngs), Math.min(...lats)], [Math.max(...lngs), Math.max(...lats)]],
-      { padding: 80, duration: 900 },
-    )
+    // Fit map to the selected route — guard against empty/missing geometry
+    const selectedRoute = routeResult.routes.find(r => r.index === selectedRouteIndex) ?? routeResult.routes[0]
+    const selectedCoords = decodePolyline(selectedRoute?.geometry)
+    if (selectedCoords.length > 0) {
+      const lngs = selectedCoords.map(([lng]) => lng)
+      const lats = selectedCoords.map(([, lat]) => lat)
+      map.fitBounds(
+        [[Math.min(...lngs), Math.min(...lats)], [Math.max(...lngs), Math.max(...lats)]],
+        { padding: 80, duration: 900 },
+      )
+    }
   }, [routeResult, selectedRouteIndex])
 
   useEffect(() => {
