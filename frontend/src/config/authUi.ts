@@ -1,5 +1,5 @@
 /**
- * Header auth UI (sign-in / sign-up modal) stays implemented but hidden until the auth API exists.
- * Set `VITE_ENABLE_AUTH_UI=true` in `.env.development.local` (or env) to preview it locally.
+ * Header auth UI — enabled by default now that the auth API exists.
+ * Set VITE_ENABLE_AUTH_UI=false to hide it (e.g. for screenshots).
  */
-export const AUTH_UI_ENABLED = import.meta.env.VITE_ENABLE_AUTH_UI === 'true'
+export const AUTH_UI_ENABLED = import.meta.env.VITE_ENABLE_AUTH_UI !== 'false'

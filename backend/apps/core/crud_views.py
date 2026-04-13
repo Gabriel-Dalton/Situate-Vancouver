@@ -86,6 +86,11 @@ class IncidentViewSet(viewsets.ModelViewSet):
         cache.set(cache_key, json.dumps(response.data), timeout=INCIDENTS_LIST_CACHE_TTL)
         return response
 
+    def perform_create(self, serializer):
+        """Link the incident to the authenticated user if logged in."""
+        user = self.request.user if self.request.user.is_authenticated else None
+        serializer.save(reported_by=user)
+
     @action(detail=True, methods=['post'])
     def verify(self, request, pk=None):
         """Mark a user-reported incident as verified."""
