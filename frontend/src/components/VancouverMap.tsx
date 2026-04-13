@@ -33,7 +33,28 @@ const SEVERITY_COLORS: Record<AiQueryResponse['severity'], string> = {
 
 export type { InsightLayerState } from '../types/insightLayers'
 
-const NODE_LAYERS = ['skytrain-nodes-core'] as const
+/** Core + glow: querying both improves tap hit area on touch devices. */
+const NODE_QUERY_LAYERS = ['skytrain-nodes-core', 'skytrain-nodes-glow'] as const
+
+function pickSkytrainFeatureAtPoint(
+  map: maplibregl.Map,
+  point: maplibregl.PointLike,
+): maplibregl.MapGeoJSONFeature | undefined {
+  const p = maplibregl.Point.convert(point)
+  const coarse =
+    typeof navigator !== 'undefined' &&
+    (navigator.maxTouchPoints > 0 ||
+      (typeof window.matchMedia === 'function' &&
+        window.matchMedia('(pointer: coarse)').matches))
+  const pad = coarse ? 26 : 12
+  const bbox: [maplibregl.PointLike, maplibregl.PointLike] = [
+    [p.x - pad, p.y - pad],
+    [p.x + pad, p.y + pad],
+  ]
+  const hits = map.queryRenderedFeatures(bbox, { layers: [...NODE_QUERY_LAYERS] })
+  const core = hits.find((h) => h.layer?.id === 'skytrain-nodes-core')
+  return core ?? hits[0]
+}
 
 const INITIAL_BASEMAP: BasemapId = 'dark'
 const VAN_CENTRE: [number, number] = [-123.1207, 49.2827]
@@ -456,15 +477,15 @@ export default function VancouverMap({
 
     const onMapClick = (e: maplibregl.MapMouseEvent) => {
       if (typeof gtag !== 'undefined') gtag('event', 'map_tap', { lat: e.lngLat.lat.toFixed(4), lng: e.lngLat.lng.toFixed(4), zoom: Math.round(map.getZoom()) })
-      const feats = map.queryRenderedFeatures(e.point, { layers: [...NODE_LAYERS] })
-      const f = feats[0]
+      const f = pickSkytrainFeatureAtPoint(map, e.point)
       if (!f?.geometry || f.geometry.type !== 'Point') return
       const coords = f.geometry.coordinates.slice() as [number, number]
       const name = String(f.properties?.name ?? 'Node')
       const lensText = String(f.properties?.lens ?? '')
       const lineKey = String(f.properties?.lineKey ?? '')
-      const isSkytrainNode = f.layer?.id === 'skytrain-nodes-core'
-      const isStrategicNode = f.layer?.id === 'strategic-nodes-core'
+      const layerId = f.layer?.id ?? ''
+      const isSkytrainNode = layerId === 'skytrain-nodes-core' || layerId === 'skytrain-nodes-glow'
+      const isStrategicNode = layerId === 'strategic-nodes-core'
       const lineColor = (lineKey && SKYTRAIN_LINE_COLORS[lineKey as keyof typeof SKYTRAIN_LINE_COLORS]) || ''
       const accentColor = isSkytrainNode ? lineColor : isStrategicNode ? '#00aaef' : ''
 
@@ -480,7 +501,13 @@ export default function VancouverMap({
         easing: (t) => 1 - Math.pow(1 - t, 3),
       })
 
-      map.once('moveend', () => {
+      let popupShown = false
+      const fallbackTimerRef: { id?: number } = {}
+      const openStationPopup = () => {
+        if (popupShown) return
+        popupShown = true
+        if (fallbackTimerRef.id !== undefined) window.clearTimeout(fallbackTimerRef.id)
+
         const accentBar = accentColor
           ? `<div class="van-popup__accent" style="background:${accentColor}"></div>`
           : ''
@@ -518,12 +545,15 @@ export default function VancouverMap({
             }
           })
         }
-      })
+      }
+
+      map.once('moveend', openStationPopup)
+      fallbackTimerRef.id = window.setTimeout(openStationPopup, 1000)
     }
 
     const onMapMouseMove = (e: maplibregl.MapMouseEvent) => {
-      const feats = map.queryRenderedFeatures(e.point, { layers: [...NODE_LAYERS] })
-      map.getCanvas().style.cursor = feats.length ? 'pointer' : ''
+      const f = pickSkytrainFeatureAtPoint(map, e.point)
+      map.getCanvas().style.cursor = f ? 'pointer' : ''
       updateCursorInfo(map, e)
     }
 

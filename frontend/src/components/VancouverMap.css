@@ -166,6 +166,11 @@
   color: var(--data-cyan) !important;
 }
 
+/* Above floating toolbars (z-index 2) so station popups stay tappable on mobile. */
+.maplibregl-popup.van-popup {
+  z-index: 12;
+}
+
 .maplibregl-popup.van-popup .maplibregl-popup-content {
   background: rgba(0, 27, 61, 0.95);
   border: 1px solid var(--border-strong);

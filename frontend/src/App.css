@@ -56,6 +56,20 @@
   flex-shrink: 0;
 }
 
+/* Lockup + status lights stay on one row so all three dots remain visible on narrow Android headers. */
+.insight-shell__brand-row {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  flex-wrap: nowrap;
+  min-width: 0;
+  width: 100%;
+}
+
+.insight-shell__brand-row .service-status-lights {
+  flex-shrink: 0;
+}
+
 .insight-shell__subtitle {
   margin: 0;
   font-size: 0.72rem;
@@ -97,15 +111,17 @@
 }
 
 .service-status-lights {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 5px;
+  flex-shrink: 0;
 }
 
 .service-status-light {
   display: inline-block;
-  width: 6px;
-  height: 6px;
+  flex-shrink: 0;
+  width: 7px;
+  height: 7px;
   border-radius: 50%;
   transition: background 0.4s, box-shadow 0.4s;
 }
@@ -2311,12 +2327,24 @@
   .ai-split-view {
     display: flex;
     flex-direction: column;
-    height: 100%;
+    flex: 1;
+    min-height: 0;
+    max-height: 100%;
+    overflow: hidden;
   }
 
   .ai-split-view__map {
-    flex: 1;
+    flex: 1 1 32vh;
+    min-height: 150px;
+    max-height: 44vh;
+  }
+
+  .ai-split-view .ai-response-panel {
+    flex: 1 1 auto;
     min-height: 0;
+    max-height: min(58vh, calc(100dvh - 200px));
+    border-left: none;
+    border-top: 1px solid var(--border-subtle);
   }
 
 }

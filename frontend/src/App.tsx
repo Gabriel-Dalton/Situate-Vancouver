@@ -162,7 +162,14 @@ export default function App() {
       )}
       <header className="insight-shell__header">
         <div className="insight-shell__brand">
-          <BrandLockup variant="onDark" href="/" />
+          <div className="insight-shell__brand-row">
+            <BrandLockup variant="onDark" href="/" />
+            <ServiceStatusLights
+              django={serviceHealth.django}
+              ai={serviceHealth.ai}
+              openData={serviceHealth.openData}
+            />
+          </div>
           <p className="insight-shell__subtitle">City-scale insight canvas <span className="beta-badge">Beta</span></p>
         </div>
         <AiQueryBar onResponse={handleAiResponse} />
@@ -173,7 +180,6 @@ export default function App() {
             <span className="insight-shell__clock" aria-live="polite">
               <LiveClock />
             </span>
-            <ServiceStatusLights django={serviceHealth.django} ai={serviceHealth.ai} data={serviceHealth.data} />
             {AUTH_UI_ENABLED ? <SignInHeader /> : null}
           </div>
           <button
@@ -463,11 +469,19 @@ export default function App() {
   )
 }
 
-function ServiceStatusLights({ django, ai, data }: { django: string; ai: string; data: string }) {
+function ServiceStatusLights({
+  django,
+  ai,
+  openData,
+}: {
+  django: string
+  ai: string
+  openData: string
+}) {
   const lights = [
-    { key: 'django', label: 'API',      status: django },
-    { key: 'ai',     label: 'AI',       status: ai     },
-    { key: 'data',   label: 'Live data', status: data   },
+    { key: 'django', label: 'App API', status: django },
+    { key: 'ai', label: 'AI service', status: ai },
+    { key: 'openData', label: 'Open data API', status: openData },
   ] as const
   return (
     <span className="service-status-lights" aria-label="Service status">

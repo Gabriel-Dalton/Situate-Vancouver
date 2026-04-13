@@ -433,6 +433,20 @@
   .ai-query-bar__input {
     font-size: 16px;
   }
+
+  .ai-response-panel__body {
+    padding: 0.75rem 0.85rem calc(0.85rem + env(safe-area-inset-bottom, 0px));
+    gap: 0.65rem;
+  }
+
+  .ai-section {
+    padding: 0.5rem 0.62rem;
+  }
+
+  .ai-chat__user-query,
+  .ai-chat__verdict {
+    font-size: 0.84rem;
+  }
 }
 
 @media (max-width: 480px) {
