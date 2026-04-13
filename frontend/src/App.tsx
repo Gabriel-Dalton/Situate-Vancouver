@@ -478,18 +478,33 @@ function ServiceStatusLights({
   ai: string
   openData: string
 }) {
+  const statusLabel = (status: string) =>
+    status === 'ok' ? 'Online' : status === 'error' ? 'Offline' : 'Checking…'
+
   const lights = [
-    { key: 'django', label: 'App API', status: django },
-    { key: 'ai', label: 'AI service', status: ai },
-    { key: 'openData', label: 'Open data API', status: openData },
+    {
+      key: 'django',
+      status: django,
+      title: `Backend API — handles incidents, auth, and data storage\nStatus: ${statusLabel(django)}`,
+    },
+    {
+      key: 'ai',
+      status: ai,
+      title: `AI service — powers natural-language queries and route intelligence\nStatus: ${statusLabel(ai)}`,
+    },
+    {
+      key: 'openData',
+      status: openData,
+      title: `Live data pipeline — Vancouver Open Data, DriveBC, BC Hydro, and border feeds\nStatus: ${statusLabel(openData)}`,
+    },
   ] as const
   return (
     <span className="service-status-lights" aria-label="Service status">
-      {lights.map(({ key, label, status }) => (
+      {lights.map(({ key, status, title }) => (
         <span
           key={key}
           className={`service-status-light service-status-light--${status}`}
-          title={`${label}: ${status === 'checking' ? 'checking…' : status}`}
+          title={title}
         />
       ))}
     </span>

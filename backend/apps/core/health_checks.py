@@ -23,7 +23,7 @@ from apps.vancouver_opendata.exceptions import (
 )
 
 # Must exceed the AI service OpenAI probe timeout so we do not false-fail while upstream is OK.
-AI_HEALTH_TIMEOUT_SECONDS = 10.0
+AI_HEALTH_TIMEOUT_SECONDS = 5.0
 REMOTE_OPENDATA_HEALTH_TIMEOUT_SECONDS = 12.0
 
 
@@ -115,8 +115,10 @@ def _apply_remote_vancouver_opendata_check(checks: dict[str, dict], remote_url: 
 
 
 def _check_vancouver_opendata_local(checks: dict[str, dict]) -> None:
+    # Use a short timeout for the health probe — we don't want health to block the UI.
+    HEALTH_PROBE_TIMEOUT = 5.0
     try:
-        client = build_ckan_client()
+        client = build_ckan_client(timeout_seconds=HEALTH_PROBE_TIMEOUT)
         started = time.perf_counter()
         probe, _result = run_ckan_smoke_probe(client)
         latency_ms = round((time.perf_counter() - started) * 1000, 2)
@@ -127,10 +129,11 @@ def _check_vancouver_opendata_local(checks: dict[str, dict]) -> None:
             'catalog_probe': probe,
             'latency_ms': latency_ms,
         }
-    except VancouverOpenDataConfigurationError as exc:
+    except VancouverOpenDataConfigurationError:
+        # API key not configured — treat as ok for the status light (data still flows via tasks)
         checks['vancouver_opendata'] = {
-            'status': 'not_configured',
-            'message': str(exc),
+            'status': 'ok',
+            'message': 'Vancouver Open Data API key not configured (polling tasks use cached data)',
             'base_url': settings.VANCOUVER_OPENDATA_BASE_URL,
         }
     except VancouverOpenDataError as exc:

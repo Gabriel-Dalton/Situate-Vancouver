@@ -137,8 +137,8 @@
 }
 
 .service-status-light--checking {
-  background: rgba(148, 163, 184, 0.35);
-  box-shadow: none;
+  background: #facc15;
+  box-shadow: 0 0 5px rgba(250, 204, 21, 0.5);
 }
 
 .report-incident-header-link {
