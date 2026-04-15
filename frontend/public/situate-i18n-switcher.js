@@ -95,7 +95,7 @@
   var FI_MAP = {
     af: 'za', sq: 'al', am: 'et', ar: 'sa', hy: 'am', az: 'az', eu: 'es-pv',
     be: 'by', bn: 'bd', bs: 'ba', bg: 'bg', ca: 'es-ct', 'zh-CN': 'cn', 'zh-TW': 'tw',
-    hr: 'hr', cs: 'cz', da: 'dk', nl: 'nl', en: 'gb', 'en-CA': 'ca', et: 'ee', fi: 'fi', fr: 'fr',
+    hr: 'hr', cs: 'cz', da: 'dk', nl: 'nl', en: 'ca', 'en-CA': 'ca', et: 'ee', fi: 'fi', fr: 'fr',
     gl: 'es-ga', ka: 'ge', de: 'de', el: 'gr', gu: 'in', ht: 'ht', ha: 'ng', he: 'il',
     hi: 'in', hu: 'hu', is: 'is', ig: 'ng', id: 'id', ga: 'ie', it: 'it', ja: 'jp',
     kn: 'in', kk: 'kz', km: 'kh', ko: 'kr', lo: 'la', lv: 'lv', lt: 'lt', lb: 'lu',
