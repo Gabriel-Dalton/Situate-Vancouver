@@ -14,7 +14,7 @@ export const authTokens = {
   setAccess: (token: string) => { _accessToken = token },
   clearAccess: () => { _accessToken = null },
   // Called on register/login — backend sets the refresh cookie, we store the access token
-  set: (access: string, _refresh?: string) => { _accessToken = access },
+  set: (access: string) => { _accessToken = access },
   clear: () => { _accessToken = null },
 }
 

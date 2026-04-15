@@ -18,6 +18,7 @@ import NavigationOverlay from './components/NavigationOverlay'
 import BrandLockup from './components/BrandLockup'
 import SignInHeader from './components/SignInHeader'
 import { AUTH_UI_ENABLED } from './config/authUi'
+import { USER_EMAIL_KEY } from './config/authSession'
 
 import { AiQueryBar, AiResponsePanel } from './components/AiQuery'
 import type { AiQueryResponse } from './components/AiQuery'
@@ -57,6 +58,7 @@ export default function App() {
   const isSafariUA = /^((?!chrome|android).)*safari/i.test(navigator.userAgent)
   const isDesktopSafari = isSafariUA && navigator.maxTouchPoints < 1
   const [safariWarningDismissed, setSafariWarningDismissed] = useState(false)
+  const [authEmail, setAuthEmail] = useState<string | null>(() => localStorage.getItem(USER_EMAIL_KEY))
   const selectedRoute = useMemo(
     () => routeResult?.routes.find((r) => r.index === selectedRouteIndex) ?? routeResult?.routes[0] ?? null,
     [routeResult, selectedRouteIndex],
@@ -180,7 +182,7 @@ export default function App() {
             <span className="insight-shell__clock" aria-live="polite">
               <LiveClock />
             </span>
-            {AUTH_UI_ENABLED ? <SignInHeader /> : null}
+            {AUTH_UI_ENABLED ? <SignInHeader onAuthEmailChange={setAuthEmail} /> : null}
           </div>
           <button
             type="button"
@@ -461,6 +463,7 @@ export default function App() {
               onStartNavigation={navStart}
               onStopNavigation={navStop}
               navigationActive={navState.active}
+              isSignedIn={Boolean(authEmail)}
             />
           </aside>
         </div>{/* end .mobile-sheet */}

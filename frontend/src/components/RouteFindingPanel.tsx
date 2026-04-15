@@ -1,6 +1,7 @@
 import { useCallback, useState } from 'react'
 import { findRoute } from '../services/routeService'
 import type { RouteFindResult, RouteOption } from '../services/routeService'
+import { useRoutes } from '../hooks/useRoutes'
 
 declare function gtag(...args: unknown[]): void
 
@@ -13,6 +14,7 @@ interface Props {
   onStartNavigation?: () => void
   onStopNavigation?: () => void
   navigationActive?: boolean
+  isSignedIn?: boolean
 }
 
 function formatDistance(m: number): string {
@@ -29,11 +31,27 @@ export default function RouteFindingPanel({
   onStartNavigation,
   onStopNavigation,
   navigationActive = false,
+  isSignedIn = false,
 }: Props) {
   const [origin, setOrigin] = useState('')
   const [destination, setDestination] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [saveError, setSaveError] = useState<string | null>(null)
+  const [saveLoading, setSaveLoading] = useState(false)
+  const [routeName, setRouteName] = useState('')
+  const [departureTime, setDepartureTime] = useState('08:30')
+  const [saveSuccess, setSaveSuccess] = useState<string | null>(null)
+  const [editingRouteId, setEditingRouteId] = useState<string | null>(null)
+  const [editingRouteName, setEditingRouteName] = useState('')
+  const {
+    routes: savedRoutes,
+    loading: savedRoutesLoading,
+    error: savedRoutesError,
+    create: createRoute,
+    update: updateRoute,
+    remove: removeRoute,
+  } = useRoutes(isSignedIn)
 
   const submit = useCallback(async () => {
     const o = origin.trim()
@@ -70,6 +88,36 @@ export default function RouteFindingPanel({
 
   const selectedRoute: RouteOption | null =
     result?.routes.find((r) => r.index === selectedRouteIndex) ?? result?.routes[0] ?? null
+
+  const saveCurrentRoute = useCallback(async () => {
+    if (!isSignedIn || !result) return
+    const resolvedName =
+      routeName.trim() ||
+      `${origin.trim() || result.routes[0]?.summary || 'Route'} to ${destination.trim() || 'Destination'}`
+    setSaveLoading(true)
+    setSaveError(null)
+    setSaveSuccess(null)
+    try {
+      await createRoute({
+        name: resolvedName.slice(0, 100),
+        origin_label: origin.trim(),
+        origin_lat: result.origin_lat,
+        origin_lng: result.origin_lng,
+        destination_label: destination.trim(),
+        destination_lat: result.dest_lat,
+        destination_lng: result.dest_lng,
+        departure_time: departureTime,
+        active_days: ['mon', 'tue', 'wed', 'thu', 'fri'],
+        is_active: true,
+      })
+      setSaveSuccess('Route saved to your account.')
+      setRouteName('')
+    } catch (err) {
+      setSaveError(err instanceof Error ? err.message : 'Could not save route right now.')
+    } finally {
+      setSaveLoading(false)
+    }
+  }, [createRoute, departureTime, destination, isSignedIn, origin, result, routeName])
 
   return (
     <section className="insight-panel route-panel" aria-label="Route finder">
@@ -125,6 +173,40 @@ export default function RouteFindingPanel({
 
       {result && result.routes.length > 0 && (
         <>
+          {isSignedIn && (
+            <div className="route-panel__save-box">
+              <h3 className="route-panel__save-heading">Save this route</h3>
+              <label className="route-panel__label" htmlFor="route-save-name">Route name</label>
+              <input
+                id="route-save-name"
+                className="route-panel__input"
+                type="text"
+                value={routeName}
+                placeholder="e.g. Morning commute"
+                onChange={(e) => setRouteName(e.target.value)}
+                maxLength={100}
+              />
+              <label className="route-panel__label" htmlFor="route-save-time">Departure time</label>
+              <input
+                id="route-save-time"
+                className="route-panel__input"
+                type="time"
+                value={departureTime}
+                onChange={(e) => setDepartureTime(e.target.value)}
+              />
+              <button
+                type="button"
+                className="route-panel__submit"
+                onClick={() => void saveCurrentRoute()}
+                disabled={saveLoading}
+              >
+                {saveLoading ? 'Saving…' : 'Save route'}
+              </button>
+              {saveError && <p className="route-panel__error" role="alert">{saveError}</p>}
+              {saveSuccess && <p className="route-panel__success">{saveSuccess}</p>}
+            </div>
+          )}
+
           {result.incidents_avoided.length > 0 && (
             <div className="route-panel__avoided">
               {result.incidents_avoided.length} active incident{result.incidents_avoided.length > 1 ? 's' : ''} near this route
@@ -181,6 +263,97 @@ export default function RouteFindingPanel({
 
       {result && result.routes.length === 0 && (
         <p className="route-panel__empty">No routes found for these addresses.</p>
+      )}
+
+      {isSignedIn && (
+        <section className="route-panel__saved-routes">
+          <h3 className="route-panel__directions-heading">My saved routes</h3>
+          {savedRoutesLoading && <p className="route-panel__empty">Loading your routes…</p>}
+          {savedRoutesError && <p className="route-panel__error">{savedRoutesError}</p>}
+          {!savedRoutesLoading && savedRoutes.length === 0 && (
+            <p className="route-panel__empty">
+              Start onboarding: find a route above, then save it to build your personalized commute feed.
+            </p>
+          )}
+          {savedRoutes.length > 0 && (
+            <ul className="route-panel__saved-list" role="list">
+              {savedRoutes.map((savedRoute) => (
+                <li key={savedRoute.id} className="route-panel__saved-item">
+                  <div className="route-panel__saved-main">
+                    {editingRouteId === savedRoute.id ? (
+                      <input
+                        className="route-panel__input"
+                        type="text"
+                        value={editingRouteName}
+                        onChange={(e) => setEditingRouteName(e.target.value)}
+                        maxLength={100}
+                      />
+                    ) : (
+                      <p className="route-panel__saved-name">{savedRoute.name}</p>
+                    )}
+                    <p className="route-panel__saved-meta">
+                      {savedRoute.origin_label} to {savedRoute.destination_label} at {savedRoute.departure_time.slice(0, 5)}
+                    </p>
+                  </div>
+                  <div className="route-panel__saved-actions">
+                    {editingRouteId === savedRoute.id ? (
+                      <>
+                        <button
+                          type="button"
+                          className="route-panel__secondary-btn"
+                          onClick={() => {
+                            void updateRoute(savedRoute.id, { name: editingRouteName.trim() || savedRoute.name })
+                            setEditingRouteId(null)
+                            setEditingRouteName('')
+                          }}
+                        >
+                          Save
+                        </button>
+                        <button
+                          type="button"
+                          className="route-panel__secondary-btn"
+                          onClick={() => {
+                            setEditingRouteId(null)
+                            setEditingRouteName('')
+                          }}
+                        >
+                          Cancel
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <button
+                          type="button"
+                          className="route-panel__secondary-btn"
+                          onClick={() => {
+                            setEditingRouteId(savedRoute.id)
+                            setEditingRouteName(savedRoute.name)
+                          }}
+                        >
+                          Rename
+                        </button>
+                        <button
+                          type="button"
+                          className="route-panel__secondary-btn"
+                          onClick={() => void updateRoute(savedRoute.id, { is_active: !savedRoute.is_active })}
+                        >
+                          {savedRoute.is_active ? 'Pause' : 'Activate'}
+                        </button>
+                        <button
+                          type="button"
+                          className="route-panel__secondary-btn route-panel__secondary-btn--danger"
+                          onClick={() => void removeRoute(savedRoute.id)}
+                        >
+                          Delete
+                        </button>
+                      </>
+                    )}
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
       )}
     </section>
   )
