@@ -1,7 +1,7 @@
-import { type FormEvent, useCallback, useEffect, useId, useRef, useState } from 'react'
+import { useCallback, useEffect, useId, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { API_BASE } from '../lib/api'
-import { authTokens } from '../services/api'
+import { authTokens, refreshAccessToken } from '../services/api'
 
 const BASE = `${API_BASE}/api`
 const USER_EMAIL_KEY = 'situate_user_email'
@@ -43,6 +43,19 @@ export default function SignInHeader() {
   )
   const titleId = useId()
 
+  // On mount — silently restore session from the httpOnly refresh cookie
+  useEffect(() => {
+    const storedEmail = localStorage.getItem(USER_EMAIL_KEY)
+    if (!storedEmail) return  // not previously signed in
+    if (authTokens.getAccess()) return  // already have an access token in memory
+
+    refreshAccessToken().catch(() => {
+      // Refresh cookie expired or invalid — clear the stored email
+      localStorage.removeItem(USER_EMAIL_KEY)
+      setUserEmail(null)
+    })
+  }, [])
+
   const openAccountModal = useCallback(() => {
     setAuthMode('signup')
     setModalOpen(true)
@@ -51,18 +64,15 @@ export default function SignInHeader() {
   const closeModal = useCallback(() => setModalOpen(false), [])
 
   const signOut = useCallback(async () => {
-    const refresh = authTokens.getRefresh()
-    if (refresh) {
-      // Best-effort blacklist — ignore errors (token may already be expired)
-      await fetch(`${BASE}/auth/logout/`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(authTokens.getAccess() ? { Authorization: `Bearer ${authTokens.getAccess()}` } : {}),
-        },
-        body: JSON.stringify({ refresh }),
-      }).catch(() => {})
-    }
+    // Backend blacklists the refresh cookie and clears it
+    await fetch(`${BASE}/auth/logout/`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(authTokens.getAccess() ? { Authorization: `Bearer ${authTokens.getAccess()}` } : {}),
+      },
+    }).catch(() => {})
     authTokens.clear()
     localStorage.removeItem(USER_EMAIL_KEY)
     setUserEmail(null)
@@ -150,7 +160,7 @@ function AuthModal({
     setError(null)
   }, [mode])
 
-  const handleSignIn = async (e: FormEvent) => {
+  const handleSignIn = async (e: { preventDefault(): void }) => {
     e.preventDefault()
     setError(null)
     const trimmed = email.trim().toLowerCase()
@@ -178,7 +188,7 @@ function AuthModal({
     }
   }
 
-  const handleSignUp = async (e: FormEvent) => {
+  const handleSignUp = async (e: { preventDefault(): void }) => {
     e.preventDefault()
     setError(null)
     const trimmed = email.trim().toLowerCase()

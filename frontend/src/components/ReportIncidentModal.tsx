@@ -1,4 +1,4 @@
-import { useState, useId, type FormEvent } from 'react'
+import { useState, useId } from 'react'
 import { incidentService } from '../services/incidentService'
 
 interface Props {
@@ -34,7 +34,7 @@ export default function ReportIncidentModal({ onClose }: Props) {
   const [error, setError] = useState<string | null>(null)
   const [submitted, setSubmitted] = useState(false)
 
-  const handleSubmit = async (e: FormEvent) => {
+  const handleSubmit = async (e: { preventDefault(): void }) => {
     e.preventDefault()
     setError(null)
     if (!title.trim()) { setError('Please add a short title.'); return }

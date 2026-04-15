@@ -1,11 +1,10 @@
 from django.urls import include, path
 from rest_framework.routers import DefaultRouter
-from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
 from apps.vancouver_opendata import views as vancouver_opendata_views
 
 from . import views
-from .auth_views import logout, me, register
+from .auth_views import login, logout, me, refresh, register
 from .crud_views import IncidentViewSet, RouteAlertViewSet, SavedRouteViewSet, UserProfileViewSet
 
 router = DefaultRouter()
@@ -16,8 +15,8 @@ router.register(r'alerts', RouteAlertViewSet, basename='alert')
 
 auth_urlpatterns = [
     path('register/', register, name='auth-register'),
-    path('login/', TokenObtainPairView.as_view(), name='auth-login'),
-    path('refresh/', TokenRefreshView.as_view(), name='auth-refresh'),
+    path('login/', login, name='auth-login'),
+    path('refresh/', refresh, name='auth-refresh'),
     path('logout/', logout, name='auth-logout'),
     path('me/', me, name='auth-me'),
 ]

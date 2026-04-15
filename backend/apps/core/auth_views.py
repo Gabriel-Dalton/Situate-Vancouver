@@ -1,15 +1,23 @@
 """
 Authentication endpoints for Situate Vancouver.
 
-POST /api/auth/register/   — create account, returns token pair
-POST /api/auth/login/      — obtain token pair  (handled by simplejwt TokenObtainPairView)
-POST /api/auth/refresh/    — refresh access token (handled by simplejwt TokenRefreshView)
-POST /api/auth/logout/     — blacklist refresh token
+POST /api/auth/register/   — create account, sets httpOnly refresh cookie, returns access token
+POST /api/auth/login/      — sign in, sets httpOnly refresh cookie, returns access token
+POST /api/auth/refresh/    — reads refresh cookie, returns new access token + rotates cookie
+POST /api/auth/logout/     — blacklists refresh token, clears cookie
 GET  /api/auth/me/         — return current user + profile
+PATCH /api/auth/me/        — update profile fields
+
+Refresh token security model:
+  - Stored as httpOnly, Secure, SameSite=Lax cookie — JS cannot read it
+  - Access token returned in response body only (short-lived, 60 min)
+  - Frontend stores access token in memory, never in localStorage
 """
 
 import logging
 
+from django.conf import settings
+from django.contrib.auth import authenticate
 from django.contrib.auth.models import User
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError as DjangoValidationError
@@ -23,6 +31,26 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from .models import UserProfile
 
 logger = logging.getLogger(__name__)
+
+REFRESH_COOKIE_NAME = 'situate_refresh'
+REFRESH_COOKIE_MAX_AGE = 60 * 60 * 24 * 30  # 30 days
+
+
+def _set_refresh_cookie(response: Response, refresh_token: str) -> None:
+    """Attach the refresh token as an httpOnly cookie."""
+    response.set_cookie(
+        REFRESH_COOKIE_NAME,
+        str(refresh_token),
+        max_age=REFRESH_COOKIE_MAX_AGE,
+        httponly=True,
+        secure=not settings.DEBUG,   # Secure flag in production (HTTPS only)
+        samesite='Lax',
+        path='/api/auth/',           # Scoped — cookie only sent to auth endpoints
+    )
+
+
+def _clear_refresh_cookie(response: Response) -> None:
+    response.delete_cookie(REFRESH_COOKIE_NAME, path='/api/auth/')
 
 
 # ---------------------------------------------------------------------------
@@ -71,10 +99,10 @@ class ProfileSerializer(serializers.ModelSerializer):
 @permission_classes([AllowAny])
 def register(request):
     """
-    Create a new user account and return a token pair.
+    Create a new user account.
 
     Request:  { "email": "...", "password": "...", "first_name": "...", "last_name": "..." }
-    Response: { "access": "...", "refresh": "...", "user": { ... } }
+    Response: { "access": "...", "user": { ... } }  +  httpOnly refresh cookie
     """
     serializer = RegisterSerializer(data=request.data)
     if not serializer.is_valid():
@@ -84,51 +112,102 @@ def register(request):
     email = data['email']
 
     user = User.objects.create_user(
-        username=email,         # use email as username — unique by design
+        username=email,
         email=email,
         password=data['password'],
         first_name=data.get('first_name', ''),
         last_name=data.get('last_name', ''),
     )
-
-    # UserProfile is created automatically via post_save signal (or created here)
     UserProfile.objects.get_or_create(user=user)
 
     refresh = RefreshToken.for_user(user)
     logger.info('register: new user %s (id=%s)', email, user.pk)
 
-    return Response(
-        {
-            'access': str(refresh.access_token),
-            'refresh': str(refresh),
-            'user': UserSerializer(user).data,
-        },
+    response = Response(
+        {'access': str(refresh.access_token), 'user': UserSerializer(user).data},
         status=status.HTTP_201_CREATED,
     )
+    _set_refresh_cookie(response, refresh)
+    return response
 
 
 @api_view(['POST'])
-@permission_classes([IsAuthenticated])
-def logout(request):
+@permission_classes([AllowAny])
+def login(request):
     """
-    Blacklist the supplied refresh token, invalidating the session.
+    Sign in with email + password.
 
-    Request:  { "refresh": "<refresh_token>" }
-    Response: 204 No Content
+    Request:  { "email": "...", "password": "..." }
+    Response: { "access": "...", "user": { ... } }  +  httpOnly refresh cookie
     """
-    refresh_token = request.data.get('refresh')
-    if not refresh_token:
+    email = (request.data.get('email') or '').strip().lower()
+    password = request.data.get('password') or ''
+
+    if not email or not password:
         return Response(
-            {'detail': 'Field "refresh" is required.'},
+            {'detail': 'Email and password are required.'},
             status=status.HTTP_400_BAD_REQUEST,
         )
+
+    # Django's username field is used for auth — we store email as username
+    user = authenticate(request, username=email, password=password)
+    if user is None:
+        return Response(
+            {'detail': 'No account found with these credentials.'},
+            status=status.HTTP_401_UNAUTHORIZED,
+        )
+
+    refresh = RefreshToken.for_user(user)
+    response = Response({'access': str(refresh.access_token), 'user': UserSerializer(user).data})
+    _set_refresh_cookie(response, refresh)
+    return response
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def refresh(request):
+    """
+    Exchange the httpOnly refresh cookie for a new access token.
+    Also rotates the refresh cookie.
+
+    No request body needed — reads from cookie automatically.
+    Response: { "access": "..." }  +  new httpOnly refresh cookie
+    """
+    refresh_token = request.COOKIES.get(REFRESH_COOKIE_NAME)
+    if not refresh_token:
+        return Response({'detail': 'No refresh token.'}, status=status.HTTP_401_UNAUTHORIZED)
+
     try:
         token = RefreshToken(refresh_token)
-        token.blacklist()
+        token.blacklist()                        # invalidate old token
+        new_refresh = token.rotate()             # issue new refresh token
     except TokenError as exc:
-        return Response({'detail': str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({'detail': str(exc)}, status=status.HTTP_401_UNAUTHORIZED)
 
-    return Response(status=status.HTTP_204_NO_CONTENT)
+    response = Response({'access': str(new_refresh.access_token)})
+    _set_refresh_cookie(response, new_refresh)
+    return response
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def logout(request):
+    """
+    Blacklist the refresh token and clear the cookie.
+
+    Response: 204 No Content
+    """
+    refresh_token = request.COOKIES.get(REFRESH_COOKIE_NAME)
+    if refresh_token:
+        try:
+            token = RefreshToken(refresh_token)
+            token.blacklist()
+        except TokenError:
+            pass  # Already invalid — still clear the cookie
+
+    response = Response(status=status.HTTP_204_NO_CONTENT)
+    _clear_refresh_cookie(response)
+    return response
 
 
 @api_view(['GET', 'PATCH'])
