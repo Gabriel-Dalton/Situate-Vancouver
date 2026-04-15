@@ -45,6 +45,7 @@ export default function SignInHeader({ onAuthEmailChange }: SignInHeaderProps) {
   const [modalOpen, setModalOpen] = useState(false)
   const [accountOpen, setAccountOpen] = useState(false)
   const [onboardingOpen, setOnboardingOpen] = useState(false)
+  const [forgotOpen, setForgotOpen] = useState(false)
   const [authMode, setAuthMode] = useState<AuthModalMode>('signup')
   const [userEmail, setUserEmail] = useState<string | null>(() =>
     localStorage.getItem(USER_EMAIL_KEY),
@@ -92,7 +93,7 @@ export default function SignInHeader({ onAuthEmailChange }: SignInHeaderProps) {
   }, [setSessionEmail])
 
   useEffect(() => {
-    if (!modalOpen && !accountOpen && !onboardingOpen) return
+    if (!modalOpen && !accountOpen && !onboardingOpen && !forgotOpen) return
     const prevOverflow = document.body.style.overflow
     document.body.style.overflow = 'hidden'
     const onKey = (e: KeyboardEvent) => {
@@ -100,13 +101,14 @@ export default function SignInHeader({ onAuthEmailChange }: SignInHeaderProps) {
       setModalOpen(false)
       setAccountOpen(false)
       setOnboardingOpen(false)
+      setForgotOpen(false)
     }
     window.addEventListener('keydown', onKey)
     return () => {
       document.body.style.overflow = prevOverflow
       window.removeEventListener('keydown', onKey)
     }
-  }, [accountOpen, modalOpen, onboardingOpen])
+  }, [accountOpen, forgotOpen, modalOpen, onboardingOpen])
 
   return (
     <>
@@ -144,6 +146,10 @@ export default function SignInHeader({ onAuthEmailChange }: SignInHeaderProps) {
             mode={authMode}
             onModeChange={setAuthMode}
             onClose={closeModal}
+            onForgotPassword={() => {
+              setModalOpen(false)
+              setForgotOpen(true)
+            }}
             onSignedIn={(email, onboardingRequired) => {
               localStorage.setItem(USER_EMAIL_KEY, email)
               setSessionEmail(email)
@@ -166,6 +172,11 @@ export default function SignInHeader({ onAuthEmailChange }: SignInHeaderProps) {
           />,
           document.body,
         )}
+      {forgotOpen &&
+        createPortal(
+          <ForgotPasswordModal titleId={titleId} onClose={() => setForgotOpen(false)} />,
+          document.body,
+        )}
     </>
   )
 }
@@ -175,12 +186,14 @@ function AuthModal({
   mode,
   onModeChange,
   onClose,
+  onForgotPassword,
   onSignedIn,
 }: {
   titleId: string
   mode: AuthModalMode
   onModeChange: (m: AuthModalMode) => void
   onClose: () => void
+  onForgotPassword: () => void
   onSignedIn: (email: string, onboardingRequired: boolean) => void
 }) {
   const [email, setEmail] = useState('')
@@ -320,6 +333,9 @@ function AuthModal({
                 {loading ? 'Signing in…' : 'Sign in'}
               </button>
               <button type="button" className="sign-in-modal__secondary" onClick={onClose}>Cancel</button>
+              <button type="button" className="sign-in-modal__secondary" onClick={onForgotPassword}>
+                Forgot password?
+              </button>
             </div>
           </form>
         ) : (
@@ -372,6 +388,10 @@ function AccountModal({
   const [phone, setPhone] = useState('')
   const [notifyVia, setNotifyVia] = useState<'email' | 'push' | 'sms'>('push')
   const [leadMinutes, setLeadMinutes] = useState(30)
+  const [emailVerified, setEmailVerified] = useState(false)
+  const [verifyUid, setVerifyUid] = useState('')
+  const [verifyToken, setVerifyToken] = useState('')
+  const [verifyMessage, setVerifyMessage] = useState<string | null>(null)
 
   useEffect(() => {
     accountService
@@ -382,6 +402,7 @@ function AccountModal({
         setPhone(data.profile.phone ?? '')
         setNotifyVia(data.profile.notify_via)
         setLeadMinutes(data.profile.alert_lead_minutes)
+        setEmailVerified(data.profile.email_verified)
       })
       .catch((e) => setError(e instanceof Error ? e.message : 'Could not load account details.'))
       .finally(() => setLoading(false))
@@ -403,6 +424,34 @@ function AccountModal({
       setError(e instanceof Error ? e.message : 'Could not save account details.')
     } finally {
       setSaving(false)
+    }
+  }
+
+  const requestVerification = async () => {
+    setVerifyMessage(null)
+    try {
+      const data = await accountService.requestEmailVerification()
+      if (data.dev_verification) {
+        setVerifyUid(data.dev_verification.uid)
+        setVerifyToken(data.dev_verification.token)
+      }
+      setVerifyMessage(data.detail)
+    } catch (e) {
+      setVerifyMessage(e instanceof Error ? e.message : 'Could not create verification token.')
+    }
+  }
+
+  const confirmVerification = async () => {
+    setVerifyMessage(null)
+    try {
+      const data = await accountService.confirmEmailVerification({
+        uid: verifyUid.trim(),
+        token: verifyToken.trim(),
+      })
+      setVerifyMessage(data.detail)
+      setEmailVerified(true)
+    } catch (e) {
+      setVerifyMessage(e instanceof Error ? e.message : 'Could not verify email.')
     }
   }
 
@@ -447,6 +496,35 @@ function AccountModal({
                   onChange={(e) => setLeadMinutes(Number(e.target.value) || 30)}
                 />
               </label>
+              <div className="sign-in-modal__label">
+                <span>Email verification</span>
+                <p className="route-panel__saved-meta">
+                  {emailVerified ? 'Verified' : 'Not verified'}
+                </p>
+                {!emailVerified && (
+                  <>
+                    <button type="button" className="sign-in-modal__secondary" onClick={() => void requestVerification()}>
+                      Create verification token
+                    </button>
+                    <input
+                      className="sign-in-modal__input"
+                      value={verifyUid}
+                      onChange={(e) => setVerifyUid(e.target.value)}
+                      placeholder="Verification UID"
+                    />
+                    <input
+                      className="sign-in-modal__input"
+                      value={verifyToken}
+                      onChange={(e) => setVerifyToken(e.target.value)}
+                      placeholder="Verification token"
+                    />
+                    <button type="button" className="sign-in-modal__secondary" onClick={() => void confirmVerification()}>
+                      Confirm verification
+                    </button>
+                  </>
+                )}
+                {verifyMessage && <p className="sign-in-modal__lede">{verifyMessage}</p>}
+              </div>
               {error && <p className="sign-in-modal__error">{error}</p>}
               <div className="sign-in-modal__actions">
                 <button type="button" className="sign-in-modal__submit" onClick={() => void save()} disabled={saving}>
@@ -554,6 +632,110 @@ function OnboardingModal({
             </button>
             <button type="button" className="sign-in-modal__secondary" onClick={onClose}>Skip for now</button>
           </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function ForgotPasswordModal({
+  titleId,
+  onClose,
+}: {
+  titleId: string
+  onClose: () => void
+}) {
+  const [email, setEmail] = useState('')
+  const [uid, setUid] = useState('')
+  const [token, setToken] = useState('')
+  const [newPassword, setNewPassword] = useState('')
+  const [message, setMessage] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const [loading, setLoading] = useState(false)
+
+  const requestReset = async () => {
+    setLoading(true)
+    setError(null)
+    setMessage(null)
+    try {
+      const data = await accountService.passwordForgot(email.trim().toLowerCase())
+      if (data.dev_reset) {
+        setUid(data.dev_reset.uid)
+        setToken(data.dev_reset.token)
+      }
+      setMessage(data.detail)
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Could not request password reset.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const resetPassword = async () => {
+    setLoading(true)
+    setError(null)
+    setMessage(null)
+    try {
+      const data = await accountService.passwordReset({
+        uid: uid.trim(),
+        token: token.trim(),
+        new_password: newPassword,
+      })
+      setMessage(data.detail)
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Could not reset password.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div className="sign-in-modal-backdrop" role="presentation" onMouseDown={(ev) => ev.target === ev.currentTarget && onClose()}>
+      <div role="dialog" aria-modal="true" aria-labelledby={titleId} className="sign-in-modal" onMouseDown={(e) => e.stopPropagation()}>
+        <div className="sign-in-modal__head">
+          <h2 id={titleId} className="sign-in-modal__title">Reset password</h2>
+          <button type="button" className="sign-in-modal__close" onClick={onClose} aria-label="Close">×</button>
+        </div>
+        <p className="sign-in-modal__lede">
+          Enter your account email to request reset instructions. In local debug mode, UID/token will be returned here.
+        </p>
+        <div className="sign-in-modal__form">
+          <label className="sign-in-modal__label">
+            <span>Email</span>
+            <input
+              className="sign-in-modal__input"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="you@example.com"
+            />
+          </label>
+          <button type="button" className="sign-in-modal__secondary" onClick={() => void requestReset()} disabled={loading}>
+            {loading ? 'Requesting…' : 'Request reset'}
+          </button>
+          <label className="sign-in-modal__label">
+            <span>UID</span>
+            <input className="sign-in-modal__input" value={uid} onChange={(e) => setUid(e.target.value)} />
+          </label>
+          <label className="sign-in-modal__label">
+            <span>Token</span>
+            <input className="sign-in-modal__input" value={token} onChange={(e) => setToken(e.target.value)} />
+          </label>
+          <label className="sign-in-modal__label">
+            <span>New password</span>
+            <input
+              className="sign-in-modal__input"
+              type="password"
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              placeholder="At least 8 characters"
+            />
+          </label>
+          <button type="button" className="sign-in-modal__submit" onClick={() => void resetPassword()} disabled={loading}>
+            {loading ? 'Resetting…' : 'Reset password'}
+          </button>
+          {message && <p className="sign-in-modal__lede">{message}</p>}
+          {error && <p className="sign-in-modal__error">{error}</p>}
         </div>
       </div>
     </div>

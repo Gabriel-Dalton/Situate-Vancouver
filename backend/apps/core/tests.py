@@ -2,6 +2,8 @@ import datetime
 from unittest.mock import MagicMock, patch
 
 import httpx
+from django.contrib.auth.models import User
+from django.core.cache import cache
 from django.test import TestCase, override_settings
 from django.utils import timezone
 from rest_framework import status
@@ -357,3 +359,63 @@ class AIQueryProxyAPITests(TestCase):
         mock_post.side_effect = httpx.TimeoutException('timed out')
         r = self.client.post('/api/query/', {'query': 'x'}, format='json')
         self.assertEqual(r.status_code, status.HTTP_503_SERVICE_UNAVAILABLE)
+
+
+@override_settings(
+    AUTH_RATE_LIMIT_WINDOW_SECONDS=60,
+    AUTH_RATE_LIMIT_LOGIN_MAX_ATTEMPTS=2,
+    AUTH_RATE_LIMIT_REGISTER_MAX_ATTEMPTS=2,
+    AUTH_RATE_LIMIT_PASSWORD_RESET_MAX_ATTEMPTS=2,
+)
+class AuthFlowSafetyTests(TestCase):
+    def setUp(self) -> None:
+        self.client = APIClient()
+        cache.clear()
+        self.user = User.objects.create_user(
+            username='user@example.com',
+            email='user@example.com',
+            password='StrongPass123!',
+        )
+
+    def test_login_rate_limit_blocks_after_threshold(self) -> None:
+        payload = {'email': 'user@example.com', 'password': 'wrong-pass'}
+        self.assertEqual(self.client.post('/api/auth/login/', payload, format='json').status_code, 401)
+        self.assertEqual(self.client.post('/api/auth/login/', payload, format='json').status_code, 401)
+        third = self.client.post('/api/auth/login/', payload, format='json')
+        self.assertEqual(third.status_code, 429)
+
+    def test_password_forgot_returns_dev_token_for_existing_user(self) -> None:
+        resp = self.client.post(
+            '/api/auth/password/forgot/',
+            {'email': 'user@example.com'},
+            format='json',
+        )
+        self.assertEqual(resp.status_code, 200)
+        body = resp.json()
+        self.assertIn('dev_reset', body)
+        self.assertIn('uid', body['dev_reset'])
+        self.assertIn('token', body['dev_reset'])
+
+    def test_password_reset_updates_credentials(self) -> None:
+        forgot = self.client.post(
+            '/api/auth/password/forgot/',
+            {'email': 'user@example.com'},
+            format='json',
+        )
+        dev_reset = forgot.json()['dev_reset']
+        reset = self.client.post(
+            '/api/auth/password/reset/',
+            {
+                'uid': dev_reset['uid'],
+                'token': dev_reset['token'],
+                'new_password': 'NewStrongPass123!',
+            },
+            format='json',
+        )
+        self.assertEqual(reset.status_code, 200)
+        login = self.client.post(
+            '/api/auth/login/',
+            {'email': 'user@example.com', 'password': 'NewStrongPass123!'},
+            format='json',
+        )
+        self.assertEqual(login.status_code, 200)

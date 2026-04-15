@@ -1,6 +1,7 @@
 import uuid
 from django.contrib.auth.models import User
 from django.db import models
+from django.utils import timezone
 
 
 class Incident(models.Model):
@@ -158,11 +159,18 @@ class UserProfile(models.Model):
         default=30,
         help_text='How many minutes before departure to send route alerts.',
     )
+    email_verified = models.BooleanField(default=False, db_index=True)
+    email_verified_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return f'Profile({self.user.username})'
+
+    def mark_email_verified(self) -> None:
+        self.email_verified = True
+        self.email_verified_at = timezone.now()
+        self.save(update_fields=['email_verified', 'email_verified_at', 'updated_at'])
 
 
 class SavedRoute(models.Model):

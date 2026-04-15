@@ -285,3 +285,15 @@ CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TIMEZONE = 'America/Vancouver'
 CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
+
+# --- Auth abuse protection (simple cache-backed endpoint throttles) ---
+AUTH_RATE_LIMIT_WINDOW_SECONDS = int(os.environ.get('AUTH_RATE_LIMIT_WINDOW_SECONDS', '60'))
+AUTH_RATE_LIMIT_LOGIN_MAX_ATTEMPTS = int(
+    os.environ.get('AUTH_RATE_LIMIT_LOGIN_MAX_ATTEMPTS', '10')
+)
+AUTH_RATE_LIMIT_REGISTER_MAX_ATTEMPTS = int(
+    os.environ.get('AUTH_RATE_LIMIT_REGISTER_MAX_ATTEMPTS', '5')
+)
+AUTH_RATE_LIMIT_PASSWORD_RESET_MAX_ATTEMPTS = int(
+    os.environ.get('AUTH_RATE_LIMIT_PASSWORD_RESET_MAX_ATTEMPTS', '5')
+)
