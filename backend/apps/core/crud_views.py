@@ -33,7 +33,8 @@ def invalidate_incidents_list_cache():
     Uses a generation counter: bumping it makes all existing cached keys
     unreachable without needing pattern-delete support.
     """
-    cache.incr('incidents_list_gen', delta=1)  # atomic; auto-creates at 0 then +1
+    cache.add('incidents_list_gen', 0)   # no-op if key already exists
+    cache.incr('incidents_list_gen', delta=1)
 
 
 class IncidentViewSet(viewsets.ModelViewSet):

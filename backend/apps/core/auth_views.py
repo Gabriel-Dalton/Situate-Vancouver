@@ -124,6 +124,9 @@ class ProfileSerializer(serializers.ModelSerializer):
             'phone',
             'email_verified',
             'email_verified_at',
+            'home_label',
+            'home_lat',
+            'home_lng',
         )
         read_only_fields = ('email_verified', 'email_verified_at')
 
@@ -228,11 +231,18 @@ def refresh(request):
 
     try:
         token = RefreshToken(refresh_token)
+        user_id = token.payload.get('user_id')
         token.blacklist()                        # invalidate old token
-        new_refresh = token.rotate()             # issue new refresh token
     except TokenError as exc:
         return Response({'detail': str(exc)}, status=status.HTTP_401_UNAUTHORIZED)
 
+    try:
+        from django.contrib.auth import get_user_model
+        user = get_user_model().objects.get(pk=user_id)
+    except Exception:
+        return Response({'detail': 'User not found.'}, status=status.HTTP_401_UNAUTHORIZED)
+
+    new_refresh = RefreshToken.for_user(user)   # fresh rotation
     response = Response({'access': str(new_refresh.access_token)})
     _set_refresh_cookie(response, new_refresh)
     return response

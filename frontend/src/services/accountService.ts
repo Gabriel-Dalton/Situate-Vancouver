@@ -14,6 +14,9 @@ export interface AccountProfile {
   phone: string
   email_verified: boolean
   email_verified_at: string | null
+  home_label: string
+  home_lat: number | null
+  home_lng: number | null
 }
 
 export interface MeResponse {
@@ -27,6 +30,9 @@ export interface MeUpdateInput {
   notify_via?: 'email' | 'push' | 'sms'
   alert_lead_minutes?: number
   phone?: string
+  home_label?: string
+  home_lat?: number | null
+  home_lng?: number | null
 }
 
 export const accountService = {

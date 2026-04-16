@@ -161,6 +161,10 @@ class UserProfile(models.Model):
     )
     email_verified = models.BooleanField(default=False, db_index=True)
     email_verified_at = models.DateTimeField(null=True, blank=True)
+    # Home location — used to calibrate alerts and surface nearby incidents
+    home_label = models.CharField(max_length=255, blank=True, help_text='Human-readable home address')
+    home_lat = models.FloatField(null=True, blank=True)
+    home_lng = models.FloatField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

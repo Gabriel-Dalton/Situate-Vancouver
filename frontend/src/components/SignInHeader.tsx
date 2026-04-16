@@ -396,6 +396,10 @@ function AccountModal({
   const [emailVerified, setEmailVerified] = useState(false)
   const [verifyMessage, setVerifyMessage] = useState<string | null>(null)
   const [verifySent, setVerifySent] = useState(false)
+  const [homeAddress, setHomeAddress] = useState('')
+  const [homeGeocoding, setHomeGeocoding] = useState(false)
+  const [homeCoords, setHomeCoords] = useState<{ lat: number; lng: number } | null>(null)
+  const [homeGeoError, setHomeGeoError] = useState<string | null>(null)
 
   useEffect(() => {
     accountService
@@ -407,6 +411,10 @@ function AccountModal({
         setNotifyVia(data.profile.notify_via)
         setLeadMinutes(data.profile.alert_lead_minutes)
         setEmailVerified(data.profile.email_verified)
+        setHomeAddress(data.profile.home_label ?? '')
+        if (data.profile.home_lat != null && data.profile.home_lng != null) {
+          setHomeCoords({ lat: data.profile.home_lat, lng: data.profile.home_lng })
+        }
       })
       .catch((e) => setError(e instanceof Error ? e.message : 'Could not load account details.'))
       .finally(() => setLoading(false))
@@ -423,6 +431,9 @@ function AccountModal({
         phone: phone.trim(),
         notify_via: notifyVia,
         alert_lead_minutes: leadMinutes,
+        home_label: homeAddress.trim(),
+        home_lat: homeCoords?.lat ?? null,
+        home_lng: homeCoords?.lng ?? null,
       })
       setSaved(true)
       setTimeout(() => onClose(), 900)
@@ -431,6 +442,22 @@ function AccountModal({
     } finally {
       setSaving(false)
     }
+  }
+
+  const lookupHomeAddress = async () => {
+    const trimmed = homeAddress.trim()
+    if (!trimmed) return
+    setHomeGeocoding(true)
+    setHomeGeoError(null)
+    const result = await geocodeAddress(trimmed)
+    setHomeGeocoding(false)
+    if (!result) {
+      setHomeGeoError('Address not found — try adding the city or street number.')
+      setHomeCoords(null)
+      return
+    }
+    setHomeCoords({ lat: result.lat, lng: result.lng })
+    setHomeAddress(result.label)
   }
 
   const requestVerification = async () => {
@@ -473,6 +500,22 @@ function AccountModal({
                 <span>Phone <em className="account-modal__optional">for SMS alerts</em></span>
                 <input className="sign-in-modal__input" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+1 604 123 4567" />
               </label>
+              <div className="sign-in-modal__label">
+                <span>Home address <em className="account-modal__optional">for nearby alerts</em></span>
+                <div className="account-modal__addr-row">
+                  <input
+                    className="sign-in-modal__input account-modal__addr-input"
+                    value={homeAddress}
+                    onChange={(e) => { setHomeAddress(e.target.value); setHomeCoords(null); setHomeGeoError(null) }}
+                    placeholder="e.g. 1234 Granville St, Vancouver"
+                    onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); void lookupHomeAddress() } }}
+                  />
+                  <button type="button" className="account-modal__addr-btn" onClick={() => void lookupHomeAddress()} disabled={homeGeocoding || !homeAddress.trim()} title="Look up address">
+                    {homeGeocoding ? '…' : homeCoords ? '✓' : '↵'}
+                  </button>
+                </div>
+                {homeGeoError && <p className="sign-in-modal__error">{homeGeoError}</p>}
+              </div>
 
               {/* ── Email ── */}
               <p className="account-modal__section">Email</p>
@@ -548,6 +591,29 @@ function AccountModal({
   )
 }
 
+async function geocodeAddress(address: string): Promise<{ lat: number; lng: number; label: string } | null> {
+  try {
+    const params = new URLSearchParams({
+      q: address,
+      format: 'json',
+      limit: '1',
+      countrycodes: 'ca',
+    })
+    const res = await fetch(`https://nominatim.openstreetmap.org/search?${params}`, {
+      headers: { 'Accept-Language': 'en', 'User-Agent': 'SituateVancouver/1.0' },
+    })
+    const results = await res.json() as Array<{ lat: string; lon: string; display_name: string }>
+    if (!results.length) return null
+    return {
+      lat: parseFloat(results[0].lat),
+      lng: parseFloat(results[0].lon),
+      label: results[0].display_name,
+    }
+  } catch {
+    return null
+  }
+}
+
 function OnboardingModal({
   titleId,
   onClose,
@@ -555,6 +621,14 @@ function OnboardingModal({
   titleId: string
   onClose: () => void
 }) {
+  const [step, setStep] = useState<'home' | 'route'>('home')
+  // Home address
+  const [homeAddress, setHomeAddress] = useState('')
+  const [homeGeocoding, setHomeGeocoding] = useState(false)
+  const [homeGeocodedLabel, setHomeGeocodedLabel] = useState<string | null>(null)
+  const [homeCoords, setHomeCoords] = useState<{ lat: number; lng: number } | null>(null)
+  const [homeError, setHomeError] = useState<string | null>(null)
+  // Route
   const [name, setName] = useState('My commute')
   const [origin, setOrigin] = useState('')
   const [destination, setDestination] = useState('')
@@ -564,6 +638,22 @@ function OnboardingModal({
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 
+  const geocodeHome = async () => {
+    const trimmed = homeAddress.trim()
+    if (!trimmed) { setStep('route'); return }
+    setHomeGeocoding(true)
+    setHomeError(null)
+    const result = await geocodeAddress(trimmed)
+    setHomeGeocoding(false)
+    if (!result) {
+      setHomeError('Could not find that address — try being more specific, e.g. "1234 Main St, Vancouver"')
+      return
+    }
+    setHomeCoords({ lat: result.lat, lng: result.lng })
+    setHomeGeocodedLabel(result.label)
+    setStep('route')
+  }
+
   const complete = async () => {
     setError(null)
     setLoading(true)
@@ -571,6 +661,9 @@ function OnboardingModal({
       await accountService.updateMe({
         notify_via: notifyVia,
         alert_lead_minutes: leadMinutes,
+        ...(homeCoords
+          ? { home_label: homeGeocodedLabel ?? homeAddress.trim(), home_lat: homeCoords.lat, home_lng: homeCoords.lng }
+          : {}),
       })
       if (origin.trim() && destination.trim()) {
         const routeResult = await findRoute(origin.trim(), destination.trim())
@@ -598,49 +691,103 @@ function OnboardingModal({
 
   return (
     <div className="sign-in-modal-backdrop" role="presentation" onMouseDown={(ev) => ev.target === ev.currentTarget && onClose()}>
-      <div role="dialog" aria-modal="true" aria-labelledby={titleId} className="sign-in-modal" onMouseDown={(e) => e.stopPropagation()}>
+      <div role="dialog" aria-modal="true" aria-labelledby={titleId} className="sign-in-modal account-modal" onMouseDown={(e) => e.stopPropagation()}>
         <div className="sign-in-modal__head">
           <h2 id={titleId} className="sign-in-modal__title">Set up your account</h2>
           <button type="button" className="sign-in-modal__close" onClick={onClose} aria-label="Close">×</button>
         </div>
-        <p className="sign-in-modal__lede">Add your first route now (optional) and choose how early you want commute alerts.</p>
-        <div className="sign-in-modal__form">
-          <label className="sign-in-modal__label">
-            <span>Route name</span>
-            <input className="sign-in-modal__input" value={name} onChange={(e) => setName(e.target.value)} />
-          </label>
-          <label className="sign-in-modal__label">
-            <span>From (optional)</span>
-            <input className="sign-in-modal__input" value={origin} onChange={(e) => setOrigin(e.target.value)} placeholder="e.g. Kitsilano" />
-          </label>
-          <label className="sign-in-modal__label">
-            <span>To (optional)</span>
-            <input className="sign-in-modal__input" value={destination} onChange={(e) => setDestination(e.target.value)} placeholder="e.g. Downtown Vancouver" />
-          </label>
-          <label className="sign-in-modal__label">
-            <span>Departure time</span>
-            <input className="sign-in-modal__input" type="time" value={departureTime} onChange={(e) => setDepartureTime(e.target.value)} />
-          </label>
-          <label className="sign-in-modal__label">
-            <span>Alert channel</span>
-            <select className="sign-in-modal__input" value={notifyVia} onChange={(e) => setNotifyVia(e.target.value as 'email' | 'push' | 'sms')}>
-              <option value="push">Push</option>
-              <option value="email">Email</option>
-              <option value="sms">SMS</option>
-            </select>
-          </label>
-          <label className="sign-in-modal__label">
-            <span>Alert lead time (minutes)</span>
-            <input className="sign-in-modal__input" type="number" min={5} max={180} value={leadMinutes} onChange={(e) => setLeadMinutes(Number(e.target.value) || 30)} />
-          </label>
-          {error && <p className="sign-in-modal__error">{error}</p>}
-          <div className="sign-in-modal__actions">
-            <button type="button" className="sign-in-modal__submit" onClick={() => void complete()} disabled={loading}>
-              {loading ? 'Saving…' : 'Finish setup'}
-            </button>
-            <button type="button" className="sign-in-modal__secondary" onClick={onClose}>Skip for now</button>
-          </div>
-        </div>
+
+        {step === 'home' ? (
+          <>
+            <p className="sign-in-modal__lede">
+              Where do you live? We'll use this to surface nearby incidents and calibrate your alerts.
+            </p>
+            <div className="sign-in-modal__form">
+              <label className="sign-in-modal__label">
+                <span>Home address</span>
+                <input
+                  className="sign-in-modal__input"
+                  value={homeAddress}
+                  onChange={(e) => { setHomeAddress(e.target.value); setHomeError(null) }}
+                  placeholder="e.g. 1234 Granville St, Vancouver"
+                  autoFocus
+                  onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); void geocodeHome() } }}
+                />
+              </label>
+              {homeError && <p className="sign-in-modal__error">{homeError}</p>}
+              <div className="sign-in-modal__actions">
+                <button type="button" className="sign-in-modal__submit" onClick={() => void geocodeHome()} disabled={homeGeocoding}>
+                  {homeGeocoding ? 'Looking up…' : 'Continue'}
+                </button>
+                <button type="button" className="sign-in-modal__secondary" onClick={() => setStep('route')}>Skip</button>
+              </div>
+            </div>
+          </>
+        ) : (
+          <>
+            <p className="sign-in-modal__lede">
+              {homeGeocodedLabel
+                ? <><strong className="account-modal__lead-val">Home set.</strong> Add your first commute route (optional) and choose alert preferences.</>
+                : 'Add your first commute route (optional) and choose how early you want alerts.'}
+            </p>
+            <div className="sign-in-modal__form">
+              <p className="account-modal__section">Route <em className="account-modal__optional">optional</em></p>
+              <label className="sign-in-modal__label">
+                <span>Route name</span>
+                <input className="sign-in-modal__input" value={name} onChange={(e) => setName(e.target.value)} />
+              </label>
+              <label className="sign-in-modal__label">
+                <span>From</span>
+                <input className="sign-in-modal__input" value={origin} onChange={(e) => setOrigin(e.target.value)} placeholder="e.g. Kitsilano" />
+              </label>
+              <label className="sign-in-modal__label">
+                <span>To</span>
+                <input className="sign-in-modal__input" value={destination} onChange={(e) => setDestination(e.target.value)} placeholder="e.g. Downtown Vancouver" />
+              </label>
+              <label className="sign-in-modal__label">
+                <span>Departure time</span>
+                <input className="sign-in-modal__input" type="time" value={departureTime} onChange={(e) => setDepartureTime(e.target.value)} />
+              </label>
+
+              <p className="account-modal__section">Notifications</p>
+              <div className="sign-in-modal__label">
+                <span>Alert channel</span>
+                <div className="account-modal__radio-group">
+                  {(['push', 'email', 'sms'] as const).map((ch) => (
+                    <label key={ch} className={`account-modal__radio${notifyVia === ch ? ' account-modal__radio--active' : ''}`}>
+                      <input type="radio" name="ob_notify_via" value={ch} checked={notifyVia === ch} onChange={() => setNotifyVia(ch)} />
+                      {ch === 'push' ? 'Push' : ch === 'email' ? 'Email' : 'SMS'}
+                    </label>
+                  ))}
+                </div>
+              </div>
+              <div className="sign-in-modal__label">
+                <span>Alert me <strong className="account-modal__lead-val">{leadMinutes} min</strong> before disruptions</span>
+                <div className="account-modal__lead-row">
+                  {LEAD_PRESETS.map((m) => (
+                    <button key={m} type="button"
+                      className={`account-modal__preset${leadMinutes === m ? ' account-modal__preset--active' : ''}`}
+                      onClick={() => setLeadMinutes(m)}
+                    >{m}m</button>
+                  ))}
+                  <input type="number" className="sign-in-modal__input account-modal__lead-custom"
+                    min={5} max={180} value={leadMinutes}
+                    onChange={(e) => setLeadMinutes(Number(e.target.value) || 30)}
+                    aria-label="Custom minutes"
+                  />
+                </div>
+              </div>
+
+              {error && <p className="sign-in-modal__error">{error}</p>}
+              <div className="sign-in-modal__actions">
+                <button type="button" className="sign-in-modal__submit" onClick={() => void complete()} disabled={loading}>
+                  {loading ? 'Saving…' : 'Finish setup'}
+                </button>
+                <button type="button" className="sign-in-modal__secondary" onClick={onClose}>Skip for now</button>
+              </div>
+            </div>
+          </>
+        )}
       </div>
     </div>
   )
