@@ -219,6 +219,7 @@ function AuthModal({
     try {
       const res = await fetch(`${BASE}/auth/login/`, {
         method: 'POST',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: trimmed, password }),
       })
@@ -249,6 +250,7 @@ function AuthModal({
     try {
       const res = await fetch(`${BASE}/auth/register/`, {
         method: 'POST',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: trimmed, password }),
       })
@@ -373,6 +375,8 @@ function AuthModal({
   )
 }
 
+const LEAD_PRESETS = [15, 30, 60, 90]
+
 function AccountModal({
   titleId,
   onClose,
@@ -382,6 +386,7 @@ function AccountModal({
 }) {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [saved, setSaved] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
@@ -389,9 +394,8 @@ function AccountModal({
   const [notifyVia, setNotifyVia] = useState<'email' | 'push' | 'sms'>('push')
   const [leadMinutes, setLeadMinutes] = useState(30)
   const [emailVerified, setEmailVerified] = useState(false)
-  const [verifyUid, setVerifyUid] = useState('')
-  const [verifyToken, setVerifyToken] = useState('')
   const [verifyMessage, setVerifyMessage] = useState<string | null>(null)
+  const [verifySent, setVerifySent] = useState(false)
 
   useEffect(() => {
     accountService
@@ -411,6 +415,7 @@ function AccountModal({
   const save = async () => {
     setSaving(true)
     setError(null)
+    setSaved(false)
     try {
       await accountService.updateMe({
         first_name: firstName.trim(),
@@ -419,9 +424,10 @@ function AccountModal({
         notify_via: notifyVia,
         alert_lead_minutes: leadMinutes,
       })
-      onClose()
+      setSaved(true)
+      setTimeout(() => onClose(), 900)
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Could not save account details.')
+      setError(e instanceof Error ? e.message : 'Could not save preferences.')
     } finally {
       setSaving(false)
     }
@@ -429,106 +435,108 @@ function AccountModal({
 
   const requestVerification = async () => {
     setVerifyMessage(null)
+    setVerifySent(false)
     try {
       const data = await accountService.requestEmailVerification()
-      if (data.dev_verification) {
-        setVerifyUid(data.dev_verification.uid)
-        setVerifyToken(data.dev_verification.token)
-      }
+      setVerifySent(true)
       setVerifyMessage(data.detail)
     } catch (e) {
-      setVerifyMessage(e instanceof Error ? e.message : 'Could not create verification token.')
-    }
-  }
-
-  const confirmVerification = async () => {
-    setVerifyMessage(null)
-    try {
-      const data = await accountService.confirmEmailVerification({
-        uid: verifyUid.trim(),
-        token: verifyToken.trim(),
-      })
-      setVerifyMessage(data.detail)
-      setEmailVerified(true)
-    } catch (e) {
-      setVerifyMessage(e instanceof Error ? e.message : 'Could not verify email.')
+      setVerifyMessage(e instanceof Error ? e.message : 'Could not send verification email.')
     }
   }
 
   return (
     <div className="sign-in-modal-backdrop" role="presentation" onMouseDown={(ev) => ev.target === ev.currentTarget && onClose()}>
-      <div role="dialog" aria-modal="true" aria-labelledby={titleId} className="sign-in-modal" onMouseDown={(e) => e.stopPropagation()}>
+      <div role="dialog" aria-modal="true" aria-labelledby={titleId} className="sign-in-modal account-modal" onMouseDown={(e) => e.stopPropagation()}>
         <div className="sign-in-modal__head">
-          <h2 id={titleId} className="sign-in-modal__title">My account</h2>
+          <h2 id={titleId} className="sign-in-modal__title">Preferences</h2>
           <button type="button" className="sign-in-modal__close" onClick={onClose} aria-label="Close">×</button>
         </div>
         <div className="sign-in-modal__form">
-          {loading ? <p className="sign-in-modal__lede">Loading your account…</p> : (
+          {loading ? (
+            <p className="sign-in-modal__lede">Loading…</p>
+          ) : (
             <>
-              <label className="sign-in-modal__label">
-                <span>First name</span>
-                <input className="sign-in-modal__input" value={firstName} onChange={(e) => setFirstName(e.target.value)} />
-              </label>
-              <label className="sign-in-modal__label">
-                <span>Last name</span>
-                <input className="sign-in-modal__input" value={lastName} onChange={(e) => setLastName(e.target.value)} />
-              </label>
-              <label className="sign-in-modal__label">
-                <span>Phone</span>
-                <input className="sign-in-modal__input" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+1 604 123 4567" />
-              </label>
-              <label className="sign-in-modal__label">
-                <span>Alert channel</span>
-                <select className="sign-in-modal__input" value={notifyVia} onChange={(e) => setNotifyVia(e.target.value as 'email' | 'push' | 'sms')}>
-                  <option value="push">Push</option>
-                  <option value="email">Email</option>
-                  <option value="sms">SMS</option>
-                </select>
-              </label>
-              <label className="sign-in-modal__label">
-                <span>Alert lead time (minutes)</span>
-                <input
-                  className="sign-in-modal__input"
-                  type="number"
-                  min={5}
-                  max={180}
-                  value={leadMinutes}
-                  onChange={(e) => setLeadMinutes(Number(e.target.value) || 30)}
-                />
-              </label>
-              <div className="sign-in-modal__label">
-                <span>Email verification</span>
-                <p className="route-panel__saved-meta">
-                  {emailVerified ? 'Verified' : 'Not verified'}
-                </p>
-                {!emailVerified && (
-                  <>
-                    <button type="button" className="sign-in-modal__secondary" onClick={() => void requestVerification()}>
-                      Create verification token
-                    </button>
-                    <input
-                      className="sign-in-modal__input"
-                      value={verifyUid}
-                      onChange={(e) => setVerifyUid(e.target.value)}
-                      placeholder="Verification UID"
-                    />
-                    <input
-                      className="sign-in-modal__input"
-                      value={verifyToken}
-                      onChange={(e) => setVerifyToken(e.target.value)}
-                      placeholder="Verification token"
-                    />
-                    <button type="button" className="sign-in-modal__secondary" onClick={() => void confirmVerification()}>
-                      Confirm verification
-                    </button>
-                  </>
-                )}
-                {verifyMessage && <p className="sign-in-modal__lede">{verifyMessage}</p>}
+              {/* ── Profile ── */}
+              <p className="account-modal__section">Profile</p>
+              <div className="account-modal__row">
+                <label className="sign-in-modal__label">
+                  <span>First name</span>
+                  <input className="sign-in-modal__input" value={firstName} onChange={(e) => setFirstName(e.target.value)} placeholder="First" />
+                </label>
+                <label className="sign-in-modal__label">
+                  <span>Last name</span>
+                  <input className="sign-in-modal__input" value={lastName} onChange={(e) => setLastName(e.target.value)} placeholder="Last" />
+                </label>
               </div>
+              <label className="sign-in-modal__label">
+                <span>Phone <em className="account-modal__optional">for SMS alerts</em></span>
+                <input className="sign-in-modal__input" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+1 604 123 4567" />
+              </label>
+
+              {/* ── Email ── */}
+              <p className="account-modal__section">Email</p>
+              <div className="account-modal__verify-row">
+                <span className={`account-modal__verify-badge${emailVerified ? ' account-modal__verify-badge--ok' : ''}`}>
+                  {emailVerified ? '✓ Verified' : 'Not verified'}
+                </span>
+                {!emailVerified && !verifySent && (
+                  <button type="button" className="sign-in-modal__secondary account-modal__verify-btn" onClick={() => void requestVerification()}>
+                    Send verification email
+                  </button>
+                )}
+              </div>
+              {verifyMessage && (
+                <p className="sign-in-modal__lede account-modal__verify-msg">{verifyMessage}</p>
+              )}
+
+              {/* ── Notifications ── */}
+              <p className="account-modal__section">Notifications</p>
+              <div className="sign-in-modal__label">
+                <span>Alert channel</span>
+                <div className="account-modal__radio-group">
+                  {(['push', 'email', 'sms'] as const).map((ch) => (
+                    <label key={ch} className={`account-modal__radio${notifyVia === ch ? ' account-modal__radio--active' : ''}`}>
+                      <input type="radio" name="notify_via" value={ch} checked={notifyVia === ch} onChange={() => setNotifyVia(ch)} />
+                      {ch === 'push' ? 'Push' : ch === 'email' ? 'Email' : 'SMS'}
+                    </label>
+                  ))}
+                </div>
+              </div>
+              <div className="sign-in-modal__label">
+                <span>Alert me <strong className="account-modal__lead-val">{leadMinutes} min</strong> before disruptions</span>
+                <div className="account-modal__lead-row">
+                  {LEAD_PRESETS.map((m) => (
+                    <button
+                      key={m}
+                      type="button"
+                      className={`account-modal__preset${leadMinutes === m ? ' account-modal__preset--active' : ''}`}
+                      onClick={() => setLeadMinutes(m)}
+                    >
+                      {m}m
+                    </button>
+                  ))}
+                  <input
+                    type="number"
+                    className="sign-in-modal__input account-modal__lead-custom"
+                    min={5}
+                    max={180}
+                    value={leadMinutes}
+                    onChange={(e) => setLeadMinutes(Number(e.target.value) || 30)}
+                    aria-label="Custom minutes"
+                  />
+                </div>
+              </div>
+
               {error && <p className="sign-in-modal__error">{error}</p>}
               <div className="sign-in-modal__actions">
-                <button type="button" className="sign-in-modal__submit" onClick={() => void save()} disabled={saving}>
-                  {saving ? 'Saving…' : 'Save account'}
+                <button
+                  type="button"
+                  className={`sign-in-modal__submit${saved ? ' account-modal__submit--saved' : ''}`}
+                  onClick={() => void save()}
+                  disabled={saving || saved}
+                >
+                  {saving ? 'Saving…' : saved ? 'Saved ✓' : 'Save preferences'}
                 </button>
                 <button type="button" className="sign-in-modal__secondary" onClick={onClose}>Cancel</button>
               </div>
