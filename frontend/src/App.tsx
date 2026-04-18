@@ -2,7 +2,7 @@
  * Situate Vancouver — insight workspace (map-first). Dev/proxy and health-check context for
  * wiring APIs lives in `src/lib/stackIntegrationNotes.ts` (comments only).
  */
-import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react'
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { InsightLayerState, FocusLocation } from './components/VancouverMap'
 import LensSelector from './components/LensSelector'
 import { SKYTRAIN_LEGEND, SKYTRAIN_LINE_COLORS } from './data/skytrainLineKeys'
@@ -368,26 +368,24 @@ export default function App() {
                   <span className="quick-route-btn__label">Airport</span>
                   <span className="quick-route-btn__sub">YVR</span>
                 </button>
-                <button
-                  type="button"
-                  className="quick-route-btn"
-                  onClick={() => triggerQuickRoute('Peace Arch Border Crossing, Surrey BC')}
-                  title="Route to Peace Arch Border"
-                >
-                  <IconBorder />
-                  <span className="quick-route-btn__label">Border</span>
-                  <span className="quick-route-btn__sub">Peace Arch</span>
-                </button>
-                <button
-                  type="button"
-                  className="quick-route-btn quick-route-btn--soon"
-                  disabled
-                  title="Ferry routes — coming soon"
-                >
-                  <IconFerry />
-                  <span className="quick-route-btn__label">Ferry</span>
-                  <span className="quick-route-btn__sub">Soon</span>
-                </button>
+                <HoldMenuBtn
+                  icon={<IconBorder />}
+                  label="Border"
+                  options={[
+                    { label: 'Peace Arch', destination: 'Peace Arch Border Crossing, Surrey BC' },
+                    { label: 'Pacific Hwy', destination: 'Pacific Highway Border Crossing, Surrey BC' },
+                  ]}
+                  onSelect={triggerQuickRoute}
+                />
+                <HoldMenuBtn
+                  icon={<IconFerry />}
+                  label="Ferry"
+                  options={[
+                    { label: 'Horseshoe Bay', destination: 'Horseshoe Bay Ferry Terminal, West Vancouver BC' },
+                    { label: 'Tsawwassen', destination: 'Tsawwassen Ferry Terminal, Delta BC' },
+                  ]}
+                  onSelect={triggerQuickRoute}
+                />
               </div>
             </section>
 
@@ -650,6 +648,96 @@ function getTimezone(d: Date): string {
   } catch {
     return ''
   }
+}
+
+interface HoldMenuOption { label: string; destination: string }
+
+function HoldMenuBtn({
+  icon,
+  label,
+  options,
+  onSelect,
+}: {
+  icon: React.ReactNode
+  label: string
+  options: HoldMenuOption[]
+  onSelect: (destination: string) => void
+}) {
+  const [menuOpen, setMenuOpen] = useState(false)
+  const [defaultIdx, setDefaultIdx] = useState(0)
+  const holdTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const didHold = useRef(false)
+  const wrapRef = useRef<HTMLDivElement>(null)
+
+  const startHold = () => {
+    didHold.current = false
+    holdTimer.current = setTimeout(() => {
+      didHold.current = true
+      setMenuOpen(true)
+    }, 500)
+  }
+
+  const cancelHold = () => {
+    if (holdTimer.current) clearTimeout(holdTimer.current)
+  }
+
+  const handleClick = () => {
+    if (didHold.current) return   // long-press already handled
+    onSelect(options[defaultIdx].destination)
+  }
+
+  const handleOption = (idx: number) => {
+    setDefaultIdx(idx)
+    setMenuOpen(false)
+    onSelect(options[idx].destination)
+  }
+
+  // Close menu when clicking outside
+  useEffect(() => {
+    if (!menuOpen) return
+    const close = (e: MouseEvent) => {
+      if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) {
+        setMenuOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', close)
+    return () => document.removeEventListener('mousedown', close)
+  }, [menuOpen])
+
+  return (
+    <div ref={wrapRef} className="quick-route-btn-wrap">
+      <button
+        type="button"
+        className={`quick-route-btn${menuOpen ? ' quick-route-btn--open' : ''}`}
+        onMouseDown={startHold}
+        onMouseUp={cancelHold}
+        onMouseLeave={cancelHold}
+        onTouchStart={startHold}
+        onTouchEnd={cancelHold}
+        onClick={handleClick}
+        title={`Route to ${options[defaultIdx].label} — hold for options`}
+      >
+        {icon}
+        <span className="quick-route-btn__label">{label}</span>
+        <span className="quick-route-btn__sub">{options[defaultIdx].label}</span>
+      </button>
+      {menuOpen && (
+        <div className="quick-route-menu" role="menu">
+          {options.map((opt, idx) => (
+            <button
+              key={opt.destination}
+              type="button"
+              role="menuitem"
+              className={`quick-route-menu__item${idx === defaultIdx ? ' quick-route-menu__item--active' : ''}`}
+              onClick={() => handleOption(idx)}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  )
 }
 
 function IconAirplane() {
