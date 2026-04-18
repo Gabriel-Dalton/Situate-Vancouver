@@ -1902,7 +1902,8 @@
   position: absolute;
   top: calc(100% + 4px);
   left: 0;
-  right: 0;
+  min-width: 140px;
+  width: max-content;
   z-index: 500;
   display: flex;
   flex-direction: column;
