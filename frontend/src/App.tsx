@@ -361,7 +361,7 @@ export default function App() {
                 <button
                   type="button"
                   className="quick-route-btn"
-                  onClick={() => triggerQuickRoute('Vancouver International Airport (YVR), Richmond, BC')}
+                  onClick={() => triggerQuickRoute('YVR Airport, Richmond, BC')}
                   title="Route to YVR airport"
                 >
                   <IconAirplane />
@@ -371,7 +371,7 @@ export default function App() {
                 <button
                   type="button"
                   className="quick-route-btn"
-                  onClick={() => triggerQuickRoute('Peace Arch Border Crossing, Surrey, BC')}
+                  onClick={() => triggerQuickRoute('Peace Arch Border Crossing, Surrey BC')}
                   title="Route to Peace Arch Border"
                 >
                   <IconBorder />
