@@ -23,8 +23,10 @@ import { USER_EMAIL_KEY } from './config/authSession'
 import { AiQueryBar, AiResponsePanel } from './components/AiQuery'
 import type { AiQueryResponse } from './components/AiQuery'
 import RouteFindingPanel from './components/RouteFindingPanel'
+import type { QuickRoute } from './components/RouteFindingPanel'
 import ReportIncidentModal from './components/ReportIncidentModal'
 import type { RouteFindResult } from './services/routeService'
+import { accountService } from './services/accountService'
 import './App.css'
 
 const VancouverMap = lazy(() => import('./components/VancouverMap'))
@@ -59,6 +61,8 @@ export default function App() {
   const isDesktopSafari = isSafariUA && navigator.maxTouchPoints < 1
   const [safariWarningDismissed, setSafariWarningDismissed] = useState(false)
   const [authEmail, setAuthEmail] = useState<string | null>(() => localStorage.getItem(USER_EMAIL_KEY))
+  const [userHomeLabel, setUserHomeLabel] = useState<string | null>(null)
+  const [quickRoute, setQuickRoute] = useState<QuickRoute | null>(null)
   const selectedRoute = useMemo(
     () => routeResult?.routes.find((r) => r.index === selectedRouteIndex) ?? routeResult?.routes[0] ?? null,
     [routeResult, selectedRouteIndex],
@@ -141,6 +145,21 @@ export default function App() {
     setRouteResult(result)
     setSelectedRouteIndex(idx)
   }, [])
+
+  // Fetch home address when user signs in so quick routes can use it
+  useEffect(() => {
+    if (!authEmail) { setUserHomeLabel(null); return }
+    accountService.getMe()
+      .then((d) => setUserHomeLabel(d.profile.home_label || null))
+      .catch(() => setUserHomeLabel(null))
+  }, [authEmail])
+
+  const triggerQuickRoute = useCallback((destination: string) => {
+    const origin = userHomeLabel ?? 'Downtown Vancouver, BC'
+    setQuickRoute({ key: Date.now(), origin, destination })
+    // On mobile, switch to the route tab
+    if (isMobile) { setSheetOpen(true); setSheetTab('route') }
+  }, [userHomeLabel, isMobile])
 
   const focusLocation: FocusLocation = useMemo(() => {
     if (!aiResponse || !aiPanelOpen) return null
@@ -331,6 +350,47 @@ export default function App() {
 
             </section>
 
+            <section className="insight-panel quick-routes-panel">
+              <h2 className="insight-panel__heading">Quick routes</h2>
+              <p className="insight-panel__hint">
+                {authEmail && userHomeLabel
+                  ? 'Routing from your saved home address.'
+                  : 'Sign in and set a home address to route from your location.'}
+              </p>
+              <div className="quick-routes__buttons">
+                <button
+                  type="button"
+                  className="quick-route-btn"
+                  onClick={() => triggerQuickRoute('Vancouver International Airport (YVR), Richmond, BC')}
+                  title="Route to YVR airport"
+                >
+                  <IconAirplane />
+                  <span className="quick-route-btn__label">Airport</span>
+                  <span className="quick-route-btn__sub">YVR</span>
+                </button>
+                <button
+                  type="button"
+                  className="quick-route-btn"
+                  onClick={() => triggerQuickRoute('Peace Arch Border Crossing, Surrey, BC')}
+                  title="Route to Peace Arch Border"
+                >
+                  <IconBorder />
+                  <span className="quick-route-btn__label">Border</span>
+                  <span className="quick-route-btn__sub">Peace Arch</span>
+                </button>
+                <button
+                  type="button"
+                  className="quick-route-btn quick-route-btn--soon"
+                  disabled
+                  title="Ferry routes — coming soon"
+                >
+                  <IconFerry />
+                  <span className="quick-route-btn__label">Ferry</span>
+                  <span className="quick-route-btn__sub">Soon</span>
+                </button>
+              </div>
+            </section>
+
             <section className="insight-panel">
               <Collapsible
                 title="Live incidents"
@@ -464,6 +524,7 @@ export default function App() {
               onStopNavigation={navStop}
               navigationActive={navState.active}
               isSignedIn={Boolean(authEmail)}
+              quickRoute={quickRoute}
             />
           </aside>
         </div>{/* end .mobile-sheet */}
@@ -589,4 +650,35 @@ function getTimezone(d: Date): string {
   } catch {
     return ''
   }
+}
+
+function IconAirplane() {
+  return (
+    <svg className="quick-route-btn__icon" viewBox="0 0 24 24" fill="none" aria-hidden>
+      <path d="M21 16v-2l-8-5V3.5A1.5 1.5 0 0 0 11.5 2 1.5 1.5 0 0 0 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5z" fill="currentColor" />
+    </svg>
+  )
+}
+
+function IconBorder() {
+  return (
+    <svg className="quick-route-btn__icon" viewBox="0 0 24 24" fill="none" aria-hidden>
+      <rect x="2" y="11" width="20" height="2" rx="1" fill="currentColor" />
+      <rect x="6" y="7" width="2" height="10" rx="1" fill="currentColor" />
+      <rect x="16" y="7" width="2" height="10" rx="1" fill="currentColor" />
+      <path d="M8 9h8v6H8z" fill="currentColor" opacity="0.25" />
+      <circle cx="12" cy="12" r="1.5" fill="currentColor" />
+    </svg>
+  )
+}
+
+function IconFerry() {
+  return (
+    <svg className="quick-route-btn__icon" viewBox="0 0 24 24" fill="none" aria-hidden>
+      <path d="M4 15l1.5-6h13L20 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+      <path d="M2 18c1.5 0 2.5-1 4-1s2.5 1 4 1 2.5-1 4-1 2.5 1 4 1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+      <rect x="10" y="6" width="4" height="4" rx="0.5" fill="currentColor" opacity="0.5" />
+      <line x1="12" y1="3" x2="12" y2="6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+    </svg>
+  )
 }

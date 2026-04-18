@@ -137,8 +137,12 @@ def _check_vancouver_opendata_local(checks: dict[str, dict]) -> None:
             'base_url': settings.VANCOUVER_OPENDATA_BASE_URL,
         }
     except VancouverOpenDataError as exc:
+        # Network/DNS errors mean the upstream is unreachable, not that our service is broken.
+        # Treat as degraded so a transient outage doesn't flip all lights red.
+        import httpx as _httpx
+        is_network = isinstance(getattr(exc, '__cause__', None), (_httpx.RequestError, OSError))
         payload: dict = {
-            'status': 'error',
+            'status': 'degraded' if is_network else 'error',
             'message': str(exc),
             'base_url': settings.VANCOUVER_OPENDATA_BASE_URL,
         }

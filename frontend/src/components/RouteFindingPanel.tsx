@@ -1,9 +1,15 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { findRoute } from '../services/routeService'
 import type { RouteFindResult, RouteOption } from '../services/routeService'
 import { useRoutes } from '../hooks/useRoutes'
 
 declare function gtag(...args: unknown[]): void
+
+export interface QuickRoute {
+  key: number   // increment to re-trigger even for the same origin/destination
+  origin: string
+  destination: string
+}
 
 interface Props {
   onResult: (result: RouteFindResult | null, selectedIndex: number) => void
@@ -15,6 +21,7 @@ interface Props {
   onStopNavigation?: () => void
   navigationActive?: boolean
   isSignedIn?: boolean
+  quickRoute?: QuickRoute | null
 }
 
 function formatDistance(m: number): string {
@@ -32,6 +39,7 @@ export default function RouteFindingPanel({
   onStopNavigation,
   navigationActive = false,
   isSignedIn = false,
+  quickRoute = null,
 }: Props) {
   const [origin, setOrigin] = useState('')
   const [destination, setDestination] = useState('')
@@ -52,6 +60,20 @@ export default function RouteFindingPanel({
     update: updateRoute,
     remove: removeRoute,
   } = useRoutes(isSignedIn)
+
+  // Auto-populate and submit when a quick route is triggered from outside
+  useEffect(() => {
+    if (!quickRoute) return
+    setOrigin(quickRoute.origin)
+    setDestination(quickRoute.destination)
+    setError(null)
+    setLoading(true)
+    findRoute(quickRoute.origin, quickRoute.destination)
+      .then((res) => onResult(res, 0))
+      .catch((err) => setError(err instanceof Error ? err.message : 'Routing unavailable.'))
+      .finally(() => setLoading(false))
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [quickRoute?.key])
 
   const submit = useCallback(async () => {
     const o = origin.trim()
