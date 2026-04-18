@@ -34,6 +34,7 @@ class ReasonerAgent:
         user_query: str,
         incident: DetectedIncident | dict,
         context: RetrievedContext,
+        user_context: str | None = None,
     ) -> ReasonerOutput:
         """
         Reason over an incident and context to answer a user query.
@@ -42,6 +43,8 @@ class ReasonerAgent:
             user_query: The natural language question from the user.
             incident: DetectedIncident or dict from WatcherAgent.
             context: RetrievedContext from RetrieverAgent.
+            user_context: Optional live context string from Django (active incidents,
+                          user profile, saved routes, border waits, etc.).
 
         Returns:
             ReasonerOutput with plain-English answer and recommendations.
@@ -52,10 +55,18 @@ class ReasonerAgent:
             else str(incident)
         )
 
+        context_block = (
+            f"\n\nLIVE SITUATE CONTEXT (from Django — use this to personalise your answer):\n"
+            f"{user_context}\n"
+            if user_context
+            else ""
+        )
+
         user_message = (
             f"User question: {user_query}\n\n"
             f"Detected incident:\n{incident_json}\n\n"
             f"Retrieved context:\n{context.model_dump_json(indent=2)}"
+            f"{context_block}"
         )
 
         response = self.client.beta.chat.completions.parse(

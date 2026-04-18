@@ -40,6 +40,7 @@ def get_orchestrator() -> OrchestratorAgent:
 
 class QueryRequest(BaseModel):
     query: str
+    context: str | None = None   # optional live context injected by Django
 
     @field_validator("query")
     @classmethod
@@ -102,7 +103,7 @@ def query(
     if not body.query.strip():
         raise HTTPException(status_code=400, detail="query must not be empty")
 
-    return orchestrator.answer_query(user_query=body.query)
+    return orchestrator.answer_query(user_query=body.query, user_context=body.context)
 
 
 @router.post("/report", response_model=DetectedIncident)

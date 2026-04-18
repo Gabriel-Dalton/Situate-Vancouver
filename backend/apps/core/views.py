@@ -1,17 +1,19 @@
 import hashlib
 import json
 import logging
+from datetime import datetime
 
 import httpx
 from django.conf import settings
 from django.core.cache import cache
+from django.utils import timezone
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
 from .health_checks import collect_health_checks
-from .models import Incident
+from .models import Incident, UserProfile, SavedRoute
 
 logger = logging.getLogger(__name__)
 
@@ -51,6 +53,77 @@ def health(request):
         else status.HTTP_200_OK
     )
     return Response(payload, status=http_status)
+
+
+def _build_ai_context(request) -> str:
+    """
+    Build a plain-text context block for the AI reasoner containing:
+    - Current Vancouver time
+    - Active DB incidents (top 15 by severity)
+    - Border wait times
+    - Authenticated user's profile, home address, and saved routes
+    """
+    lines: list[str] = []
+
+    # ── Timestamp ──
+    now = timezone.now().astimezone(timezone.get_current_timezone())
+    lines.append(f"Current time: {now.strftime('%Y-%m-%d %H:%M %Z')}")
+
+    # ── Active incidents ──
+    severity_order = {'high': 0, 'medium': 1, 'low': 2}
+    incidents = list(
+        Incident.objects.filter(status='active')
+        .values('incident_type', 'severity', 'title', 'location_description')
+        .order_by('severity')[:20]
+    )
+    if incidents:
+        border = [i for i in incidents if i['incident_type'] == 'border_wait']
+        other  = [i for i in incidents if i['incident_type'] != 'border_wait']
+
+        if other:
+            lines.append(f"\nActive map incidents ({len(other)} shown):")
+            for i in sorted(other, key=lambda x: severity_order.get(x['severity'], 9))[:15]:
+                loc = i['location_description'] or ''
+                lines.append(f"  - [{i['severity'].upper()}] {i['incident_type']}: {i['title']}" + (f" — {loc}" if loc else ""))
+
+        if border:
+            lines.append("\nBorder wait times:")
+            for i in border:
+                lines.append(f"  - {i['title']}: {i['severity']} wait" + (f" ({i['location_description']})" if i['location_description'] else ""))
+    else:
+        lines.append("\nNo active incidents in the database right now.")
+
+    # ── User profile (if authenticated) ──
+    user = getattr(request, 'user', None)
+    if user and user.is_authenticated:
+        try:
+            profile = UserProfile.objects.get(user=user)
+            lines.append("\nUser profile:")
+            if profile.home_label:
+                lines.append(f"  - Home address: {profile.home_label}")
+            lines.append(f"  - Alert channel: {profile.notify_via}")
+            lines.append(f"  - Alert lead time: {profile.alert_lead_minutes} minutes before departure")
+
+            routes = list(
+                SavedRoute.objects.filter(user=profile, is_active=True)
+                .values('name', 'origin_label', 'destination_label', 'departure_time', 'active_days')
+            )
+            if routes:
+                lines.append(f"\n  Saved routes ({len(routes)}):")
+                for r in routes:
+                    days = ', '.join(r['active_days']) if r['active_days'] else 'all days'
+                    lines.append(
+                        f"    * {r['name']}: {r['origin_label']} → {r['destination_label']}"
+                        f" (departs {r['departure_time']}, {days})"
+                    )
+            else:
+                lines.append("  - No saved routes.")
+        except UserProfile.DoesNotExist:
+            pass
+    else:
+        lines.append("\nUser: not signed in (no personalised route data available).")
+
+    return "\n".join(lines)
 
 
 @api_view(['POST'])
@@ -101,6 +174,8 @@ def ai_incidents_query(request):
             payload['cache_hit'] = True
         return Response(payload, status=status.HTTP_200_OK)
 
+    user_context = _build_ai_context(request)
+
     base = settings.AI_SERVICE_URL.rstrip('/')
     url = f'{base}/incidents/query'
     timeout = float(getattr(settings, 'AI_QUERY_TIMEOUT_SECONDS', 120.0))
@@ -108,7 +183,7 @@ def ai_incidents_query(request):
     try:
         upstream = httpx.post(
             url,
-            json={'query': query},
+            json={'query': query, 'context': user_context},
             timeout=timeout,
         )
     except httpx.TimeoutException:

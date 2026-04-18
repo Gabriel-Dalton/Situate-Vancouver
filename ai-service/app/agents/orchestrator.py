@@ -108,7 +108,7 @@ class OrchestratorAgent:
 
         return incident
 
-    def answer_query(self, user_query: str) -> QueryResponse:
+    def answer_query(self, user_query: str, user_context: str | None = None) -> QueryResponse:
         """
         QUERY mode: Answer a natural language question about Vancouver.
 
@@ -165,6 +165,7 @@ class OrchestratorAgent:
             user_query=user_query,
             incident=incident,
             context=context,
+            user_context=user_context,
         )
 
         return QueryResponse(
