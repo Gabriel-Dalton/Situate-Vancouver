@@ -1286,7 +1286,7 @@
   }
 }
 
-@media (max-width: 768px) {
+@media (max-width: 768px), (max-height: 560px) and (max-width: 1100px) {
   .insight-shell__pill {
     display: none;
   }
@@ -2435,12 +2435,12 @@
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   MOBILE LAYOUT  (≤ 768px  — iOS / Android native via Capacitor)
+   MOBILE LAYOUT  (narrow portrait OR phone-style landscape — iOS/Android/Capacitor)
    The map fills the entire screen. Rails live in a slide-up bottom sheet.
    All desktop grid layout is untouched — these rules only apply on mobile.
    ═══════════════════════════════════════════════════════════════════════════ */
 
-@media (max-width: 768px) {
+@media (max-width: 768px), (max-height: 560px) and (max-width: 1100px) {
 
   /* ── Shell: full-screen column, map takes all remaining space ── */
 
@@ -2745,4 +2745,53 @@
     border-top: 1px solid var(--border-subtle);
   }
 
+}
+
+/*
+ * Wide phone landscape: the main mobile block above keeps a 3-column header (`auto 1fr auto`),
+ * which matches desktop density on a short viewport. Stack the header after that block so this wins.
+ */
+@media (max-height: 560px) and (min-width: 769px) and (max-width: 1100px) {
+  .insight-shell__header {
+    grid-template-columns: 1fr;
+    justify-items: center;
+    gap: 0.35rem;
+    padding-top: max(env(safe-area-inset-top, 0px), 0.35rem);
+    padding-left: max(env(safe-area-inset-left, 0px), 0.5rem);
+    padding-right: max(env(safe-area-inset-right, 0px), 0.5rem);
+    padding-bottom: 0.35rem;
+  }
+
+  .insight-shell__brand {
+    justify-self: start;
+    width: 100%;
+  }
+
+  .insight-shell__header-meta {
+    justify-self: end;
+    width: 100%;
+  }
+
+  .sign-in-header__session-email {
+    max-width: 6rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+
+/*
+ * Touch mobile landscape: cap bottom sheet height so the map stays usable; Mobility lens & route
+ * finder stay behind the same ☰ sheet as portrait (not stacked under the map).
+ */
+@media (orientation: landscape) and (max-height: 560px) and (max-width: 1100px) {
+  .insight-shell--mobile-touch .mobile-sheet {
+    max-height: min(44vh, 252px);
+    height: auto;
+    min-height: 0;
+  }
+
+  .insight-shell--mobile-touch .mobile-sheet-tab {
+    padding: 0.45rem 0;
+    font-size: 0.75rem;
+  }
 }

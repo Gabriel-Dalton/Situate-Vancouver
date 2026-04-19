@@ -120,7 +120,16 @@ export default function App() {
   }, [isMobile, sheetOpen])
 
   const toggleLayer = useCallback((key: keyof InsightLayerState) => {
-    setLayers((prev) => ({ ...prev, [key]: !prev[key] }))
+    setLayers((prev) => {
+      if (key === 'skytrainNodes') {
+        const next = !prev.skytrainNodes
+        if (next) {
+          return { ...prev, skytrainNodes: true, expoLine: true, millenniumLine: true }
+        }
+        return { ...prev, skytrainNodes: false, expoLine: false, millenniumLine: false }
+      }
+      return { ...prev, [key]: !prev[key] }
+    })
   }, [])
 
   const toggleIncidentType = useCallback((type: string) => {
@@ -170,7 +179,7 @@ export default function App() {
   }, [aiResponse, aiPanelOpen])
 
   return (
-    <div className="insight-shell">
+    <div className={`insight-shell${isMobile ? ' insight-shell--mobile-touch' : ''}`}>
       {reportModalOpen && <ReportIncidentModal onClose={() => setReportModalOpen(false)} />}
       {isDesktopSafari && !safariWarningDismissed && (
         <div className="safari-warning" role="alert">

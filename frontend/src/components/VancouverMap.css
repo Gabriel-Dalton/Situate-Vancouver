@@ -131,7 +131,7 @@
   background: rgba(0, 170, 239, 0.15);
 }
 
-@media (max-width: 768px) {
+@media (max-width: 768px), (max-height: 560px) and (max-width: 1100px) {
   .van-map .maplibregl-ctrl-bottom-right {
     margin-bottom: 5.6rem;
     margin-right: 0.85rem;
@@ -144,6 +144,17 @@
   .van-map .maplibregl-ctrl button {
     min-width: 44px;
     min-height: 44px;
+  }
+}
+
+/* Same controls as the Layers sheet — hide duplicate strip in touch mobile landscape for a clearer map */
+@media (orientation: landscape) and (max-height: 560px) and (max-width: 1100px) {
+  .insight-shell--mobile-touch .map-insight-toolbar {
+    display: none;
+  }
+
+  .insight-shell--mobile-touch .van-map .maplibregl-ctrl-bottom-right {
+    margin-bottom: 4.25rem;
   }
 }
 

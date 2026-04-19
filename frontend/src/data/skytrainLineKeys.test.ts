@@ -1,5 +1,10 @@
 import type { FeatureCollection } from 'geojson'
-import { enrichSkytrainNodes, SKYTRAIN_LINE_COLORS, SKYTRAIN_LEGEND } from './skytrainLineKeys'
+import {
+  ALL_SKYTRAIN_LINE_KEYS,
+  enrichSkytrainNodes,
+  SKYTRAIN_LINE_COLORS,
+  SKYTRAIN_LEGEND,
+} from './skytrainLineKeys'
 
 describe('enrichSkytrainNodes', () => {
   it('adds lineKey and lens for a known station', () => {
@@ -40,6 +45,18 @@ describe('enrichSkytrainNodes', () => {
     })
     expect(warn).toHaveBeenCalled()
     warn.mockRestore()
+  })
+})
+
+describe('ALL_SKYTRAIN_LINE_KEYS', () => {
+  it('lists every logical line key used for station filters', () => {
+    expect(ALL_SKYTRAIN_LINE_KEYS).toEqual([
+      'expo',
+      'millennium',
+      'canada',
+      'expo-millennium',
+      'expo-canada',
+    ])
   })
 })
 

@@ -4,6 +4,15 @@ import type { ExpressionSpecification } from 'maplibre-gl'
 /** Logical line grouping for map styling (interchanges get their own keys). */
 export type SkytrainLineKey = 'expo' | 'millennium' | 'canada' | 'expo-millennium' | 'expo-canada'
 
+/** Every `lineKey` assigned by `enrichSkytrainNodes` — use when the SkyTrain layer is on without line sub-filters. */
+export const ALL_SKYTRAIN_LINE_KEYS: readonly SkytrainLineKey[] = [
+  'expo',
+  'millennium',
+  'canada',
+  'expo-millennium',
+  'expo-canada',
+]
+
 /**
  * Station → line key (TransLink network as of Evergreen + Capstan).
  * Interchanges: Commercial–Broadway, Lougheed, Production Way (Expo + Millennium); Waterfront (Expo + Canada).

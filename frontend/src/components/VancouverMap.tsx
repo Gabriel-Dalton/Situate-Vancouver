@@ -75,12 +75,14 @@ function applyInsightLayers(map: maplibregl.Map, layers: InsightLayerState) {
     if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', vis(on))
   }
 
-  // Per-line filters: build list of visible lineKeys and apply as a filter expression
+  // Per-line filters: Expo / Millennium toggles match the sidebar & toolbar (see App toggleLayer).
+  // Canada Line has no separate checkbox — always include canada + Waterfront (expo-canada) when SkyTrain is on.
   const visibleLines: string[] = []
-  if (layers.expoLine) visibleLines.push('expo', 'expo-millennium', 'expo-canada')
-  if (layers.millenniumLine) visibleLines.push('millennium', 'expo-millennium')
-  // canada line has no separate toggle — always on if skytrainNodes is on
-  if (layers.skytrainNodes) visibleLines.push('canada', 'expo-canada')
+  if (layers.skytrainNodes) {
+    visibleLines.push('canada', 'expo-canada')
+    if (layers.expoLine) visibleLines.push('expo', 'expo-millennium', 'expo-canada')
+    if (layers.millenniumLine) visibleLines.push('millennium', 'expo-millennium')
+  }
 
   const uniqueLines = [...new Set(visibleLines)]
   const lineFilter: maplibregl.ExpressionSpecification = uniqueLines.length > 0

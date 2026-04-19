@@ -424,7 +424,7 @@
 
 /* ─── Responsive: header query bar ─── */
 
-@media (max-width: 768px) {
+@media (max-width: 768px), (max-height: 560px) and (max-width: 1100px) {
   .ai-query-bar {
     height: 40px;
     max-width: none;
@@ -449,7 +449,7 @@
   }
 }
 
-@media (max-width: 480px) {
+@media (max-width: 480px), (max-height: 560px) and (max-width: 1100px) {
   .ai-query-bar {
     height: 40px;
     flex-basis: 100%;
@@ -472,7 +472,7 @@
 
 /* ─── Responsive: split view on small screens stacks vertically ─── */
 
-@media (max-width: 700px) {
+@media (max-width: 700px), (max-height: 560px) and (max-width: 1100px) {
   .ai-response-panel {
     border-left: none;
     border-top: 1px solid var(--border-subtle);
