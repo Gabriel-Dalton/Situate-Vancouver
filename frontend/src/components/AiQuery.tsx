@@ -19,8 +19,11 @@ export interface AiQueryResponse {
   confidence: number
 }
 
+export type ZoomLocation = { lat: number; lng: number; label: string }
+
 interface AiQueryBarProps {
   onResponse: (response: AiQueryResponse) => void
+  onZoom?: (loc: ZoomLocation) => void
 }
 
 const PLACEHOLDER_QUERIES = [
@@ -52,7 +55,30 @@ function buildErrorResponse(query: string, detail: string): AiQueryResponse {
   }
 }
 
-export function AiQueryBar({ onResponse }: AiQueryBarProps) {
+const ZOOM_PREFIX_RE = /^(?:go\s+to|zoom\s+to|navigate\s+to|take\s+me\s+to|show\s+me|find|where\s+is|where's)\s+/i
+
+async function geocodePlace(place: string): Promise<ZoomLocation | null> {
+  try {
+    const params = new URLSearchParams({
+      q: `${place}, Vancouver, BC`,
+      format: 'json',
+      limit: '1',
+      countrycodes: 'ca',
+      viewbox: '-123.5,49.0,-122.5,49.6',
+      bounded: '1',
+    })
+    const res = await fetch(`https://nominatim.openstreetmap.org/search?${params}`, {
+      headers: { 'Accept-Language': 'en', 'User-Agent': 'SituateVancouver/1.0' },
+    })
+    const data = await res.json()
+    if (!data?.[0]) return null
+    return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon), label: data[0].display_name }
+  } catch {
+    return null
+  }
+}
+
+export function AiQueryBar({ onResponse, onZoom }: AiQueryBarProps) {
   const [query, setQuery] = useState('')
   const [loading, setLoading] = useState(false)
   const [placeholderIdx, setPlaceholderIdx] = useState(0)
@@ -68,6 +94,22 @@ export function AiQueryBar({ onResponse }: AiQueryBarProps) {
   const submit = useCallback(async () => {
     const trimmed = query.trim()
     if (!trimmed || loading) return
+
+    const zoomMatch = trimmed.match(ZOOM_PREFIX_RE)
+    if (zoomMatch && onZoom) {
+      const place = trimmed.slice(zoomMatch[0].length).trim()
+      setLoading(true)
+      const loc = await geocodePlace(place)
+      setLoading(false)
+      if (loc) {
+        onZoom(loc)
+        setQuery('')
+      } else {
+        onResponse(buildErrorResponse(trimmed, `Could not find "${place}" on the map.`))
+        setQuery('')
+      }
+      return
+    }
 
     setLoading(true)
     try {

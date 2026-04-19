@@ -173,13 +173,20 @@ export default function App() {
     if (isMobile) { setSheetOpen(true); setSheetTab('route') }
   }, [userHomeLabel, isMobile])
 
+  const [zoomFocus, setZoomFocus] = useState<FocusLocation>(null)
+
   const focusLocation: FocusLocation = useMemo(() => {
-    if (!aiResponse || !aiPanelOpen) return null
-    const { lat, lng } = aiResponse.coordinates
-    if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null
-    if (aiResponse.query_type === 'error') return null
-    return { lat, lng, label: aiResponse.location }
-  }, [aiResponse, aiPanelOpen])
+    if (aiResponse && aiPanelOpen) {
+      const { lat, lng } = aiResponse.coordinates
+      if (Number.isFinite(lat) && Number.isFinite(lng) && aiResponse.query_type !== 'error')
+        return { lat, lng, label: aiResponse.location }
+    }
+    return zoomFocus
+  }, [aiResponse, aiPanelOpen, zoomFocus])
+
+  const handleZoom = useCallback((loc: { lat: number; lng: number; label: string }) => {
+    setZoomFocus(loc)
+  }, [])
 
   return (
     <div className={`insight-shell${isMobile ? ' insight-shell--mobile-touch' : ''}`}>
@@ -205,7 +212,7 @@ export default function App() {
           </div>
           <p className="insight-shell__subtitle">City-scale insight canvas <span className="beta-badge">Beta</span></p>
         </div>
-        <AiQueryBar onResponse={handleAiResponse} />
+        <AiQueryBar onResponse={handleAiResponse} onZoom={handleZoom} />
         <div className="insight-shell__header-meta">
           <div className="insight-shell__header-meta-row">
             <div id="situate-lang-mount" className="insight-shell__lang" aria-label="Language" />
