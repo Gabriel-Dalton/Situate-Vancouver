@@ -45,6 +45,7 @@ urlpatterns = [
     path('routes/find/', views.find_route, name='routes-find'),
     path('lens/<str:lens>/', views.lens_geojson, name='lens-geojson'),
     path('outages/', views.outages_geojson, name='outages-geojson'),
+    path('cameras/', views.cameras_geojson, name='cameras-geojson'),
     path('', include(router.urls)),
     path(
         'datasets/',

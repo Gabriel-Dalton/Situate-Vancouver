@@ -70,6 +70,7 @@ function applyInsightLayers(map: maplibregl.Map, layers: InsightLayerState) {
     ['3d-buildings', layers.buildings],
     ['outages-glow', layers.outages],
     ['outages-core', layers.outages],
+    ['cameras-core', layers.cameras],
   ]
   for (const [id, on] of pairs) {
     if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', vis(on))
@@ -269,6 +270,7 @@ type Props = {
   lens: MobilityLens
   lensData: GeoJSON.FeatureCollection
   outagesData?: GeoJSON.FeatureCollection
+  camerasData?: GeoJSON.FeatureCollection | null
   incident?: AiQueryResponse | null
   focusLocation?: FocusLocation
   routeResult?: RouteFindResult | null
@@ -391,6 +393,7 @@ export default function VancouverMap({
   lens,
   lensData,
   outagesData,
+  camerasData,
   incident,
   focusLocation,
   routeResult,
@@ -808,6 +811,58 @@ export default function VancouverMap({
     map.on('mouseenter', LAYER_CORE, () => { map.getCanvas().style.cursor = 'pointer' })
     map.on('mouseleave', LAYER_CORE, () => { map.getCanvas().style.cursor = '' })
   }, [outagesData]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Render DriveBC traffic camera dots
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map || !styleReadyRef.current) return
+
+    const SRC = 'traffic-cameras'
+    const LAYER_CORE = 'cameras-core'
+
+    const data: GeoJSON.FeatureCollection = camerasData ?? { type: 'FeatureCollection', features: [] }
+
+    if (map.getSource(SRC)) {
+      ;(map.getSource(SRC) as maplibregl.GeoJSONSource).setData(data)
+      return
+    }
+
+    map.addSource(SRC, { type: 'geojson', data })
+
+    map.addLayer({
+      id: LAYER_CORE,
+      type: 'circle',
+      source: SRC,
+      layout: { visibility: layers.cameras ? 'visible' : 'none' },
+      paint: {
+        'circle-radius': 5,
+        'circle-color': '#ffffff',
+        'circle-stroke-width': 2,
+        'circle-stroke-color': '#00e5ff',
+        'circle-opacity': 0.92,
+      },
+    })
+
+    map.on('click', LAYER_CORE, (e) => {
+      const props = e.features?.[0]?.properties
+      if (!props) return
+      const imgHtml = props.image_url
+        ? `<img src="${props.image_url}" alt="${escapeHtml(props.name)}" class="van-popup__cam-img" onerror="this.style.display='none'" />`
+        : ''
+      const orientation = props.orientation ? `<div class="van-popup__body" style="opacity:0.6;font-size:0.78em">${escapeHtml(props.orientation)}</div>` : ''
+      new maplibregl.Popup({ maxWidth: '320px', className: 'van-popup', offset: 14 })
+        .setLngLat(e.lngLat)
+        .setHTML(
+          `<div class="van-popup__title">📷 ${escapeHtml(props.name)}</div>` +
+          orientation +
+          imgHtml,
+        )
+        .addTo(map)
+    })
+
+    map.on('mouseenter', LAYER_CORE, () => { map.getCanvas().style.cursor = 'pointer' })
+    map.on('mouseleave', LAYER_CORE, () => { map.getCanvas().style.cursor = '' })
+  }, [camerasData]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Render route polylines from ORS result
   useEffect(() => {

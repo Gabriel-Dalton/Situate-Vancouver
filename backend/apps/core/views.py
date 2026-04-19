@@ -55,6 +55,63 @@ def health(request):
     return Response(payload, status=http_status)
 
 
+_CAMERAS_URL = 'https://api.open511.gov.bc.ca/cameras'
+_CAMERAS_BBOX = '-123.5,48.9,-121.8,49.5'   # Metro Vancouver bounding box
+_CAMERAS_CACHE_TTL = 10 * 60                  # 10 minutes
+
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def cameras_geojson(request):
+    """
+    Return a GeoJSON FeatureCollection of DriveBC traffic cameras in Metro Vancouver.
+    Proxied from the Open511 BC cameras endpoint, cached 10 minutes.
+    """
+    cache_key = 'cameras_geojson_metro_van'
+    cached = cache.get(cache_key)
+    if cached:
+        return Response(json.loads(cached))
+
+    try:
+        resp = httpx.get(
+            _CAMERAS_URL,
+            params={'bbox': _CAMERAS_BBOX, 'limit': 300},
+            headers={'Accept': 'application/json'},
+            timeout=10.0,
+        )
+        resp.raise_for_status()
+        data = resp.json()
+    except Exception as exc:
+        logger.warning('cameras_geojson: fetch failed — %s', exc)
+        return Response({'type': 'FeatureCollection', 'features': []})
+
+    features = []
+    for cam in data.get('cameras', []):
+        geo = cam.get('geography')
+        if not geo or geo.get('type') != 'Point':
+            continue
+        views = cam.get('cameras', [])
+        image_url = views[0].get('imageUrl', '') if views else ''
+        orientation = views[0].get('orientation', '') if views else ''
+        roads = cam.get('roads', [])
+        road = roads[0].get('name', '') if roads else ''
+        features.append({
+            'type': 'Feature',
+            'geometry': geo,
+            'properties': {
+                'id': cam.get('id', ''),
+                'name': cam.get('name', ''),
+                'image_url': image_url,
+                'orientation': orientation,
+                'road': road,
+            },
+        })
+
+    geojson = {'type': 'FeatureCollection', 'features': features}
+    cache.set(cache_key, json.dumps(geojson), timeout=_CAMERAS_CACHE_TTL)
+    return Response(geojson)
+
+
 def _build_ai_context(request) -> str:
     """
     Build a plain-text context block for the AI reasoner containing:

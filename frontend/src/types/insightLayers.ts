@@ -5,6 +5,7 @@ export type InsightLayerState = {
   incidentMarker: boolean
   buildings: boolean
   outages: boolean
+  cameras: boolean
 }
 
 export type InsightLayerKey = keyof InsightLayerState

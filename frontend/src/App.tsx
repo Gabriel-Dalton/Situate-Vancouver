@@ -12,6 +12,7 @@ import { useLensOverlay } from './hooks/useLensOverlay'
 import { useNavigation } from './hooks/useNavigation'
 import { useIsMobile } from './hooks/useIsMobile'
 import { useOutages } from './hooks/useOutages'
+import { useCameras } from './hooks/useCameras'
 import { useIncidents } from './hooks/useIncidents'
 import { useServiceHealth } from './hooks/useServiceHealth'
 import NavigationOverlay from './components/NavigationOverlay'
@@ -38,6 +39,7 @@ const DEFAULT_LAYERS: InsightLayerState = {
   incidentMarker: true,
   buildings: true,
   outages: true,
+  cameras: false,
 }
 
 export default function App() {
@@ -45,6 +47,7 @@ export default function App() {
   const [lens, setLens] = useState<MobilityLens>('drive')
   const { data: lensData, loading: lensLoading } = useLensOverlay(lens)
   const { data: outagesData } = useOutages()
+  const camerasData = useCameras(layers.cameras)
   const { incidents: dbIncidents, lastUpdated: incidentsLastUpdated } = useIncidents({ status: 'active' })
   const [aiResponse, setAiResponse] = useState<AiQueryResponse | null>(null)
   const [aiPanelOpen, setAiPanelOpen] = useState(false)
@@ -239,6 +242,7 @@ export default function App() {
                 lens={lens}
                 lensData={lensData}
                 outagesData={outagesData}
+                camerasData={camerasData}
                 incident={aiResponse}
                 focusLocation={focusLocation}
                 routeResult={routeResult}
@@ -296,6 +300,7 @@ export default function App() {
               lens={lens}
               lensData={lensData}
               outagesData={outagesData}
+              camerasData={camerasData}
               incident={aiResponse}
               focusLocation={focusLocation}
               routeResult={routeResult}
@@ -481,6 +486,13 @@ export default function App() {
                   description="Live BC Hydro outages · refreshes every 15 min"
                   checked={layers.outages}
                   onChange={() => toggleLayer('outages')}
+                />
+                <LayerToggle
+                  id="layer-cameras"
+                  label="Traffic cameras"
+                  description="DriveBC live camera locations · click for preview"
+                  checked={layers.cameras}
+                  onChange={() => toggleLayer('cameras')}
                 />
               </Collapsible>
 
