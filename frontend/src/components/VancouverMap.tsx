@@ -849,7 +849,8 @@ export default function VancouverMap({
       const imgHtml = props.image_url
         ? `<img src="${props.image_url}" alt="${escapeHtml(props.name)}" class="van-popup__cam-img" onerror="this.style.display='none'" />`
         : ''
-      const orientation = props.orientation ? `<div class="van-popup__body" style="opacity:0.6;font-size:0.78em">${escapeHtml(props.orientation)}</div>` : ''
+      const subtitle = props.caption || props.orientation
+      const orientation = subtitle ? `<div class="van-popup__body" style="opacity:0.6;font-size:0.78em">${escapeHtml(subtitle)}</div>` : ''
       new maplibregl.Popup({ maxWidth: '320px', className: 'van-popup', offset: 14 })
         .setLngLat(e.lngLat)
         .setHTML(

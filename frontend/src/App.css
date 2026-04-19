@@ -1,8 +1,9 @@
 .insight-shell {
   display: flex;
   flex-direction: column;
-  min-height: 100%;
-  min-height: 100svh;
+  height: 100%;
+  height: 100svh;
+  overflow: hidden;
 }
 
 .safari-warning {
@@ -539,10 +540,11 @@
 
 .insight-shell__map-wrap {
   position: relative;
-  min-height: 320px;
+  min-height: 0;
   background: var(--harbor-navy-deep);
   grid-column: 2;
   grid-row: 1;
+  overflow: hidden;
 }
 
 .insight-shell__rail--left {

@@ -55,9 +55,11 @@ def health(request):
     return Response(payload, status=http_status)
 
 
-_CAMERAS_URL = 'https://api.open511.gov.bc.ca/cameras'
-_CAMERAS_BBOX = '-123.5,48.9,-121.8,49.5'   # Metro Vancouver bounding box
-_CAMERAS_CACHE_TTL = 10 * 60                  # 10 minutes
+_CAMERAS_URL = 'https://www.drivebc.ca/api/webcams/'
+_CAMERAS_CACHE_TTL = 10 * 60  # 10 minutes
+# Metro Vancouver bounding box for server-side filtering
+_CAM_LNG_MIN, _CAM_LNG_MAX = -123.5, -121.8
+_CAM_LAT_MIN, _CAM_LAT_MAX = 49.0, 49.5
 
 
 @api_view(['GET'])
@@ -65,7 +67,7 @@ _CAMERAS_CACHE_TTL = 10 * 60                  # 10 minutes
 def cameras_geojson(request):
     """
     Return a GeoJSON FeatureCollection of DriveBC traffic cameras in Metro Vancouver.
-    Proxied from the Open511 BC cameras endpoint, cached 10 minutes.
+    Proxied from the DriveBC webcams API, filtered to the Metro Vancouver bbox, cached 10 min.
     """
     cache_key = 'cameras_geojson_metro_van'
     cached = cache.get(cache_key)
@@ -75,9 +77,9 @@ def cameras_geojson(request):
     try:
         resp = httpx.get(
             _CAMERAS_URL,
-            params={'bbox': _CAMERAS_BBOX, 'limit': 300},
+            params={'format': 'json'},
             headers={'Accept': 'application/json'},
-            timeout=10.0,
+            timeout=15.0,
         )
         resp.raise_for_status()
         data = resp.json()
@@ -86,24 +88,27 @@ def cameras_geojson(request):
         return Response({'type': 'FeatureCollection', 'features': []})
 
     features = []
-    for cam in data.get('cameras', []):
-        geo = cam.get('geography')
-        if not geo or geo.get('type') != 'Point':
+    for cam in data if isinstance(data, list) else []:
+        loc = cam.get('location')
+        if not loc or loc.get('type') != 'Point':
             continue
-        views = cam.get('cameras', [])
-        image_url = views[0].get('imageUrl', '') if views else ''
-        orientation = views[0].get('orientation', '') if views else ''
-        roads = cam.get('roads', [])
-        road = roads[0].get('name', '') if roads else ''
+        lng, lat = loc['coordinates']
+        if not (_CAM_LNG_MIN <= lng <= _CAM_LNG_MAX and _CAM_LAT_MIN <= lat <= _CAM_LAT_MAX):
+            continue
+        if not cam.get('is_on', True) or not cam.get('should_appear', True):
+            continue
+        image_path = cam.get('links', {}).get('imageDisplay', '')
+        image_url = f'https://www.drivebc.ca{image_path}' if image_path else ''
         features.append({
             'type': 'Feature',
-            'geometry': geo,
+            'geometry': loc,
             'properties': {
                 'id': cam.get('id', ''),
                 'name': cam.get('name', ''),
+                'caption': cam.get('caption', ''),
                 'image_url': image_url,
-                'orientation': orientation,
-                'road': road,
+                'orientation': cam.get('orientation', ''),
+                'highway': cam.get('highway_display', ''),
             },
         })
 
