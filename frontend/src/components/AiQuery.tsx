@@ -3,6 +3,27 @@ import type { KeyboardEvent } from 'react'
 import { apiUrl } from '../lib/api'
 import './AiQuery.css'
 
+// Minimal Web Speech API types (not yet in standard TypeScript DOM lib)
+interface SpeechRecognitionEvent extends Event {
+  readonly results: SpeechRecognitionResultList
+}
+interface ISpeechRecognition extends EventTarget {
+  lang: string
+  continuous: boolean
+  interimResults: boolean
+  onresult: ((ev: SpeechRecognitionEvent) => void) | null
+  onend: (() => void) | null
+  onerror: ((ev: Event) => void) | null
+  start(): void
+  stop(): void
+  abort(): void
+}
+
+// Detect Web Speech API support once at module load (stable across renders)
+const isSpeechSupported =
+  typeof window !== 'undefined' &&
+  ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window)
+
 export interface AiQueryResponse {
   original_query: string
   query_type: string
@@ -82,7 +103,10 @@ export function AiQueryBar({ onResponse, onZoom }: AiQueryBarProps) {
   const [query, setQuery] = useState('')
   const [loading, setLoading] = useState(false)
   const [placeholderIdx, setPlaceholderIdx] = useState(0)
+  const [isListening, setIsListening] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
+  const recognitionRef = useRef<ISpeechRecognition | null>(null)
+  const pendingTranscriptRef = useRef('')
 
   useEffect(() => {
     const id = setInterval(() => {
@@ -91,8 +115,8 @@ export function AiQueryBar({ onResponse, onZoom }: AiQueryBarProps) {
     return () => clearInterval(id)
   }, [])
 
-  const submit = useCallback(async () => {
-    const trimmed = query.trim()
+  const submit = useCallback(async (overrideQuery?: string) => {
+    const trimmed = (overrideQuery ?? query).trim()
     if (!trimmed || loading) return
 
     const zoomMatch = trimmed.match(ZOOM_PREFIX_RE)
@@ -147,6 +171,10 @@ export function AiQueryBar({ onResponse, onZoom }: AiQueryBarProps) {
     }
   }, [query, loading, onResponse])
 
+  // Keep a stable ref so voice recognition callbacks always call the latest submit
+  const submitRef = useRef(submit)
+  useEffect(() => { submitRef.current = submit }, [submit])
+
   const handleKey = useCallback(
     (e: KeyboardEvent) => {
       if (e.key === 'Enter' && !e.shiftKey) {
@@ -156,6 +184,56 @@ export function AiQueryBar({ onResponse, onZoom }: AiQueryBarProps) {
     },
     [submit],
   )
+
+  const startVoice = useCallback(() => {
+    if (!isSpeechSupported || loading || recognitionRef.current) return
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const SR = (window as any).SpeechRecognition ?? (window as any).webkitSpeechRecognition
+    if (!SR) return
+
+    const recognition = new SR() as ISpeechRecognition
+    recognition.lang = navigator.language || 'en-CA'
+    recognition.continuous = false
+    recognition.interimResults = true
+
+    recognition.onresult = (event: SpeechRecognitionEvent) => {
+      // Use the final result from the last recognition segment
+      const transcript = event.results[event.results.length - 1][0].transcript
+      pendingTranscriptRef.current = transcript
+      setQuery(transcript)
+    }
+
+    recognition.onend = () => {
+      setIsListening(false)
+      recognitionRef.current = null
+      const text = pendingTranscriptRef.current.trim()
+      if (text) {
+        pendingTranscriptRef.current = ''
+        submitRef.current(text)
+      }
+    }
+
+    recognition.onerror = (ev: Event) => {
+      console.warn('[Voice] SpeechRecognition error', (ev as ErrorEvent).message ?? ev.type)
+      setIsListening(false)
+      recognitionRef.current = null
+      pendingTranscriptRef.current = ''
+    }
+
+    recognitionRef.current = recognition
+    recognition.start()
+    setIsListening(true)
+  }, [loading])
+
+  const stopVoice = useCallback(() => {
+    recognitionRef.current?.stop()
+  }, [])
+
+  // Abort any in-progress recognition when the component unmounts
+  useEffect(() => {
+    return () => { recognitionRef.current?.abort() }
+  }, [])
 
   return (
     <div className="ai-query-bar">
@@ -190,9 +268,38 @@ export function AiQueryBar({ onResponse, onZoom }: AiQueryBarProps) {
         aria-label="Ask a question about Vancouver"
         disabled={loading}
       />
+      {isSpeechSupported && (
+        <button
+          className={`ai-query-bar__mic-btn${isListening ? ' ai-query-bar__mic-btn--active' : ''}`}
+          onPointerDown={startVoice}
+          onPointerUp={stopVoice}
+          onPointerCancel={stopVoice}
+          onContextMenu={(e) => e.preventDefault()}
+          aria-label={isListening ? 'Recording… release to send' : 'Hold to speak'}
+          aria-pressed={isListening}
+          type="button"
+          disabled={loading}
+        >
+          <svg
+            width="15"
+            height="15"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <rect x="9" y="2" width="6" height="12" rx="3" />
+            <path d="M5 10a7 7 0 0 0 14 0" />
+            <line x1="12" y1="19" x2="12" y2="22" />
+            <line x1="8" y1="22" x2="16" y2="22" />
+          </svg>
+        </button>
+      )}
       <button
         className="ai-query-bar__submit"
-        onClick={submit}
+        onClick={() => submit()}
         disabled={!query.trim() || loading}
         type="button"
       >

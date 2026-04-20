@@ -117,6 +117,51 @@
   to { transform: rotate(360deg); }
 }
 
+/* ─── Voice / Mic button ─── */
+
+.ai-query-bar__mic-btn {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 100%;
+  background: none;
+  border: none;
+  border-left: 1px solid var(--border-subtle);
+  color: var(--text-dim);
+  cursor: pointer;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  transition: color 0.15s ease;
+}
+
+.ai-query-bar__mic-btn:hover:not(:disabled) {
+  color: var(--text-primary);
+}
+
+.ai-query-bar__mic-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.ai-query-bar__mic-btn--active {
+  color: #ff4f4f;
+  animation: ai-mic-pulse 0.9s ease-in-out infinite;
+}
+
+@keyframes ai-mic-pulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.2); opacity: 0.75; }
+}
+
+@media (max-width: 480px) {
+  .ai-query-bar__mic-btn {
+    width: 30px;
+  }
+}
+
 /* ─── Response Panel — right half of the split view ─── */
 
 .ai-response-panel {
