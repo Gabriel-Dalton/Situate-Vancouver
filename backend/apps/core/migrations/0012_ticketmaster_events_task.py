@@ -30,7 +30,7 @@ def remove_events_task(apps, schema_editor):
 class Migration(migrations.Migration):
     dependencies = [
         ("core", "0011_rename_outagegeocode_failed_geocoded_idx_core_outage_failed_17e7b1_idx_and_more"),
-        ("django_celery_beat", "0006_periodictask_expire_seconds"),
+        ("django_celery_beat", "0019_alter_periodictasks_options"),
     ]
 
     operations = [
