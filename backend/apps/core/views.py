@@ -376,6 +376,113 @@ def outages_geojson(request):
     return Response(geojson)
 
 
+_TICKETMASTER_URL = 'https://app.ticketmaster.com/discovery/v2/events.json'
+_EVENTS_CACHE_KEY = 'ticketmaster_events_geojson'
+_EVENTS_CACHE_TTL = 60 * 30  # 30 minutes
+_VAN_LAT = 49.2827
+_VAN_LNG = -123.1207
+
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def events_geojson(request):
+    """
+    Return upcoming Ticketmaster events near Vancouver as a GeoJSON FeatureCollection.
+
+    GET /api/events/
+
+    Requires TICKETMASTER_API_KEY in settings. Returns an empty FeatureCollection when
+    the key is absent or the upstream request fails. Cached 30 minutes.
+    """
+    cached = cache.get(_EVENTS_CACHE_KEY)
+    if cached:
+        return Response(json.loads(cached))
+
+    api_key = getattr(settings, 'TICKETMASTER_API_KEY', '')
+    if not api_key:
+        return Response({'type': 'FeatureCollection', 'features': [], 'error': 'TICKETMASTER_API_KEY not configured'})
+
+    features = []
+    page = 0
+
+    while page < 5:
+        try:
+            resp = httpx.get(
+                _TICKETMASTER_URL,
+                params={
+                    'apikey': api_key,
+                    'latlong': f'{_VAN_LAT},{_VAN_LNG}',
+                    'radius': 30,
+                    'unit': 'km',
+                    'size': 50,
+                    'page': page,
+                    'sort': 'date,asc',
+                },
+                timeout=15.0,
+            )
+            resp.raise_for_status()
+            data = resp.json()
+        except Exception as exc:
+            logger.warning('events_geojson: Ticketmaster fetch failed (page %s) — %s', page, exc)
+            break
+
+        events = (data.get('_embedded') or {}).get('events', [])
+        for event in events:
+            venues = (event.get('_embedded') or {}).get('venues', [])
+            venue = venues[0] if venues else {}
+            loc = venue.get('location') or {}
+            try:
+                lat = float(loc.get('latitude', ''))
+                lng = float(loc.get('longitude', ''))
+            except (TypeError, ValueError):
+                continue
+
+            classifications = event.get('classifications') or [{}]
+            segment = (classifications[0].get('segment') or {}).get('name', '')
+            genre = (classifications[0].get('genre') or {}).get('name', '')
+            category = genre or segment
+
+            dates = event.get('dates') or {}
+            start = (dates.get('start') or {}).get('localDate', '')
+            start_time = (dates.get('start') or {}).get('localTime', '')
+
+            price_ranges = event.get('priceRanges') or []
+            price_min = price_ranges[0].get('min') if price_ranges else None
+            price_max = price_ranges[0].get('max') if price_ranges else None
+
+            images = event.get('images') or []
+            image_url = next((i['url'] for i in images if i.get('ratio') == '16_9' and i.get('width', 0) >= 640), '')
+
+            features.append({
+                'type': 'Feature',
+                'geometry': {'type': 'Point', 'coordinates': [lng, lat]},
+                'properties': {
+                    'id': event.get('id', ''),
+                    'name': event.get('name', ''),
+                    'date': start,
+                    'time': start_time,
+                    'url': event.get('url', ''),
+                    'category': category,
+                    'venue_name': venue.get('name', ''),
+                    'address': (venue.get('address') or {}).get('line1', ''),
+                    'image_url': image_url,
+                    'price_min': price_min,
+                    'price_max': price_max,
+                },
+            })
+
+        pagination = data.get('page') or {}
+        total_pages = pagination.get('totalPages', 1)
+        if page + 1 < total_pages:
+            page += 1
+        else:
+            break
+
+    geojson = {'type': 'FeatureCollection', 'features': features}
+    cache.set(_EVENTS_CACHE_KEY, json.dumps(geojson), timeout=_EVENTS_CACHE_TTL)
+    return Response(geojson)
+
+
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def find_route(request):

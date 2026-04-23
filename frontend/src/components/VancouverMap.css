@@ -29,6 +29,35 @@
   pointer-events: auto;
 }
 
+.van-map-toolbars__toggle {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  border: 1px solid rgba(241, 245, 249, 0.14);
+  background: rgba(0, 12, 28, 0.92);
+  color: rgba(241, 245, 249, 0.75);
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  flex-shrink: 0;
+}
+
+.van-map-shell--day .van-map-toolbars__toggle {
+  background: rgba(226, 235, 245, 0.92);
+  border-color: rgba(38, 56, 84, 0.14);
+  color: rgba(0, 27, 61, 0.75);
+}
+
+@media (max-width: 768px), (max-height: 560px) and (max-width: 1100px) {
+  .van-map-toolbars__toggle {
+    display: flex;
+  }
+}
+
 .map-icon-toolbar {
   display: flex;
   flex-direction: column;

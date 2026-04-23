@@ -248,6 +248,9 @@ HEALTH_VANCOUVER_OPENDATA_STATUS_URL = os.environ.get(
     '',
 ).strip()
 
+# --- Ticketmaster (events near Vancouver — GET /api/events/) ---
+TICKETMASTER_API_KEY = os.environ.get('TICKETMASTER_API_KEY', '').strip()
+
 # --- Open511 BC (DriveBC) — public API, no key ---
 _open511_base = os.environ.get(
     'OPEN511_BC_BASE_URL',

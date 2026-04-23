@@ -46,6 +46,7 @@ urlpatterns = [
     path('lens/<str:lens>/', views.lens_geojson, name='lens-geojson'),
     path('outages/', views.outages_geojson, name='outages-geojson'),
     path('cameras/', views.cameras_geojson, name='cameras-geojson'),
+    path('events/', views.events_geojson, name='events-geojson'),
     path('', include(router.urls)),
     path(
         'datasets/',

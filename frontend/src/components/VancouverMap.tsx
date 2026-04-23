@@ -406,6 +406,9 @@ export default function VancouverMap({
   const mapRef = useRef<maplibregl.Map | null>(null)
   const styleReadyRef = useRef(false)
   const layersRef = useRef(layers)
+  const [toolbarsCollapsed, setToolbarsCollapsed] = useState(() =>
+    typeof window !== 'undefined' && window.matchMedia('(max-width: 768px), (max-height: 560px) and (max-width: 1100px)').matches
+  )
   const basemapRef = useRef<BasemapId>(INITIAL_BASEMAP)
   const lensRef = useRef(lens)
   const lensDataRef = useRef(lensData)
@@ -608,9 +611,17 @@ export default function VancouverMap({
 
     map.on('style.load', onStyleLoad)
 
-    // Detect WebGL context loss (common on Safari under memory pressure)
+    // Detect WebGL context loss (common on Safari under GPU memory pressure).
+    // Auto-reload only once per session — without the guard Safari can loop:
+    // context lost → reload → context lost → reload endlessly.
     el.addEventListener('webglcontextlost', () => {
-      console.warn('WebGL context lost — reloading map')
+      const RELOAD_KEY = 'situate_webgl_reloaded'
+      if (sessionStorage.getItem(RELOAD_KEY)) {
+        console.warn('WebGL context lost again after reload — skipping auto-reload')
+        return
+      }
+      console.warn('WebGL context lost — reloading once')
+      sessionStorage.setItem(RELOAD_KEY, '1')
       window.location.reload()
     })
 
@@ -1076,9 +1087,26 @@ export default function VancouverMap({
       }
     >
       <div ref={containerRef} className="van-map" role="application" aria-label="Vancouver map" />
-      <div className="van-map-toolbars">
-        <MapBasemapToolbar active={basemap} onSelect={handleBasemap} />
-        <MapInsightToolbar layers={layers} onToggleLayer={onToggleLayer} />
+      <div className={`van-map-toolbars${toolbarsCollapsed ? ' van-map-toolbars--collapsed' : ''}`}>
+        <button
+          type="button"
+          className="van-map-toolbars__toggle"
+          onClick={() => setToolbarsCollapsed((v) => !v)}
+          aria-label={toolbarsCollapsed ? 'Expand map controls' : 'Collapse map controls'}
+          aria-expanded={!toolbarsCollapsed}
+        >
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden width="16" height="16">
+            {toolbarsCollapsed
+              ? <path stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d="M12 5v14M5 12h14" />
+              : <path stroke="currentColor" strokeWidth="2" strokeLinecap="round" d="M5 12h14" />}
+          </svg>
+        </button>
+        {!toolbarsCollapsed && (
+          <>
+            <MapBasemapToolbar active={basemap} onSelect={handleBasemap} />
+            <MapInsightToolbar layers={layers} onToggleLayer={onToggleLayer} />
+          </>
+        )}
       </div>
       <div className="van-map-footer" aria-label="Cursor coordinates">
         <span className="van-map-footer__coord">{fmtCoord(cursorInfo.lat, 'N', 'S')}</span>
