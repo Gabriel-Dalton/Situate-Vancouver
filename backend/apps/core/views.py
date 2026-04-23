@@ -117,12 +117,30 @@ def cameras_geojson(request):
     return Response(geojson)
 
 
+def _get_cached_events(limit: int = 20) -> list[dict]:
+    """
+    Return upcoming events from the Ticketmaster cache (populated by GET /api/events/).
+    Falls back to an empty list if the cache is cold or the key is missing.
+    """
+    raw = cache.get(_EVENTS_CACHE_KEY)
+    if not raw:
+        return []
+    try:
+        geojson = json.loads(raw)
+        features = geojson.get('features', [])
+        # Already sorted date-asc by Ticketmaster; just cap the list
+        return [f['properties'] for f in features[:limit]]
+    except Exception:
+        return []
+
+
 def _build_ai_context(request) -> str:
     """
     Build a plain-text context block for the AI reasoner containing:
     - Current Vancouver time
     - Active DB incidents (top 15 by severity)
     - Border wait times
+    - Upcoming events near Vancouver (from Ticketmaster cache)
     - Authenticated user's profile, home address, and saved routes
     """
     lines: list[str] = []
@@ -154,6 +172,30 @@ def _build_ai_context(request) -> str:
                 lines.append(f"  - {i['title']}: {i['severity']} wait" + (f" ({i['location_description']})" if i['location_description'] else ""))
     else:
         lines.append("\nNo active incidents in the database right now.")
+
+    # ── Upcoming events ──
+    events = _get_cached_events(limit=20)
+    if events:
+        lines.append(f"\nUpcoming events near Vancouver ({len(events)} shown):")
+        for e in events:
+            date_str = e.get('date', '')
+            time_str = e.get('time', '')
+            when = f"{date_str} {time_str}".strip() if date_str else 'date TBD'
+            venue = e.get('venue_name', '')
+            category = e.get('category', '')
+            price_min = e.get('price_min')
+            price_max = e.get('price_max')
+            price_str = ''
+            if price_min is not None:
+                price_str = f' — ${price_min:.0f}' + (f'–${price_max:.0f}' if price_max and price_max != price_min else '')
+            cat_str = f' [{category}]' if category else ''
+            lines.append(
+                f"  - {e.get('name', 'Unknown event')}{cat_str}: {when}"
+                + (f" @ {venue}" if venue else '')
+                + price_str
+            )
+    else:
+        lines.append("\nNo upcoming events cached (GET /api/events/ to populate).")
 
     # ── User profile (if authenticated) ──
     user = getattr(request, 'user', None)

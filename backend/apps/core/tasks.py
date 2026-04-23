@@ -1040,6 +1040,104 @@ def poll_border_wait(self):
 
 
 # ---------------------------------------------------------------------------
+# Ticketmaster events cache refresh
+# ---------------------------------------------------------------------------
+
+@shared_task(bind=True, max_retries=2, default_retry_delay=300)
+def refresh_events_cache(self):
+    """
+    Fetch upcoming Ticketmaster events near Vancouver and store in the Redis cache.
+    Runs once a day — events don't change frequently.
+    """
+    from django.conf import settings as django_settings
+    from .views import _TICKETMASTER_URL, _EVENTS_CACHE_KEY, _EVENTS_CACHE_TTL, _VAN_LAT, _VAN_LNG
+
+    api_key = getattr(django_settings, 'TICKETMASTER_API_KEY', '').strip()
+    if not api_key:
+        logger.warning('refresh_events_cache: TICKETMASTER_API_KEY not set — skipping')
+        return {'skipped': True, 'reason': 'no_api_key'}
+
+    features = []
+    page = 0
+
+    while page < 5:
+        try:
+            resp = httpx.get(
+                _TICKETMASTER_URL,
+                params={
+                    'apikey': api_key,
+                    'latlong': f'{_VAN_LAT},{_VAN_LNG}',
+                    'radius': 30,
+                    'unit': 'km',
+                    'size': 50,
+                    'page': page,
+                    'sort': 'date,asc',
+                },
+                timeout=15.0,
+            )
+            resp.raise_for_status()
+            data = resp.json()
+        except Exception as exc:
+            logger.warning('refresh_events_cache: fetch failed (page %s) — %s', page, exc)
+            break
+
+        events = (data.get('_embedded') or {}).get('events', [])
+        for event in events:
+            venues = (event.get('_embedded') or {}).get('venues', [])
+            venue = venues[0] if venues else {}
+            loc = venue.get('location') or {}
+            try:
+                lat = float(loc.get('latitude', ''))
+                lng = float(loc.get('longitude', ''))
+            except (TypeError, ValueError):
+                continue
+
+            classifications = event.get('classifications') or [{}]
+            segment = (classifications[0].get('segment') or {}).get('name', '')
+            genre = (classifications[0].get('genre') or {}).get('name', '')
+            dates = event.get('dates') or {}
+            start = (dates.get('start') or {}).get('localDate', '')
+            start_time = (dates.get('start') or {}).get('localTime', '')
+            price_ranges = event.get('priceRanges') or []
+            price_min = price_ranges[0].get('min') if price_ranges else None
+            price_max = price_ranges[0].get('max') if price_ranges else None
+            images = event.get('images') or []
+            image_url = next(
+                (i['url'] for i in images if i.get('ratio') == '16_9' and i.get('width', 0) >= 640), ''
+            )
+
+            features.append({
+                'type': 'Feature',
+                'geometry': {'type': 'Point', 'coordinates': [lng, lat]},
+                'properties': {
+                    'id': event.get('id', ''),
+                    'name': event.get('name', ''),
+                    'date': start,
+                    'time': start_time,
+                    'url': event.get('url', ''),
+                    'category': genre or segment,
+                    'venue_name': venue.get('name', ''),
+                    'address': (venue.get('address') or {}).get('line1', ''),
+                    'image_url': image_url,
+                    'price_min': price_min,
+                    'price_max': price_max,
+                },
+            })
+
+        pagination = data.get('page') or {}
+        if page + 1 < pagination.get('totalPages', 1):
+            page += 1
+        else:
+            break
+
+    import json as _json
+    geojson = {'type': 'FeatureCollection', 'features': features}
+    cache.set(_EVENTS_CACHE_KEY, _json.dumps(geojson), timeout=_EVENTS_CACHE_TTL)
+    logger.info('refresh_events_cache: cached %d events', len(features))
+    return {'cached': len(features)}
+
+
+# ---------------------------------------------------------------------------
 # Expiry / cleanup
 # ---------------------------------------------------------------------------
 
