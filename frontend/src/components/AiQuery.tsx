@@ -1,6 +1,7 @@
 import { useCallback, useRef, useState, useEffect } from 'react'
 import type { KeyboardEvent } from 'react'
 import { apiUrl } from '../lib/api'
+import { authTokens } from '../services/api'
 import './AiQuery.css'
 
 export interface AiQueryResponse {
@@ -56,6 +57,8 @@ function buildErrorResponse(query: string, detail: string): AiQueryResponse {
 }
 
 const ZOOM_PREFIX_RE = /^(?:go\s+to|zoom\s+to|navigate\s+to|take\s+me\s+to|show\s+me|find|where\s+is|where's)\s+/i
+// Matches "street and street" intersection queries (no verb prefix required)
+const INTERSECTION_RE = /^[\w\s'-]+\s+and\s+[\w\s'-]+$/i
 
 async function geocodePlace(place: string): Promise<ZoomLocation | null> {
   try {
@@ -96,8 +99,9 @@ export function AiQueryBar({ onResponse, onZoom }: AiQueryBarProps) {
     if (!trimmed || loading) return
 
     const zoomMatch = trimmed.match(ZOOM_PREFIX_RE)
-    if (zoomMatch && onZoom) {
-      const place = trimmed.slice(zoomMatch[0].length).trim()
+    const intersectionMatch = !zoomMatch && INTERSECTION_RE.test(trimmed)
+    if ((zoomMatch || intersectionMatch) && onZoom) {
+      const place = zoomMatch ? trimmed.slice(zoomMatch[0].length).trim() : trimmed
       setLoading(true)
       const loc = await geocodePlace(place)
       setLoading(false)
@@ -113,9 +117,16 @@ export function AiQueryBar({ onResponse, onZoom }: AiQueryBarProps) {
 
     setLoading(true)
     try {
+      const token = authTokens.getAccess()
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+      }
+      if (token) headers['Authorization'] = `Bearer ${token}`
       const res = await fetch(apiUrl('/api/query/'), {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        headers,
+        credentials: 'include',
         body: JSON.stringify({ query: trimmed }),
       })
 
