@@ -117,6 +117,16 @@ def cameras_geojson(request):
     return Response(geojson)
 
 
+def _haversine_km(lat1: float, lng1: float, lat2: float, lng2: float) -> float:
+    """Approximate great-circle distance in km between two lat/lng points."""
+    import math
+    R = 6371.0
+    dlat = math.radians(lat2 - lat1)
+    dlng = math.radians(lng2 - lng1)
+    a = math.sin(dlat / 2) ** 2 + math.cos(math.radians(lat1)) * math.cos(math.radians(lat2)) * math.sin(dlng / 2) ** 2
+    return R * 2 * math.asin(math.sqrt(a))
+
+
 def _get_cached_events(limit: int = 20) -> list[dict]:
     """
     Return upcoming events from the Ticketmaster cache (populated by GET /api/events/).
@@ -196,6 +206,72 @@ def _build_ai_context(request) -> str:
             )
     else:
         lines.append("\nNo upcoming events cached (GET /api/events/ to populate).")
+
+    # ── Event-incident correlations ──
+    # Pre-compute which active incidents fall within 3 km of an event venue
+    # and are happening on the same day, so the AI gets explicit causal hints.
+    if events:
+        # Pull coordinates for active incidents
+        inc_with_coords = list(
+            Incident.objects.filter(status='active', lat__isnull=False, lng__isnull=False)
+            .values('title', 'incident_type', 'lat', 'lng', 'location_description')
+        )
+
+        correlations = []
+        today_str = now.strftime('%Y-%m-%d')
+        tomorrow_str = (now + timezone.timedelta(days=1)).strftime('%Y-%m-%d')
+
+        for e in events:
+            event_date = e.get('date', '')
+            if event_date not in (today_str, tomorrow_str):
+                continue
+            # Events need coordinates from the GeoJSON features — fetch from cache
+            # (we only have properties here; coordinates are in the feature geometry)
+            # Fall back to matching by venue proximity is not possible without coords.
+            # Instead flag all incidents within 3 km of known event venue coordinates.
+            # The _get_cached_events helper strips geometry; re-read full features.
+            pass  # coordinates handled below via full feature read
+
+        # Re-read full features to access geometry
+        raw = cache.get(_EVENTS_CACHE_KEY)
+        if raw:
+            try:
+                import json as _json
+                features = _json.loads(raw).get('features', [])
+                for feat in features:
+                    props = feat.get('properties', {})
+                    event_date = props.get('date', '')
+                    if event_date not in (today_str, tomorrow_str):
+                        continue
+                    coords = feat.get('geometry', {}).get('coordinates', [])
+                    if len(coords) < 2:
+                        continue
+                    ev_lng, ev_lat = coords[0], coords[1]
+                    event_name = props.get('name', 'Unknown event')
+                    venue_name = props.get('venue_name', '')
+                    event_time = props.get('time', '')
+
+                    nearby = []
+                    for inc in inc_with_coords:
+                        dist = _haversine_km(ev_lat, ev_lng, float(inc['lat']), float(inc['lng']))
+                        if dist <= 3.0:
+                            nearby.append((dist, inc))
+
+                    if nearby:
+                        when = f"{event_date} {event_time}".strip()
+                        correlations.append(
+                            f"  - '{event_name}' @ {venue_name} ({when}): "
+                            + "; ".join(
+                                f"{inc['title']} ({dist:.1f} km away)"
+                                for dist, inc in sorted(nearby, key=lambda x: x[0])[:3]
+                            )
+                        )
+            except Exception:
+                pass
+
+        if correlations:
+            lines.append("\nEvent-incident correlations (same day, within 3 km of venue):")
+            lines.extend(correlations)
 
     # ── User profile (if authenticated) ──
     user = getattr(request, 'user', None)
