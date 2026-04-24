@@ -156,8 +156,16 @@
   background: rgba(0, 12, 28, 0.4);
 }
 
+.cam-feed__age {
+  padding: 0.2rem 0.6rem;
+  font-family: var(--font-mono);
+  font-size: 0.58rem;
+  color: var(--text-dim);
+  opacity: 0.7;
+}
+
 .cam-feed__caption {
-  padding: 0.3rem 0.6rem;
+  padding: 0.15rem 0.6rem 0.3rem;
   font-family: var(--font-mono);
   font-size: 0.6rem;
   color: var(--text-dim);

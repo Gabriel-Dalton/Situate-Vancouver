@@ -23,29 +23,44 @@ function buildCameras(geojson: GeoJSON.FeatureCollection | null): CameraItem[] {
 
 function CameraFeedImage({ src, alt }: { src: string; alt: string }) {
   const [refreshKey, setRefreshKey] = useState(() => Date.now())
+  const [lastRefreshed, setLastRefreshed] = useState(() => Date.now())
+  const [now, setNow] = useState(() => Date.now())
   const [errored, setErrored] = useState(false)
 
   useEffect(() => {
     setErrored(false)
     const id = setInterval(() => {
-      setRefreshKey(Date.now())
+      const ts = Date.now()
+      setRefreshKey(ts)
+      setLastRefreshed(ts)
       setErrored(false)
     }, REFRESH_INTERVAL_MS)
     return () => clearInterval(id)
   }, [src])
+
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 1000)
+    return () => clearInterval(id)
+  }, [])
+
+  const secondsAgo = Math.round((now - lastRefreshed) / 1000)
+  const ageLabel = secondsAgo < 3 ? 'Just now' : `${secondsAgo} s ago`
 
   if (errored) {
     return <div className="cam-feed__no-img">Feed unavailable</div>
   }
 
   return (
-    <img
-      className="cam-feed__img"
-      src={`${src}?t=${refreshKey}`}
-      alt={alt}
-      loading="lazy"
-      onError={() => setErrored(true)}
-    />
+    <>
+      <img
+        className="cam-feed__img"
+        src={`${src}?t=${refreshKey}`}
+        alt={alt}
+        loading="lazy"
+        onError={() => setErrored(true)}
+      />
+      <p className="cam-feed__age">Updated {ageLabel}</p>
+    </>
   )
 }
 
