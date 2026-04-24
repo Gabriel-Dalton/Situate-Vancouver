@@ -578,6 +578,50 @@
   border-left-width: 1px;
 }
 
+/* ── Right rail view switcher tabs ───────────────────── */
+
+.right-rail-tabs {
+  display: flex;
+  margin: -1rem -1rem 1rem;
+  border-bottom: 1px solid var(--border-subtle);
+  position: sticky;
+  top: -1rem;
+  z-index: 5;
+  background: rgba(0, 9, 22, 0.96);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+}
+
+.right-rail-tab {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  padding: 0.6rem 0.5rem;
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: color 0.12s, border-color 0.12s, background 0.12s;
+}
+
+.right-rail-tab:hover:not(.right-rail-tab--active) {
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.right-rail-tab--active {
+  color: var(--data-cyan);
+  border-bottom-color: var(--data-cyan);
+}
+
 .insight-panel__heading {
   margin: 0 0 0.5rem;
   font-size: 0.68rem;

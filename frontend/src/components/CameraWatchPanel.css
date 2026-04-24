@@ -1,0 +1,289 @@
+/* ── Camera Watch Panel ────────────────────────────────── */
+
+.cam-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.cam-panel__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.cam-panel__hint {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  color: var(--text-dim);
+  margin-top: 0.2rem;
+}
+
+.cam-panel__edit-btn {
+  flex-shrink: 0;
+  padding: 0.25rem 0.6rem;
+  border-radius: 3px;
+  border: 1px solid var(--border-subtle);
+  background: transparent;
+  color: var(--data-cyan);
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s;
+  white-space: nowrap;
+}
+
+.cam-panel__edit-btn:hover {
+  background: rgba(0, 170, 239, 0.1);
+  border-color: var(--data-cyan);
+}
+
+/* Empty state */
+
+.cam-panel__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 2.5rem 1rem;
+  color: var(--text-dim);
+  text-align: center;
+}
+
+.cam-panel__empty-text {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.cam-panel__add-btn {
+  padding: 0.45rem 1rem;
+  border-radius: 4px;
+  border: 1px solid rgba(0, 170, 239, 0.4);
+  background: rgba(0, 170, 239, 0.1);
+  color: var(--data-cyan);
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s;
+}
+
+.cam-panel__add-btn:hover {
+  background: rgba(0, 170, 239, 0.18);
+  border-color: var(--data-cyan);
+}
+
+/* Feed list */
+
+.cam-panel__feed-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+/* Individual feed card */
+
+.cam-feed {
+  border-radius: 5px;
+  border: 1px solid var(--border-subtle);
+  background: rgba(0, 15, 36, 0.55);
+  overflow: hidden;
+}
+
+.cam-feed__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.45rem 0.6rem;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.cam-feed__name {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: var(--pacific-slate);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cam-feed__remove {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border: none;
+  border-radius: 3px;
+  background: transparent;
+  color: var(--text-dim);
+  cursor: pointer;
+  transition: color 0.1s, background 0.1s;
+}
+
+.cam-feed__remove:hover {
+  color: #f87171;
+  background: rgba(248, 113, 113, 0.12);
+}
+
+.cam-feed__img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  background: rgba(0, 12, 28, 0.8);
+}
+
+.cam-feed__no-img {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 80px;
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  color: var(--text-dim);
+  background: rgba(0, 12, 28, 0.4);
+}
+
+.cam-feed__caption {
+  padding: 0.3rem 0.6rem;
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  color: var(--text-dim);
+  line-height: 1.4;
+}
+
+/* ── Picker mode ─────────────────────────────────────── */
+
+.cam-panel--picking {
+  gap: 0.6rem;
+}
+
+.cam-panel__picker-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.cam-panel__picker-title {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--pacific-slate);
+}
+
+.cam-panel__done-btn {
+  padding: 0.28rem 0.7rem;
+  border-radius: 3px;
+  border: 1px solid rgba(0, 170, 239, 0.4);
+  background: rgba(0, 170, 239, 0.12);
+  color: var(--data-cyan);
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background 0.1s;
+}
+
+.cam-panel__done-btn:hover {
+  background: rgba(0, 170, 239, 0.22);
+}
+
+.cam-panel__search {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.45rem 0.6rem;
+  border-radius: 4px;
+  border: 1px solid var(--border-subtle);
+  background: rgba(0, 15, 36, 0.7);
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  outline: none;
+  transition: border-color 0.12s;
+}
+
+.cam-panel__search:focus {
+  border-color: var(--data-cyan);
+}
+
+.cam-panel__pick-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: calc(100vh - 18rem);
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+
+.cam-panel__pick-item {
+  border-radius: 4px;
+  transition: background 0.1s;
+}
+
+.cam-panel__pick-item:hover {
+  background: rgba(0, 170, 239, 0.06);
+}
+
+.cam-panel__pick-item--checked {
+  background: rgba(0, 170, 239, 0.1);
+}
+
+.cam-panel__pick-label {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.55rem;
+  padding: 0.45rem 0.5rem;
+  cursor: pointer;
+}
+
+.cam-panel__pick-checkbox {
+  flex-shrink: 0;
+  margin-top: 0.1rem;
+  accent-color: var(--data-cyan);
+  width: 14px;
+  height: 14px;
+}
+
+.cam-panel__pick-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.cam-panel__pick-name {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cam-panel__pick-caption {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  color: var(--text-dim);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

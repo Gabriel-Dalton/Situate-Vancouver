@@ -25,6 +25,7 @@ import { AiQueryBar, AiResponsePanel } from './components/AiQuery'
 import type { AiQueryResponse } from './components/AiQuery'
 import RouteFindingPanel from './components/RouteFindingPanel'
 import type { QuickRoute } from './components/RouteFindingPanel'
+import CameraWatchPanel from './components/CameraWatchPanel'
 import ReportIncidentModal from './components/ReportIncidentModal'
 import type { RouteFindResult } from './services/routeService'
 import { accountService } from './services/accountService'
@@ -173,6 +174,8 @@ export default function App() {
     if (isMobile) { setSheetOpen(true); setSheetTab('route') }
   }, [userHomeLabel, isMobile])
 
+  const [rightView, setRightView] = useState<'routes' | 'cameras'>('routes')
+  const [pinnedCameraKeys, setPinnedCameraKeys] = useState<Set<string>>(new Set())
   const [zoomFocus, setZoomFocus] = useState<FocusLocation>(null)
 
   const focusLocation: FocusLocation = useMemo(() => {
@@ -540,18 +543,49 @@ export default function App() {
           </aside>
 
           <aside className="insight-shell__rail insight-shell__rail--right" aria-label="Signals" style={isMobile && sheetTab !== 'route' ? { display: 'none' } : undefined}>
-            <RouteFindingPanel
-              onResult={handleRouteResult}
-              onSelectRoute={setSelectedRouteIndex}
-              result={routeResult}
-              selectedRouteIndex={selectedRouteIndex}
-              isMobile={isMobile}
-              onStartNavigation={navStart}
-              onStopNavigation={navStop}
-              navigationActive={navState.active}
-              isSignedIn={Boolean(authEmail)}
-              quickRoute={quickRoute}
-            />
+            <div className="right-rail-tabs">
+              <button
+                type="button"
+                className={`right-rail-tab${rightView === 'routes' ? ' right-rail-tab--active' : ''}`}
+                onClick={() => setRightView('routes')}
+              >
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                  <path d="M3 12h18M3 6h18M3 18h12" />
+                </svg>
+                Routes
+              </button>
+              <button
+                type="button"
+                className={`right-rail-tab${rightView === 'cameras' ? ' right-rail-tab--active' : ''}`}
+                onClick={() => setRightView('cameras')}
+              >
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                  <path d="M23 7 16 12 23 17V7z" />
+                  <rect x="1" y="5" width="15" height="14" rx="2" ry="2" />
+                </svg>
+                Cameras
+              </button>
+            </div>
+
+            {rightView === 'routes' ? (
+              <RouteFindingPanel
+                onResult={handleRouteResult}
+                onSelectRoute={setSelectedRouteIndex}
+                result={routeResult}
+                selectedRouteIndex={selectedRouteIndex}
+                isMobile={isMobile}
+                onStartNavigation={navStart}
+                onStopNavigation={navStop}
+                navigationActive={navState.active}
+                isSignedIn={Boolean(authEmail)}
+                quickRoute={quickRoute}
+              />
+            ) : (
+              <CameraWatchPanel
+                pinnedKeys={pinnedCameraKeys}
+                onPinnedChange={setPinnedCameraKeys}
+              />
+            )}
           </aside>
         </div>{/* end .mobile-sheet */}
       </div>
