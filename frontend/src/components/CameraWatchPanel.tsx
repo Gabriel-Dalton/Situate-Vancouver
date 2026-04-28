@@ -2,6 +2,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useCameras } from '../hooks/useCameras'
 import './CameraWatchPanel.css'
 
+declare function gtag(...args: unknown[]): void
+
 interface CameraItem {
   key: string
   name: string
@@ -89,9 +91,12 @@ export default function CameraWatchPanel({ pinnedKeys, onPinnedChange }: CameraW
   const togglePin = useCallback(
     (key: string) => {
       const next = new Set(pinnedKeys)
-      if (next.has(key)) next.delete(key)
-      else next.add(key)
+      const pinning = !next.has(key)
+      if (pinning) next.add(key)
+      else next.delete(key)
       onPinnedChange(next)
+      if (typeof gtag !== 'undefined')
+        gtag('event', pinning ? 'camera_pin' : 'camera_unpin', { camera_key: key, pinned_count: next.size })
     },
     [pinnedKeys, onPinnedChange],
   )
@@ -99,7 +104,8 @@ export default function CameraWatchPanel({ pinnedKeys, onPinnedChange }: CameraW
   const openPicker = useCallback(() => {
     setPicking(true)
     setTimeout(() => searchRef.current?.focus(), 60)
-  }, [])
+    if (typeof gtag !== 'undefined') gtag('event', 'camera_picker_open', { pinned_count: pinnedKeys.size })
+  }, [pinnedKeys.size])
 
   const closePicker = useCallback(() => {
     setPicking(false)

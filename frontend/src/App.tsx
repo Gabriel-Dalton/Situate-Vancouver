@@ -31,6 +31,8 @@ import type { RouteFindResult } from './services/routeService'
 import { accountService } from './services/accountService'
 import './App.css'
 
+declare function gtag(...args: unknown[]): void
+
 const VancouverMap = lazy(() => import('./components/VancouverMap'))
 
 const DEFAULT_LAYERS: InsightLayerState = {
@@ -175,6 +177,10 @@ export default function App() {
   }, [userHomeLabel, isMobile])
 
   const [rightView, setRightView] = useState<'routes' | 'cameras'>('routes')
+  const switchRightView = useCallback((view: 'routes' | 'cameras') => {
+    setRightView(view)
+    if (typeof gtag !== 'undefined') gtag('event', 'right_panel_tab', { tab: view })
+  }, [])
   const [pinnedCameraKeys, setPinnedCameraKeys] = useState<Set<string>>(new Set())
   const [zoomFocus, setZoomFocus] = useState<FocusLocation>(null)
 
@@ -547,7 +553,7 @@ export default function App() {
               <button
                 type="button"
                 className={`right-rail-tab${rightView === 'routes' ? ' right-rail-tab--active' : ''}`}
-                onClick={() => setRightView('routes')}
+                onClick={() => switchRightView('routes')}
               >
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
                   <path d="M3 12h18M3 6h18M3 18h12" />
@@ -557,7 +563,7 @@ export default function App() {
               <button
                 type="button"
                 className={`right-rail-tab${rightView === 'cameras' ? ' right-rail-tab--active' : ''}`}
-                onClick={() => setRightView('cameras')}
+                onClick={() => switchRightView('cameras')}
               >
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
                   <path d="M23 7 16 12 23 17V7z" />

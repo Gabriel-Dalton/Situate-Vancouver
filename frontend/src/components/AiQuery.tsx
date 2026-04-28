@@ -57,8 +57,11 @@ function buildErrorResponse(query: string, detail: string): AiQueryResponse {
 }
 
 const ZOOM_PREFIX_RE = /^(?:go\s+to|zoom\s+to|navigate\s+to|take\s+me\s+to|show\s+me|find|where\s+is|where's)\s+/i
-// Matches "street and street" intersection queries (no verb prefix required)
-const INTERSECTION_RE = /^[\w\s'-]+\s+and\s+[\w\s'-]+$/i
+// Question/auxiliary word starters signal an AI query, not a location lookup
+const QUESTION_STARTER_RE = /^(?:is|are|was|were|what|how|where|when|why|can|does|did|will|has|have|any|there|which|who|tell|check|show|i[sf])\b/i
+// Bare intersection: "boundary and kingsway", "41st and oak", "west 4th and burrard"
+// Each side is 1–3 words; no question-word starters (checked separately before testing this)
+const INTERSECTION_RE = /^[\w'-]+(?:\s+[\w'-]+){0,2}\s+and\s+[\w'-]+(?:\s+[\w'-]+){0,2}$/i
 
 async function geocodePlace(place: string): Promise<ZoomLocation | null> {
   try {
@@ -99,7 +102,7 @@ export function AiQueryBar({ onResponse, onZoom }: AiQueryBarProps) {
     if (!trimmed || loading) return
 
     const zoomMatch = trimmed.match(ZOOM_PREFIX_RE)
-    const intersectionMatch = !zoomMatch && INTERSECTION_RE.test(trimmed)
+    const intersectionMatch = !zoomMatch && !QUESTION_STARTER_RE.test(trimmed) && INTERSECTION_RE.test(trimmed)
     if ((zoomMatch || intersectionMatch) && onZoom) {
       const place = zoomMatch ? trimmed.slice(zoomMatch[0].length).trim() : trimmed
       setLoading(true)
