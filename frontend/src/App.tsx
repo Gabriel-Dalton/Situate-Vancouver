@@ -42,7 +42,7 @@ const DEFAULT_LAYERS: InsightLayerState = {
   incidentMarker: true,
   buildings: true,
   outages: true,
-  cameras: false,
+  cameras: true,
 }
 
 export default function App() {

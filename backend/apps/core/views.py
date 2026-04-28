@@ -163,7 +163,7 @@ def _build_ai_context(request) -> str:
     severity_order = {'high': 0, 'medium': 1, 'low': 2}
     incidents = list(
         Incident.objects.filter(status='active')
-        .values('incident_type', 'severity', 'title', 'location_description')
+        .values('incident_type', 'severity', 'title', 'location')
         .order_by('severity')[:20]
     )
     if incidents:
@@ -173,13 +173,13 @@ def _build_ai_context(request) -> str:
         if other:
             lines.append(f"\nActive map incidents ({len(other)} shown):")
             for i in sorted(other, key=lambda x: severity_order.get(x['severity'], 9))[:15]:
-                loc = i['location_description'] or ''
+                loc = i['location'] or ''
                 lines.append(f"  - [{i['severity'].upper()}] {i['incident_type']}: {i['title']}" + (f" — {loc}" if loc else ""))
 
         if border:
             lines.append("\nBorder wait times:")
             for i in border:
-                lines.append(f"  - {i['title']}: {i['severity']} wait" + (f" ({i['location_description']})" if i['location_description'] else ""))
+                lines.append(f"  - {i['title']}: {i['severity']} wait" + (f" ({i['location']})" if i['location'] else ""))
     else:
         lines.append("\nNo active incidents in the database right now.")
 
@@ -214,7 +214,7 @@ def _build_ai_context(request) -> str:
         # Pull coordinates for active incidents
         inc_with_coords = list(
             Incident.objects.filter(status='active', lat__isnull=False, lng__isnull=False)
-            .values('title', 'incident_type', 'lat', 'lng', 'location_description')
+            .values('title', 'incident_type', 'lat', 'lng', 'location')
         )
 
         correlations = []
