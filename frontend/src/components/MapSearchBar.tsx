@@ -16,20 +16,23 @@ function toStreetPrefix(name: string): string {
 }
 
 async function geocodeIntersection(raw1: string, raw2: string): Promise<ZoomLocation | null> {
-  const prefix1 = escapeRegex(toStreetPrefix(raw1))
-  const prefix2 = escapeRegex(toStreetPrefix(raw2))
+  // Use the stripped prefix but match it as a whole word (handles "West Broadway" etc.)
+  const p1 = escapeRegex(toStreetPrefix(raw1))
+  const p2 = escapeRegex(toStreetPrefix(raw2))
+  // Word-boundary simulation in POSIX ERE: match prefix preceded by start or space
+  const re1 = `(^|[ ])${p1}([ ]|$)`
+  const re2 = `(^|[ ])${p2}([ ]|$)`
 
   const query = `[out:json][timeout:12];
-way["name"~"^${prefix1}","i"]["highway"](${BBOX})->.a;
-way["name"~"^${prefix2}","i"]["highway"](${BBOX})->.b;
+way["name"~"${re1}","i"]["highway"](${BBOX})->.a;
+way["name"~"${re2}","i"]["highway"](${BBOX})->.b;
 node(w.a)(w.b);
 out;`
 
   try {
-    const res = await fetch('https://overpass-api.de/api/interpreter', {
-      method: 'POST',
-      body: query,
-    })
+    const res = await fetch(
+      `https://overpass-api.de/api/interpreter?data=${encodeURIComponent(query)}`,
+    )
     const data = await res.json()
     const node = data.elements?.[0]
     if (node?.lat != null) {
