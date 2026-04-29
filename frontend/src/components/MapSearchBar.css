@@ -3,11 +3,9 @@
 .map-search-bar {
   position: absolute;
   top: 0.65rem;
-  left: 50%;
-  transform: translateX(-50%);
+  left: 0.65rem;
+  right: 0.65rem;
   z-index: 8;
-  width: 320px;
-  max-width: calc(100% - 5.5rem);
   display: flex;
   flex-direction: column;
   gap: 0.35rem;
@@ -162,9 +160,7 @@
   .map-search-bar {
     top: auto;
     bottom: 5.8rem;
-    width: calc(100% - 5rem);
-    max-width: 360px;
-    left: 50%;
-    transform: translateX(-50%);
+    left: 0.65rem;
+    right: 0.65rem;
   }
 }

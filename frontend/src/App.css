@@ -45,7 +45,8 @@
   background: linear-gradient(180deg, rgba(0, 15, 36, 0.97) 0%, rgba(0, 27, 61, 0.88) 100%);
   -webkit-backdrop-filter: blur(14px);
   backdrop-filter: blur(14px);
-  z-index: 2;
+  position: relative;
+  z-index: 15;
 }
 
 .insight-shell__brand {

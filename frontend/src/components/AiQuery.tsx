@@ -6,15 +6,6 @@ import './AiQuery.css'
 
 const HELP_SECTIONS = [
   {
-    title: 'Map navigation',
-    examples: [
-      'Broadway and Granville',
-      '41st and Oak',
-      'Go to Stanley Park',
-      'Show me Granville Island',
-    ],
-  },
-  {
     title: 'Traffic & construction',
     examples: [
       'Is there construction on Oak Street?',
@@ -28,6 +19,14 @@ const HELP_SECTIONS = [
     examples: [
       'Any SkyTrain delays on the Expo Line?',
       'How busy is the Canada Line right now?',
+      'Is the West Coast Express running on time?',
+    ],
+  },
+  {
+    title: 'Events & congestion',
+    examples: [
+      'Are there any events causing traffic tonight?',
+      'Is there a Canucks game affecting downtown?',
     ],
   },
   {
@@ -35,6 +34,7 @@ const HELP_SECTIONS = [
     examples: [
       'Power outages in Kitsilano?',
       'Active wildfires near Vancouver?',
+      'Any flooding or weather alerts?',
     ],
   },
 ]
