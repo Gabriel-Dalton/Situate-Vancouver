@@ -3,7 +3,57 @@ import type { KeyboardEvent } from 'react'
 import type { ZoomLocation } from './AiQuery'
 import './MapSearchBar.css'
 
+// Metro Vancouver bounding box for Overpass queries
+const BBOX = '49.0,-123.5,49.5,-122.5'
+
+function escapeRegex(s: string) {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
+// Strip common street-type suffixes so "main" also matches "Main Street"
+function toStreetPrefix(name: string): string {
+  return name.trim().replace(/\s+(street|st|avenue|ave|boulevard|blvd|road|rd|drive|dr|way|crescent|cres|court|ct|place|pl|lane|ln)\.?$/i, '').trim()
+}
+
+async function geocodeIntersection(raw1: string, raw2: string): Promise<ZoomLocation | null> {
+  const prefix1 = escapeRegex(toStreetPrefix(raw1))
+  const prefix2 = escapeRegex(toStreetPrefix(raw2))
+
+  const query = `[out:json][timeout:12];
+way["name"~"^${prefix1}","i"]["highway"](${BBOX})->.a;
+way["name"~"^${prefix2}","i"]["highway"](${BBOX})->.b;
+node(w.a)(w.b);
+out;`
+
+  try {
+    const res = await fetch('https://overpass-api.de/api/interpreter', {
+      method: 'POST',
+      body: query,
+    })
+    const data = await res.json()
+    const node = data.elements?.[0]
+    if (node?.lat != null) {
+      return {
+        lat: node.lat,
+        lng: node.lon,
+        label: `${raw1.trim()} & ${raw2.trim()}, Vancouver`,
+      }
+    }
+  } catch {
+    // fall through to Nominatim
+  }
+  return null
+}
+
 async function geocodePlace(place: string): Promise<ZoomLocation | null> {
+  // Detect "X and Y" intersection pattern
+  const andMatch = place.match(/^(.+?)\s+and\s+(.+)$/i)
+  if (andMatch) {
+    const loc = await geocodeIntersection(andMatch[1], andMatch[2])
+    if (loc) return loc
+  }
+
+  // General Nominatim geocoding (places, addresses, landmarks)
   try {
     const params = new URLSearchParams({
       q: `${place}, Vancouver, BC`,
