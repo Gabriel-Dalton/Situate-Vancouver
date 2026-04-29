@@ -4,6 +4,41 @@ import { apiUrl } from '../lib/api'
 import { authTokens } from '../services/api'
 import './AiQuery.css'
 
+const HELP_SECTIONS = [
+  {
+    title: 'Map navigation',
+    examples: [
+      'Broadway and Granville',
+      '41st and Oak',
+      'Go to Stanley Park',
+      'Show me Granville Island',
+    ],
+  },
+  {
+    title: 'Traffic & construction',
+    examples: [
+      'Is there construction on Oak Street?',
+      'Any accidents on the Ironworkers Bridge?',
+      'How bad is traffic on the Cambie Bridge?',
+      'Road closures near downtown?',
+    ],
+  },
+  {
+    title: 'Transit',
+    examples: [
+      'Any SkyTrain delays on the Expo Line?',
+      'How busy is the Canada Line right now?',
+    ],
+  },
+  {
+    title: 'Hazards & outages',
+    examples: [
+      'Power outages in Kitsilano?',
+      'Active wildfires near Vancouver?',
+    ],
+  },
+]
+
 export interface AiQueryResponse {
   original_query: string
   query_type: string
@@ -88,7 +123,20 @@ export function AiQueryBar({ onResponse, onZoom }: AiQueryBarProps) {
   const [query, setQuery] = useState('')
   const [loading, setLoading] = useState(false)
   const [placeholderIdx, setPlaceholderIdx] = useState(0)
+  const [helpOpen, setHelpOpen] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
+  const wrapRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!helpOpen) return
+    const handler = (e: MouseEvent) => {
+      if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) {
+        setHelpOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [helpOpen])
 
   useEffect(() => {
     const id = setInterval(() => {
@@ -172,65 +220,92 @@ export function AiQueryBar({ onResponse, onZoom }: AiQueryBarProps) {
   )
 
   return (
-    <div className="ai-query-bar">
-      <button
-        className="ai-query-bar__icon-btn"
-        onClick={() => inputRef.current?.focus()}
-        aria-label="Analyse data"
-        type="button"
-      >
-        <svg
-          width="16"
-          height="16"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
+    <div className="ai-query-wrap" ref={wrapRef}>
+      <div className="ai-query-bar">
+        <button
+          className="ai-query-bar__icon-btn"
+          onClick={() => inputRef.current?.focus()}
+          aria-label="Analyse data"
+          type="button"
         >
-          <circle cx="11" cy="11" r="8" />
-          <path d="m21 21-4.3-4.3" />
-        </svg>
-      </button>
-      <input
-        ref={inputRef}
-        className="ai-query-bar__input"
-        type="text"
-        value={query}
-        onChange={(e) => setQuery(e.target.value)}
-        onKeyDown={handleKey}
-        placeholder={PLACEHOLDER_QUERIES[placeholderIdx]}
-        aria-label="Ask a question about Vancouver"
-        disabled={loading}
-      />
-      <button
-        className="ai-query-bar__submit"
-        onClick={submit}
-        disabled={!query.trim() || loading}
-        type="button"
-      >
-        {loading ? (
-          <span className="ai-query-bar__spinner" />
-        ) : (
-          <>
-            <span className="ai-query-bar__submit-label">Analyse</span>
-            <svg
-              width="14"
-              height="14"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M5 12h14" />
-              <path d="m12 5 7 7-7 7" />
-            </svg>
-          </>
-        )}
-      </button>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="11" cy="11" r="8" />
+            <path d="m21 21-4.3-4.3" />
+          </svg>
+        </button>
+        <input
+          ref={inputRef}
+          className="ai-query-bar__input"
+          type="text"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          onKeyDown={handleKey}
+          placeholder={PLACEHOLDER_QUERIES[placeholderIdx]}
+          aria-label="Ask a question about Vancouver"
+          disabled={loading}
+        />
+        <button
+          type="button"
+          className={`ai-query-bar__help-btn${helpOpen ? ' ai-query-bar__help-btn--active' : ''}`}
+          onClick={() => setHelpOpen((o) => !o)}
+          aria-label="What can I ask?"
+          aria-expanded={helpOpen}
+        >
+          ?
+        </button>
+        <button
+          className="ai-query-bar__submit"
+          onClick={submit}
+          disabled={!query.trim() || loading}
+          type="button"
+        >
+          {loading ? (
+            <span className="ai-query-bar__spinner" />
+          ) : (
+            <>
+              <span className="ai-query-bar__submit-label">Analyse</span>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M5 12h14" />
+                <path d="m12 5 7 7-7 7" />
+              </svg>
+            </>
+          )}
+        </button>
+      </div>
+
+      {helpOpen && (
+        <div className="ai-query-help" role="dialog" aria-label="Query examples">
+          <div className="ai-query-help__header">
+            <span className="ai-query-help__title">What can I ask?</span>
+            <button type="button" className="ai-query-help__close" onClick={() => setHelpOpen(false)} aria-label="Close">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                <path d="M18 6 6 18M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+          {HELP_SECTIONS.map((section) => (
+            <div key={section.title} className="ai-query-help__section">
+              <span className="ai-query-help__section-title">{section.title}</span>
+              <div className="ai-query-help__examples">
+                {section.examples.map((ex) => (
+                  <button
+                    key={ex}
+                    type="button"
+                    className="ai-query-help__example"
+                    onClick={() => {
+                      setQuery(ex)
+                      setHelpOpen(false)
+                      setTimeout(() => inputRef.current?.focus(), 40)
+                    }}
+                  >
+                    {ex}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   )
 }
