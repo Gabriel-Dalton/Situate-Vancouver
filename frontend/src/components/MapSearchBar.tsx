@@ -16,35 +16,61 @@ function toStreetPrefix(name: string): string {
 }
 
 async function geocodeIntersection(raw1: string, raw2: string): Promise<ZoomLocation | null> {
-  // Use the stripped prefix but match it as a whole word (handles "West Broadway" etc.)
   const p1 = escapeRegex(toStreetPrefix(raw1))
   const p2 = escapeRegex(toStreetPrefix(raw2))
-  // Word-boundary simulation in POSIX ERE: match prefix preceded by start or space
-  const re1 = `(^|[ ])${p1}([ ]|$)`
-  const re2 = `(^|[ ])${p2}([ ]|$)`
 
   const query = `[out:json][timeout:12];
-way["name"~"${re1}","i"]["highway"](${BBOX})->.a;
-way["name"~"${re2}","i"]["highway"](${BBOX})->.b;
+way["name"~"${p1}","i"]["highway"](${BBOX})->.a;
+way["name"~"${p2}","i"]["highway"](${BBOX})->.b;
 node(w.a)(w.b);
 out;`
 
   try {
-    const res = await fetch(
-      `https://overpass-api.de/api/interpreter?data=${encodeURIComponent(query)}`,
-    )
+    const res = await fetch('https://overpass-api.de/api/interpreter', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: `data=${encodeURIComponent(query)}`,
+    })
+    if (res.ok) {
+      const data = await res.json()
+      const node = data.elements?.[0]
+      if (node?.lat != null) {
+        return {
+          lat: node.lat,
+          lng: node.lon,
+          label: `${raw1.trim()} & ${raw2.trim()}, Vancouver`,
+        }
+      }
+    }
+  } catch {
+    // fall through
+  }
+
+  // Nominatim fallback — "X at Y" works better than "X and Y" for intersections
+  try {
+    const params = new URLSearchParams({
+      q: `${raw1.trim()} at ${raw2.trim()}, Vancouver, BC`,
+      format: 'json',
+      limit: '1',
+      countrycodes: 'ca',
+      viewbox: '-123.5,49.0,-122.5,49.6',
+      bounded: '1',
+    })
+    const res = await fetch(`https://nominatim.openstreetmap.org/search?${params}`, {
+      headers: { 'Accept-Language': 'en', 'User-Agent': 'SituateVancouver/1.0' },
+    })
     const data = await res.json()
-    const node = data.elements?.[0]
-    if (node?.lat != null) {
+    if (data?.[0]) {
       return {
-        lat: node.lat,
-        lng: node.lon,
+        lat: parseFloat(data[0].lat),
+        lng: parseFloat(data[0].lon),
         label: `${raw1.trim()} & ${raw2.trim()}, Vancouver`,
       }
     }
   } catch {
-    // fall through to Nominatim
+    // fall through
   }
+
   return null
 }
 
