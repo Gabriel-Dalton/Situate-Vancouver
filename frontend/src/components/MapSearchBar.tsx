@@ -3,73 +3,38 @@ import type { KeyboardEvent } from 'react'
 import type { ZoomLocation } from './AiQuery'
 import './MapSearchBar.css'
 
-// Metro Vancouver bounding box for Overpass queries
-const BBOX = '49.0,-123.5,49.5,-122.5'
+const NOMINATIM = 'https://nominatim.openstreetmap.org/search'
+const NOMINATIM_HEADERS = { 'Accept-Language': 'en', 'User-Agent': 'SituateVancouver/1.0' }
+const NOMINATIM_BASE = { format: 'json', limit: '1', countrycodes: 'ca', viewbox: '-123.5,49.0,-122.5,49.6', bounded: '1' }
 
-function escapeRegex(s: string) {
-  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-}
-
-// Strip common street-type suffixes so "main" also matches "Main Street"
-function toStreetPrefix(name: string): string {
-  return name.trim().replace(/\s+(street|st|avenue|ave|boulevard|blvd|road|rd|drive|dr|way|crescent|cres|court|ct|place|pl|lane|ln)\.?$/i, '').trim()
+async function nominatimSearch(q: string): Promise<{ lat: number; lng: number } | null> {
+  try {
+    const res = await fetch(`${NOMINATIM}?${new URLSearchParams({ ...NOMINATIM_BASE, q })}`, { headers: NOMINATIM_HEADERS })
+    const data = await res.json()
+    if (data?.[0]) return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) }
+  } catch { /* ignore */ }
+  return null
 }
 
 async function geocodeIntersection(raw1: string, raw2: string): Promise<ZoomLocation | null> {
-  const p1 = escapeRegex(toStreetPrefix(raw1))
-  const p2 = escapeRegex(toStreetPrefix(raw2))
+  const s1 = raw1.trim()
+  const s2 = raw2.trim()
+  const label = `${s1} & ${s2}, Vancouver`
 
-  const query = `[out:json][timeout:12];
-way["name"~"${p1}","i"]["highway"](${BBOX})->.a;
-way["name"~"${p2}","i"]["highway"](${BBOX})->.b;
-node(w.a)(w.b);
-out;`
-
-  try {
-    const res = await fetch('https://overpass-api.de/api/interpreter', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: `data=${encodeURIComponent(query)}`,
-    })
-    if (res.ok) {
-      const data = await res.json()
-      const node = data.elements?.[0]
-      if (node?.lat != null) {
-        return {
-          lat: node.lat,
-          lng: node.lon,
-          label: `${raw1.trim()} & ${raw2.trim()}, Vancouver`,
-        }
-      }
-    }
-  } catch {
-    // fall through
+  // Try intersection formats — "at" is best supported by Nominatim for OSM intersections
+  for (const q of [
+    `${s1} at ${s2}, Vancouver, BC`,
+    `${s2} at ${s1}, Vancouver, BC`,
+    `${s1} & ${s2}, Vancouver, BC`,
+    `${s1} and ${s2}, Vancouver, BC`,
+  ]) {
+    const loc = await nominatimSearch(q)
+    if (loc) return { ...loc, label }
   }
 
-  // Nominatim fallback — "X at Y" works better than "X and Y" for intersections
-  try {
-    const params = new URLSearchParams({
-      q: `${raw1.trim()} at ${raw2.trim()}, Vancouver, BC`,
-      format: 'json',
-      limit: '1',
-      countrycodes: 'ca',
-      viewbox: '-123.5,49.0,-122.5,49.6',
-      bounded: '1',
-    })
-    const res = await fetch(`https://nominatim.openstreetmap.org/search?${params}`, {
-      headers: { 'Accept-Language': 'en', 'User-Agent': 'SituateVancouver/1.0' },
-    })
-    const data = await res.json()
-    if (data?.[0]) {
-      return {
-        lat: parseFloat(data[0].lat),
-        lng: parseFloat(data[0].lon),
-        label: `${raw1.trim()} & ${raw2.trim()}, Vancouver`,
-      }
-    }
-  } catch {
-    // fall through
-  }
+  // Last resort: zoom to the first street so the user lands somewhere useful
+  const fallback = await nominatimSearch(`${s1}, Vancouver, BC`)
+  if (fallback) return { ...fallback, label: `${s1}, Vancouver (intersection not found)` }
 
   return null
 }
