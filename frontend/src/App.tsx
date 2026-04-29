@@ -23,6 +23,7 @@ import { USER_EMAIL_KEY } from './config/authSession'
 
 import { AiQueryBar, AiResponsePanel } from './components/AiQuery'
 import type { AiQueryResponse } from './components/AiQuery'
+import MapSearchBar from './components/MapSearchBar'
 import RouteFindingPanel from './components/RouteFindingPanel'
 import type { QuickRoute } from './components/RouteFindingPanel'
 import CameraWatchPanel from './components/CameraWatchPanel'
@@ -221,7 +222,7 @@ export default function App() {
           </div>
           <p className="insight-shell__subtitle">City-scale insight canvas <span className="beta-badge">Beta</span></p>
         </div>
-        <AiQueryBar onResponse={handleAiResponse} onZoom={handleZoom} />
+        <AiQueryBar onResponse={handleAiResponse} />
         <div className="insight-shell__header-meta">
           <div className="insight-shell__header-meta-row">
             <div id="situate-lang-mount" className="insight-shell__lang" aria-label="Language" />
@@ -326,6 +327,7 @@ export default function App() {
               hiddenIncidentTypes={hiddenIncidentTypes}
             />
           </Suspense>
+          <MapSearchBar onZoom={handleZoom} />
         </main>
 
         {/* mobile-sheet is display:contents on desktop (invisible to the grid),

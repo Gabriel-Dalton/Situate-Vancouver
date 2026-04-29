@@ -59,7 +59,6 @@ export type ZoomLocation = { lat: number; lng: number; label: string }
 
 interface AiQueryBarProps {
   onResponse: (response: AiQueryResponse) => void
-  onZoom?: (loc: ZoomLocation) => void
 }
 
 const PLACEHOLDER_QUERIES = [
@@ -91,35 +90,7 @@ function buildErrorResponse(query: string, detail: string): AiQueryResponse {
   }
 }
 
-const ZOOM_PREFIX_RE = /^(?:go\s+to|zoom\s+to|navigate\s+to|take\s+me\s+to|show\s+me|find|where\s+is|where's)\s+/i
-// Question/auxiliary word starters signal an AI query, not a location lookup
-const QUESTION_STARTER_RE = /^(?:is|are|was|were|what|how|where|when|why|can|does|did|will|has|have|any|there|which|who|tell|check|show|i[sf])\b/i
-// Bare intersection: "boundary and kingsway", "41st and oak", "west 4th and burrard"
-// Each side is 1–3 words; no question-word starters (checked separately before testing this)
-const INTERSECTION_RE = /^[\w'-]+(?:\s+[\w'-]+){0,2}\s+and\s+[\w'-]+(?:\s+[\w'-]+){0,2}$/i
-
-async function geocodePlace(place: string): Promise<ZoomLocation | null> {
-  try {
-    const params = new URLSearchParams({
-      q: `${place}, Vancouver, BC`,
-      format: 'json',
-      limit: '1',
-      countrycodes: 'ca',
-      viewbox: '-123.5,49.0,-122.5,49.6',
-      bounded: '1',
-    })
-    const res = await fetch(`https://nominatim.openstreetmap.org/search?${params}`, {
-      headers: { 'Accept-Language': 'en', 'User-Agent': 'SituateVancouver/1.0' },
-    })
-    const data = await res.json()
-    if (!data?.[0]) return null
-    return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon), label: data[0].display_name }
-  } catch {
-    return null
-  }
-}
-
-export function AiQueryBar({ onResponse, onZoom }: AiQueryBarProps) {
+export function AiQueryBar({ onResponse }: AiQueryBarProps) {
   const [query, setQuery] = useState('')
   const [loading, setLoading] = useState(false)
   const [placeholderIdx, setPlaceholderIdx] = useState(0)
@@ -148,23 +119,6 @@ export function AiQueryBar({ onResponse, onZoom }: AiQueryBarProps) {
   const submit = useCallback(async () => {
     const trimmed = query.trim()
     if (!trimmed || loading) return
-
-    const zoomMatch = trimmed.match(ZOOM_PREFIX_RE)
-    const intersectionMatch = !zoomMatch && !QUESTION_STARTER_RE.test(trimmed) && INTERSECTION_RE.test(trimmed)
-    if ((zoomMatch || intersectionMatch) && onZoom) {
-      const place = zoomMatch ? trimmed.slice(zoomMatch[0].length).trim() : trimmed
-      setLoading(true)
-      const loc = await geocodePlace(place)
-      setLoading(false)
-      if (loc) {
-        onZoom(loc)
-        setQuery('')
-      } else {
-        onResponse(buildErrorResponse(trimmed, `Could not find "${place}" on the map.`))
-        setQuery('')
-      }
-      return
-    }
 
     setLoading(true)
     try {
