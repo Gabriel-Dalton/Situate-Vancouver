@@ -1,5 +1,9 @@
 .env
 **/.env
+.env.*
+**/.env.*
+!.env.example
+!**/.env.example
 SESSION_NOTES.md
 *.sqlite3
 __pycache__/
